@@ -279,11 +279,37 @@ export default function App() {
           <View style={{ flex: 1 }}>
              <View style={[{borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: isDark ? '#1E1E1E' : '#F9FAFB', height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12}]}>
                 <Text style={s.paneTitle}>WYSIWYG 에디터 - {selectedFile}</Text>
-                <Pressable onPress={() => setActiveTab('files')} style={{ marginLeft: 'auto' }}><Text style={{color: colors.primary, fontSize: 13, fontWeight: 'bold'}}>닫기 (탐색기로 돌아가기)</Text></Pressable>
+                <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center' }}>
+                  <Pressable 
+                    onPress={() => {
+                      setLocalFiles(prev => ({ ...prev, [selectedFile]: editorContent }));
+                      if (Platform.OS === 'web') window.alert('에디터 내용이 임시 저장되었습니다.');
+                      else Alert.alert('저장됨', '에디터 내용이 임시 저장되었습니다.');
+                    }} 
+                    style={{ marginRight: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 4, flexDirection: 'row', alignItems: 'center' }}
+                  >
+                    <Ionicons name="save-outline" size={14} color={colors.primary} style={{ marginRight: 6 }} />
+                    <Text style={{color: colors.primary, fontSize: 13, fontWeight: 'bold'}}>저장 (Cmd+S)</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setActiveTab('files')}>
+                    <Text style={{color: colors.textMuted, fontSize: 13, fontWeight: 'bold'}}>닫기 (탐색기로 돌아가기)</Text>
+                  </Pressable>
+                </View>
              </View>
              <View style={{ flex: 1 }}>
                {/* WYSIWYG Editor replaces the split view */}
-               <Editor value={editorContent} onChange={setEditorContent} isDark={isDark} />
+               <Editor
+                 key={selectedFile}
+                 value={editorContent} 
+                 onChange={setEditorContent} 
+                 onSave={(val: string) => {
+                   setEditorContent(val);
+                   setLocalFiles(prev => ({ ...prev, [selectedFile]: val }));
+                   if (Platform.OS === 'web') window.alert('에디터 내용이 임시 저장되었습니다.');
+                   else Alert.alert('저장됨', '에디터 내용이 임시 저장되었습니다.');
+                 }} 
+                 isDark={isDark} 
+               />
              </View>
           </View>
         )}

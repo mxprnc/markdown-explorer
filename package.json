@@ -11,11 +11,13 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@aarkue/tiptap-math-extension": "^1.4.0",
     "@codemirror/lang-markdown": "^6.5.0",
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
+    "@tiptap/extension-code-block": "^3.20.1",
     "@tiptap/pm": "^3.20.1",
     "@tiptap/react": "^3.20.1",
     "@tiptap/starter-kit": "^3.20.1",
@@ -36,6 +38,8 @@
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.10",
+    "katex": "^0.16.37",
+    "mermaid": "^11.12.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-markdown": "^10.1.0",
@@ -48,6 +52,8 @@
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
     "react-syntax-highlighter": "^16.1.1",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
     "tiptap-markdown": "^0.9.0"
   },
   "devDependencies": {

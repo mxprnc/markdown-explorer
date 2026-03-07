@@ -1,8 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Ionicons } from '@expo/vector-icons';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
+import mermaid from 'mermaid';
+
+function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {
+  const [svg, setSvg] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  
+  useEffect(() => {
+    mermaid.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default' });
+    const renderChart = async () => {
+      try {
+        const id = `mermaid-${Math.random().toString(36).substring(7)}`;
+        const { svg } = await mermaid.render(id, chart);
+        setSvg(svg);
+        setError('');
+      } catch (e: any) {
+        console.error('Mermaid rendering error:', e);
+        setError(e?.message || 'Invalid mermaid syntax');
+      }
+    };
+    if (chart) renderChart();
+  }, [chart, isDark]);
+
+  if (error) {
+    return <div style={{ color: isDark ? '#FCA5A5' : '#EF4444', backgroundColor: isDark ? '#374151' : '#F3F4F6', padding: '16px', borderRadius: '8px', margin: '20px 0', fontSize: '13px', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{error}</div>;
+  }
+
+  return <div className="mermaid-diagram" dangerouslySetInnerHTML={{ __html: svg }} style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }} />;
+}
 
 export default function Preview({ content, isDark }: { content: string, isDark: boolean }) {
   const color = isDark ? '#F3F4F6' : '#121212';
@@ -21,11 +52,17 @@ export default function Preview({ content, isDark }: { content: string, isDark: 
         }
       `}</style>
       <ReactMarkdown
+        remarkPlugins={[remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           code(props: any) {
             const {children, className, node, ...rest} = props;
             const match = /language-(\w+)/.exec(className || '');
             const codeString = String(children).replace(/\n$/, '');
+            
+            if (match && match[1] === 'mermaid') {
+              return <Mermaid chart={codeString} isDark={isDark} />;
+            }
             
             const handleCopy = () => {
               if (navigator.clipboard) {
