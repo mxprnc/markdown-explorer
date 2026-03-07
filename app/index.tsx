@@ -253,7 +253,20 @@ export default function App() {
               <View style={s.paneHeader}>
                 <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
                   <Text style={s.paneTitle}>Preview (Read-Only)</Text>
-                  <Pressable onPress={() => setActiveTab('editor')}><Text style={{color: colors.primary, fontSize: 12}}>Edit</Text></Pressable>
+                  <Pressable 
+                    onPress={() => setActiveTab('editor')}
+                    style={{
+                      backgroundColor: colors.primary,
+                      paddingVertical: 6,
+                      paddingHorizontal: 16,
+                      borderRadius: 6,
+                      flexDirection: 'row',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <Ionicons name="create-outline" size={14} color="#FFF" style={{ marginRight: 4 }} />
+                    <Text style={{color: '#FFF', fontSize: 13, fontWeight: 'bold'}}>에디터 모드로 열기 (Split View)</Text>
+                  </Pressable>
                 </View>
               </View>
               <ScrollView style={{ flex: 1 }}>
@@ -262,19 +275,15 @@ export default function App() {
             </View>
           </>
         ) : (
-          /* PANE 2: Editor Mode */
-          <View style={{ flex: 1, flexDirection: 'row' }}>
-             {/* EDITOR */}
-             <View style={s.paneMiddle}>
-              <View style={s.paneHeader}><Text style={s.paneTitle}>Editor - {selectedFile}</Text></View>
-              <Editor value={editorContent} onChange={setEditorContent} isDark={isDark} />
+          /* PANE 2: WYSIWYG Editor Mode */
+          <View style={{ flex: 1 }}>
+             <View style={[{borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: isDark ? '#1E1E1E' : '#F9FAFB', height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12}]}>
+                <Text style={s.paneTitle}>WYSIWYG 에디터 - {selectedFile}</Text>
+                <Pressable onPress={() => setActiveTab('files')} style={{ marginLeft: 'auto' }}><Text style={{color: colors.primary, fontSize: 13, fontWeight: 'bold'}}>닫기 (탐색기로 돌아가기)</Text></Pressable>
              </View>
-             {/* LIVE PREVIEW */}
-             <View style={s.paneRight}>
-              <View style={s.paneHeader}><Text style={s.paneTitle}>Live Preview</Text></View>
-              <ScrollView style={{ flex: 1 }}>
-                <Preview content={editorContent} isDark={isDark} />
-              </ScrollView>
+             <View style={{ flex: 1 }}>
+               {/* WYSIWYG Editor replaces the split view */}
+               <Editor value={editorContent} onChange={setEditorContent} isDark={isDark} />
              </View>
           </View>
         )}
