@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
-import { Extension } from '@tiptap/core';
+import { Extension, getMarkRange } from '@tiptap/core';
+import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import CodeBlock from '@tiptap/extension-code-block';
 import Heading from '@tiptap/extension-heading';
@@ -378,6 +379,183 @@ const CustomBlockquote = Blockquote.extend({
   },
 });
 
+const LiveMarkdownExtension = Extension.create({
+  name: 'liveMarkdown',
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey('liveMarkdown'),
+        appendTransaction(transactions, oldState, newState) {
+          if (!transactions.some(tr => tr.docChanged || tr.selectionSet)) return;
+
+          let tr = newState.tr;
+          const markSymbols: Record<string, string> = {
+            bold: '**',
+            italic: '*',
+            strike: '~~',
+            code: '`'
+          };
+
+          const expandMark = () => {
+            const { $from, $to } = newState.selection;
+            const positions = [
+              $from.pos - 1, $from.pos, $from.pos + 1,
+              $to.pos - 1, $to.pos, $to.pos + 1
+            ].filter(p => p >= 0 && p <= newState.doc.content.size);
+
+            for (const pos of positions) {
+              const $pos = newState.doc.resolve(pos);
+              for (const mark of $pos.marks()) {
+                const sym = markSymbols[mark.type.name];
+                if (sym) {
+                  const range = getMarkRange($pos, mark.type);
+                  if (range) {
+                    tr.removeMark(range.from, range.to, mark.type);
+                    tr.insertText(sym, range.to);
+                    tr.insertText(sym, range.from);
+
+                    const selFrom = newState.selection.from;
+                    const selTo = newState.selection.to;
+                    
+                    let newFrom = selFrom;
+                    let newTo = selTo;
+
+                    // If selection was after the mark's start, it shifts right by sym.length
+                    if (selFrom >= range.to) newFrom += sym.length * 2;
+                    else if (selFrom > range.from) newFrom += sym.length;
+                    else if (selFrom === range.from) newFrom += sym.length;
+
+                    if (selTo >= range.to) newTo += sym.length * 2;
+                    else if (selTo > range.from) newTo += sym.length;
+                    else if (selTo === range.from) newTo += sym.length;
+                    
+                    if (selTo === range.to && selFrom === selTo) {
+                      newTo += sym.length;
+                      newFrom = newTo;
+                    }
+
+                    tr.setSelection(TextSelection.create(
+                      tr.doc,
+                      newFrom,
+                      newTo
+                    ));
+                    return true;
+                  }
+                }
+              }
+            }
+            return false;
+          };
+
+          const collapseText = () => {
+            let found = false;
+            newState.doc.descendants((node, pos) => {
+              if (found) return false;
+              if (node.isTextblock) {
+                const text = node.textContent;
+                if (!text.includes('*') && !text.includes('~') && !text.includes('`')) return;
+
+                const regexes = [
+                  { name: 'bold', regex: /\*\*([^\*]+)\*\*/g, symLength: 2 },
+                  { name: 'strike', regex: /~~([^~]+)~~/g, symLength: 2 },
+                  { name: 'code', regex: /`([^`]+)`/g, symLength: 1 },
+                  { name: 'italic', regex: /(^|[^\*])\*([^\*]+)\*(?=[^\*]|$)/g, symLength: 1, isComplex: true },
+                ];
+
+                for (const { name, regex, symLength, isComplex } of regexes) {
+                  let match;
+                  const markType = newState.schema.marks[name];
+                  if (!markType) continue;
+
+                  while ((match = regex.exec(text)) !== null) {
+                    const offset = isComplex ? match[1].length : 0;
+                    const innerText = match[isComplex ? 2 : 1];
+                    const start = pos + 1 + match.index + offset;
+                    const end = start + innerText.length + symLength * 2;
+
+                    const isTouching = 
+                      (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) ||
+                      (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
+
+                    if (!isTouching) {
+                      tr.delete(start, end);
+                      tr.insertText(innerText, start);
+                      tr.addMark(start, start + innerText.length, markType.create());
+                      found = true;
+                      break;
+                    }
+                  }
+                  if (found) break;
+                }
+              }
+            });
+            return found;
+          };
+
+          if (expandMark()) return tr;
+          if (collapseText()) return tr;
+          
+          return null;
+        }
+      })
+    ];
+  },
+  addKeyboardShortcuts() {
+    const toggleMarkdownFormat = (sym: string) => {
+      const { state, dispatch } = this.editor.view;
+      const { $from, $to, empty } = state.selection;
+      
+      if (empty) return false;
+
+      const text = state.doc.textBetween($from.pos, $to.pos, '\n');
+      
+      const textBefore = state.doc.textBetween(Math.max(0, $from.pos - sym.length), $from.pos, '\n');
+      const textAfter = state.doc.textBetween($to.pos, Math.min(state.doc.content.size, $to.pos + sym.length), '\n');
+
+      if (textBefore === sym && textAfter === sym) {
+        // Selection is exactly between symbols. E.g. **|word|**
+        if (dispatch) {
+          const tr = state.tr;
+          tr.delete($to.pos, $to.pos + sym.length);
+          tr.delete($from.pos - sym.length, $from.pos);
+          dispatch(tr);
+        }
+        return true;
+      } else if (text.startsWith(sym) && text.endsWith(sym) && text.length >= sym.length * 2) {
+        // Selection includes the symbols. E.g. |**word**|
+        if (dispatch) {
+          const tr = state.tr;
+          tr.delete($to.pos - sym.length, $to.pos);
+          tr.delete($from.pos, $from.pos + sym.length);
+          dispatch(tr);
+        }
+        return true;
+      } else {
+        // Selection does not have the symbols. E.g. |word| -> **|word|**
+        if (dispatch) {
+          const tr = state.tr;
+          tr.insertText(sym, $to.pos);
+          tr.insertText(sym, $from.pos);
+          tr.setSelection(TextSelection.create(tr.doc, $from.pos + sym.length, $to.pos + sym.length));
+          dispatch(tr);
+        }
+        return true;
+      }
+    };
+
+    return {
+      'Mod-b': () => toggleMarkdownFormat('**'),
+      'Mod-i': () => toggleMarkdownFormat('*'),
+      'Mod-e': () => toggleMarkdownFormat('`'),
+      'Mod-Shift-s': () => toggleMarkdownFormat('~~'),
+    };
+  }
+});
+
+const postprocessMd = (md: string) => {
+  return md.replace(/\\\*/g, '*').replace(/\\~/g, '~').replace(/\\`/g, '`').replace(/\\_/g, '_');
+};
+
 export default function Editor({ value, onChange, onSave, isDark }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, isDark: boolean }) {
 
   const SaveShortcut = Extension.create({
@@ -386,7 +564,8 @@ export default function Editor({ value, onChange, onSave, isDark }: { value: str
       return {
         'Mod-s': () => {
           if (onSave) {
-            onSave((this.editor.storage as any).markdown.getMarkdown());
+            let md = (this.editor.storage as any).markdown.getMarkdown();
+            onSave(postprocessMd(md));
           }
           return true; // prevent default
         },
@@ -400,6 +579,7 @@ export default function Editor({ value, onChange, onSave, isDark }: { value: str
       CustomCodeBlock,
       CustomHeading,
       CustomBlockquote,
+      LiveMarkdownExtension,
       Markdown,
       MathExtension.configure({ evaluation: false }),
       SaveShortcut,
@@ -407,7 +587,7 @@ export default function Editor({ value, onChange, onSave, isDark }: { value: str
     content: value,
     onUpdate: ({ editor }) => {
       // Get the markdown content whenever the user types
-      const markdown = (editor.storage as any).markdown.getMarkdown();
+      const markdown = postprocessMd((editor.storage as any).markdown.getMarkdown());
       onChange(markdown);
     },
     editorProps: {
