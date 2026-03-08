@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
-import { Extension, getMarkRange } from '@tiptap/core';
+import { Extension, getMarkRange, Node } from '@tiptap/core';
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import CodeBlock from '@tiptap/extension-code-block';
@@ -465,21 +465,26 @@ const LiveMarkdownExtension = Extension.create({
             return false;
           };
 
-          const expandImage = () => {
+          const expandMedia = () => {
             if ((window as any).pmIsMousingDown) return false;
             let found = false;
             newState.doc.descendants((node, pos) => {
               if (found) return false;
-              if (node.type.name === 'image' || node.type.name === 'customImage') {
+              if (node.type.name === 'image' || node.type.name === 'customImage' || node.type.name === 'customYoutube') {
                 const isTouchingFromBefore = newState.selection.$from.pos === pos;
                 const isTouchingFromAfter = newState.selection.$from.pos === pos + node.nodeSize;
                 const isSelected = newState.selection.from <= pos && newState.selection.to >= pos + node.nodeSize;
                 const isTouching = isTouchingFromBefore || isTouchingFromAfter || isSelected;
                   
                 if (isTouching) {
-                  const alt = node.attrs.alt || '';
-                  const src = node.attrs.src || '';
-                  const textStr = `![${alt}](${src})`;
+                  let textStr = '';
+                  if (node.type.name === 'customYoutube') {
+                    textStr = node.attrs.originalUrl || node.attrs.src;
+                  } else {
+                    const alt = node.attrs.alt || '';
+                    const src = node.attrs.src || '';
+                    textStr = `![${alt}](<${src}>)`;
+                  }
                   
                   tr.delete(pos, pos + node.nodeSize);
                   tr.insertText(textStr, pos);
@@ -503,7 +508,7 @@ const LiveMarkdownExtension = Extension.create({
               if (found) return false;
               if (node.isTextblock) {
                 const text = node.textContent;
-                if (!text.includes('*') && !text.includes('~') && !text.includes('`') && !text.includes('![')) return;
+                if (!text.includes('*') && !text.includes('~') && !text.includes('`') && !text.includes('![') && !text.includes('youtu')) return;
 
                 const regexes = [
                   { name: 'bold', regex: /\*\*([^\*]+)\*\*/g, symLength: 2 },
@@ -542,7 +547,7 @@ const LiveMarkdownExtension = Extension.create({
                 if ((window as any).pmIsMousingDown) return false;
 
                 // Handle Image Markdown text matching
-                const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+                const imgRegex = /!\[([^\]]*)\]\((?:<([^>]+)>|([^)]+))\)/g;
                 let imgMatch;
                 while ((imgMatch = imgRegex.exec(text)) !== null) {
                   const start = pos + 1 + imgMatch.index;
@@ -555,8 +560,34 @@ const LiveMarkdownExtension = Extension.create({
                   if (!isTouching) {
                     const imageType = newState.schema.nodes.image || newState.schema.nodes.customImage;
                     if (imageType) {
-                       const imgNode = imageType.create({ alt: imgMatch[1], src: imgMatch[2] });
+                       const src = imgMatch[2] || imgMatch[3];
+                       const imgNode = imageType.create({ alt: imgMatch[1], src });
                        tr.replaceWith(start, end, imgNode);
+                    }
+                    found = true;
+                    break;
+                  }
+                }
+
+                if (found) return false;
+
+                // Handle Youtube Markdown text matching
+                const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s<)]*)?/g;
+                let ytMatch;
+                while ((ytMatch = ytRegex.exec(text)) !== null) {
+                  const start = pos + 1 + ytMatch.index;
+                  const end = start + ytMatch[0].length;
+                  
+                  const isTouching = 
+                    (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) ||
+                    (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
+                    
+                  if (!isTouching) {
+                    const ytType = newState.schema.nodes.customYoutube;
+                    if (ytType) {
+                       const src = `https://www.youtube.com/embed/${ytMatch[1]}`;
+                       const ytNode = ytType.create({ src, originalUrl: ytMatch[0] });
+                       tr.replaceWith(start, end, ytNode);
                     }
                     found = true;
                     break;
@@ -569,7 +600,7 @@ const LiveMarkdownExtension = Extension.create({
           };
 
           if (expandMark()) return tr;
-          if (expandImage()) return tr;
+          if (expandMedia()) return tr;
           if (collapseText()) return tr;
           
           return null;
@@ -630,8 +661,11 @@ const LiveMarkdownExtension = Extension.create({
 });
 
 const postprocessMd = (md: string) => {
-  return md.replace(/\\\*/g, '*').replace(/\\~/g, '~').replace(/\\`/g, '`').replace(/\\_/g, '_')
+  let processed = md.replace(/\\\*/g, '*').replace(/\\~/g, '~').replace(/\\`/g, '`').replace(/\\_/g, '_')
            .replace(/\\!\\\[/g, '![').replace(/\\\]/g, ']');
+  // Convert custom Youtube iframe HTML from tiptap-markdown back to its original text URL.
+  processed = processed.replace(/<iframe[^>]*originalurl="([^"]+)"[^>]*><\/iframe>/gi, '$1');
+  return processed;
 };
 
 const ImagePastingExtension = Extension.create({
@@ -717,6 +751,144 @@ const CustomImage = Image.extend<any>({
   }
 });
 
+const CustomYoutube = Node.create<any>({
+  name: 'customYoutube',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  addAttributes() {
+    return {
+      src: { default: null },
+      originalUrl: { default: null }
+    }
+  },
+  parseHTML() {
+    return [{ tag: 'iframe[data-youtube]' }]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['iframe', { ...HTMLAttributes, 'data-youtube': 'true' }]
+  },
+  addNodeView() {
+    return ({ node, getPos, editor }: any) => {
+      const dom = document.createElement('span')
+      dom.style.position = 'relative'
+      dom.style.margin = '16px 0'
+      dom.style.width = '100%'
+      dom.style.maxWidth = '560px'
+      dom.style.display = 'inline-block'
+      
+      const iframe = document.createElement('iframe')
+      iframe.src = node.attrs.src
+      iframe.width = '100%'
+      iframe.height = '315'
+      iframe.style.borderRadius = '8px'
+      iframe.setAttribute('frameborder', '0')
+      iframe.setAttribute('allowfullscreen', 'true')
+      
+      // Top overlay for clicking
+      const overlay = document.createElement('div')
+      overlay.style.position = 'absolute'
+      overlay.style.top = '0'
+      overlay.style.left = '0'
+      overlay.style.right = '0'
+      overlay.style.height = '40px'
+      overlay.style.zIndex = '10'
+      overlay.style.cursor = 'pointer'
+      overlay.title = '클릭하여 링크 수정'
+      overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2), transparent)'
+      overlay.style.borderTopLeftRadius = '8px'
+      overlay.style.borderTopRightRadius = '8px'
+
+      dom.appendChild(iframe)
+      dom.appendChild(overlay)
+
+      const linkContainer = document.createElement('div')
+      linkContainer.style.display = 'flex'
+      linkContainer.style.alignItems = 'center'
+      linkContainer.style.marginTop = '8px'
+      linkContainer.style.gap = '8px'
+
+      const link = document.createElement('a')
+      link.href = node.attrs.originalUrl || node.attrs.src
+      link.target = '_blank'
+      link.rel = 'noopener noreferrer'
+      link.innerText = node.attrs.originalUrl || node.attrs.src
+      link.style.fontSize = '14px'
+      link.style.color = '#3b82f6' // text-blue-500
+      link.style.textDecoration = 'none'
+      link.style.wordBreak = 'break-all'
+      link.style.whiteSpace = 'nowrap'
+      link.style.overflow = 'hidden'
+      link.style.textOverflow = 'ellipsis'
+      link.style.flex = '1'
+      
+      link.addEventListener('mouseover', () => {
+        link.style.textDecoration = 'underline'
+      })
+      link.addEventListener('mouseout', () => {
+        link.style.textDecoration = 'none'
+      })
+      link.addEventListener('mousedown', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      })
+
+      const copyButton = document.createElement('button')
+      copyButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`
+      copyButton.style.display = 'flex'
+      copyButton.style.alignItems = 'center'
+      copyButton.style.justifyContent = 'center'
+      copyButton.style.padding = '4px'
+      copyButton.style.background = 'transparent'
+      copyButton.style.border = 'none'
+      copyButton.style.cursor = 'pointer'
+      copyButton.style.color = '#6b7280' // text-gray-500
+      copyButton.style.borderRadius = '4px'
+      copyButton.title = '주소 복사'
+      
+      copyButton.addEventListener('mouseover', () => {
+        copyButton.style.background = 'rgba(0,0,0,0.05)'
+      })
+      copyButton.addEventListener('mouseout', () => {
+        copyButton.style.background = 'transparent'
+      })
+      copyButton.addEventListener('mousedown', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      })
+      
+      copyButton.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(node.attrs.originalUrl || node.attrs.src)
+            .then(() => {
+              const originalHtml = copyButton.innerHTML;
+              copyButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+              setTimeout(() => {
+                copyButton.innerHTML = originalHtml;
+              }, 2000)
+            })
+        }
+      })
+
+      linkContainer.appendChild(link)
+      linkContainer.appendChild(copyButton)
+      dom.appendChild(linkContainer)
+
+      overlay.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (typeof getPos === 'function') {
+          editor.commands.setTextSelection(getPos())
+        }
+      })
+
+      return { dom }
+    }
+  }
+});
+
 export default function Editor({ value, onChange, onSave, onPasteImage, resolveImage, isDark }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean }) {
 
   const SaveShortcut = Extension.create({
@@ -743,6 +915,7 @@ export default function Editor({ value, onChange, onSave, onPasteImage, resolveI
       ImagePastingExtension.configure({ onPasteImage }),
       LiveMarkdownExtension,
       CustomImage.configure({ resolveImage }),
+      CustomYoutube,
       Markdown,
       MathExtension.configure({ evaluation: false }),
       SaveShortcut,
