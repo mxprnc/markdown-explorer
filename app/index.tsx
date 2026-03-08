@@ -184,6 +184,12 @@ export default function App() {
       flex: 1,
       backgroundColor: colors.surface,
     },
+    paneTOC: {
+      width: 220,
+      borderLeftWidth: 1,
+      borderLeftColor: colors.border,
+      backgroundColor: colors.surface,
+    },
 
     paneHeader: {
       padding: 12,
@@ -225,8 +231,53 @@ export default function App() {
       alignItems: 'center',
       paddingHorizontal: 12,
     },
-    footerPathText: { color: '#FFF', fontSize: 11, fontWeight: 'bold', fontFamily: fontFamilyCode }
+    footerPathText: { color: '#FFF', fontSize: 11, fontWeight: 'bold', fontFamily: fontFamilyCode },
   });
+
+  const handleTOCClick = (text: string, index: number) => {
+    if (Platform.OS === 'web') {
+      const headers = document.querySelectorAll('.tiptap-wrapper h1, .tiptap-wrapper h2, .tiptap-wrapper h3, .tiptap-wrapper h4, .tiptap-wrapper h5, .tiptap-wrapper h6');
+      
+      // Fast path: try to index match exactly
+      if (headers[index] && headers[index].textContent?.trim() === text) {
+        headers[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      
+      // Fallback: search by text content across all headers
+      for (let i = 0; i < headers.length; i++) {
+        if (headers[i].textContent?.trim() === text) {
+           headers[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+           break;
+        }
+      }
+    }
+  };
+
+  const tocList = React.useMemo(() => {
+    const lines = editorContent.split('\n');
+    const toc: { id: string, text: string, level: number }[] = [];
+    let inCodeBlock = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('```')) {
+        inCodeBlock = !inCodeBlock;
+        continue;
+      }
+      if (inCodeBlock) continue;
+      
+      const match = line.match(/^(#{1,6})\s+(.*)$/);
+      if (match) {
+        toc.push({
+          id: `toc-${i}`,
+          level: match[1].length,
+          text: match[2].replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1').replace(/[*_~`]/g, '')
+        });
+      }
+    }
+    return toc;
+  }, [editorContent]);
 
   return (
     <View style={s.container}>
@@ -351,22 +402,58 @@ export default function App() {
                   </Pressable>
                 </View>
              </View>
-             <View style={{ flex: 1 }}>
+             <View style={{ flex: 1, flexDirection: 'row' }}>
                {/* WYSIWYG Editor replaces the split view */}
-               <Editor
-                 key={selectedFile}
-                 value={editorContent} 
-                 onChange={setEditorContent} 
-                 onSave={(val: string) => {
-                   setEditorContent(val);
-                   setLocalFiles(prev => ({ ...prev, [selectedFile]: val }));
-                   if (Platform.OS === 'web') window.alert('에디터 내용이 임시 저장되었습니다.');
-                   else Alert.alert('저장됨', '에디터 내용이 임시 저장되었습니다.');
-                 }} 
-                 onPasteImage={handlePasteImage}
-                 resolveImage={resolveImage}
-                 isDark={isDark} 
-               />
+               <View style={{ flex: 1 }}>
+                 <Editor
+                   key={selectedFile}
+                   value={editorContent} 
+                   onChange={setEditorContent} 
+                   onSave={(val: string) => {
+                     setEditorContent(val);
+                     setLocalFiles(prev => ({ ...prev, [selectedFile]: val }));
+                     if (Platform.OS === 'web') window.alert('에디터 내용이 임시 저장되었습니다.');
+                     else Alert.alert('저장됨', '에디터 내용이 임시 저장되었습니다.');
+                   }} 
+                   onPasteImage={handlePasteImage}
+                   resolveImage={resolveImage}
+                   isDark={isDark} 
+                 />
+               </View>
+               <View style={s.paneTOC}>
+                 <View style={[s.paneHeader, { borderBottomWidth: 1, borderBottomColor: colors.border }]}><Text style={s.paneTitle}>목차 (TOC)</Text></View>
+                 <ScrollView style={{ flex: 1 }}>
+                   {tocList.length === 0 ? (
+                     <View style={{ padding: 16 }}>
+                       <Text style={{ color: colors.textMuted, fontSize: 12 }}>작성된 헤딩(제목)이 없습니다.</Text>
+                     </View>
+                   ) : (
+                     tocList.map((item, index) => (
+                       <Pressable key={item.id} onPress={() => handleTOCClick(item.text, index)}>
+                         <View style={{ 
+                           paddingVertical: 8, 
+                           paddingRight: 12,
+                           paddingLeft: 12 + (item.level - 1) * 12,
+                           borderBottomWidth: 1, 
+                           borderBottomColor: isDark ? '#374151' : '#F3F4F6',
+                           cursor: 'pointer'
+                         } as any}>
+                           <Text 
+                             numberOfLines={1} 
+                             style={{ 
+                               color: item.level === 1 ? colors.text : colors.textMuted, 
+                               fontSize: item.level <= 2 ? 13 : 12,
+                               fontWeight: item.level <= 2 ? 'bold' : 'normal',
+                               fontFamily: 'Inter, sans-serif'
+                             }}>
+                             {item.text}
+                           </Text>
+                         </View>
+                       </Pressable>
+                     ))
+                   )}
+                 </ScrollView>
+               </View>
              </View>
           </View>
         )}
