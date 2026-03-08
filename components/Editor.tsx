@@ -1,7 +1,7 @@
 import React from 'react';
 import { TextInput } from 'react-native';
 
-export default function Editor({ value, onChange, onSave, isDark }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, isDark: boolean }) {
+export default function Editor({ value, onChange, onSave, onPasteImage, resolveImage, isDark }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: any) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean }) {
   return (
     <TextInput
       value={value}

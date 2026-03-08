@@ -6,6 +6,7 @@ import StarterKit from '@tiptap/starter-kit';
 import CodeBlock from '@tiptap/extension-code-block';
 import Heading from '@tiptap/extension-heading';
 import Blockquote from '@tiptap/extension-blockquote';
+import Image from '@tiptap/extension-image';
 import { Markdown } from 'tiptap-markdown';
 import { MathExtension } from '@aarkue/tiptap-math-extension';
 import { Ionicons } from '@expo/vector-icons';
@@ -385,8 +386,25 @@ const LiveMarkdownExtension = Extension.create({
     return [
       new Plugin({
         key: new PluginKey('liveMarkdown'),
+        props: {
+          handleDOMEvents: {
+            mousedown: () => {
+              (window as any).pmIsMousingDown = true;
+              return false;
+            },
+            mouseup: (view) => {
+              (window as any).pmIsMousingDown = false;
+              setTimeout(() => {
+                if (!view.isDestroyed) {
+                  view.dispatch(view.state.tr.setMeta('evalMarkdown', true));
+                }
+              }, 10);
+              return false;
+            }
+          }
+        },
         appendTransaction(transactions, oldState, newState) {
-          if (!transactions.some(tr => tr.docChanged || tr.selectionSet)) return;
+          if (!transactions.some(tr => tr.docChanged || tr.selectionSet || tr.getMeta('evalMarkdown'))) return;
 
           let tr = newState.tr;
           const markSymbols: Record<string, string> = {
@@ -447,13 +465,45 @@ const LiveMarkdownExtension = Extension.create({
             return false;
           };
 
+          const expandImage = () => {
+            if ((window as any).pmIsMousingDown) return false;
+            let found = false;
+            newState.doc.descendants((node, pos) => {
+              if (found) return false;
+              if (node.type.name === 'image' || node.type.name === 'customImage') {
+                const isTouchingFromBefore = newState.selection.$from.pos === pos;
+                const isTouchingFromAfter = newState.selection.$from.pos === pos + node.nodeSize;
+                const isSelected = newState.selection.from <= pos && newState.selection.to >= pos + node.nodeSize;
+                const isTouching = isTouchingFromBefore || isTouchingFromAfter || isSelected;
+                  
+                if (isTouching) {
+                  const alt = node.attrs.alt || '';
+                  const src = node.attrs.src || '';
+                  const textStr = `![${alt}](${src})`;
+                  
+                  tr.delete(pos, pos + node.nodeSize);
+                  tr.insertText(textStr, pos);
+                  
+                  if (isTouchingFromAfter) {
+                     tr.setSelection(TextSelection.create(tr.doc, pos + textStr.length));
+                  } else {
+                     tr.setSelection(TextSelection.create(tr.doc, pos));
+                  }
+                  
+                  found = true;
+                }
+              }
+            });
+            return found;
+          };
+
           const collapseText = () => {
             let found = false;
             newState.doc.descendants((node, pos) => {
               if (found) return false;
               if (node.isTextblock) {
                 const text = node.textContent;
-                if (!text.includes('*') && !text.includes('~') && !text.includes('`')) return;
+                if (!text.includes('*') && !text.includes('~') && !text.includes('`') && !text.includes('![')) return;
 
                 const regexes = [
                   { name: 'bold', regex: /\*\*([^\*]+)\*\*/g, symLength: 2 },
@@ -487,12 +537,39 @@ const LiveMarkdownExtension = Extension.create({
                   }
                   if (found) break;
                 }
+
+                if (found) return false;
+                if ((window as any).pmIsMousingDown) return false;
+
+                // Handle Image Markdown text matching
+                const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+                let imgMatch;
+                while ((imgMatch = imgRegex.exec(text)) !== null) {
+                  const start = pos + 1 + imgMatch.index;
+                   const end = start + imgMatch[0].length;
+                  
+                  const isTouching = 
+                    (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) ||
+                    (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
+                    
+                  if (!isTouching) {
+                    const imageType = newState.schema.nodes.image || newState.schema.nodes.customImage;
+                    if (imageType) {
+                       const imgNode = imageType.create({ alt: imgMatch[1], src: imgMatch[2] });
+                       tr.replaceWith(start, end, imgNode);
+                    }
+                    found = true;
+                    break;
+                  }
+                }
+
               }
             });
             return found;
           };
 
           if (expandMark()) return tr;
+          if (expandImage()) return tr;
           if (collapseText()) return tr;
           
           return null;
@@ -553,10 +630,94 @@ const LiveMarkdownExtension = Extension.create({
 });
 
 const postprocessMd = (md: string) => {
-  return md.replace(/\\\*/g, '*').replace(/\\~/g, '~').replace(/\\`/g, '`').replace(/\\_/g, '_');
+  return md.replace(/\\\*/g, '*').replace(/\\~/g, '~').replace(/\\`/g, '`').replace(/\\_/g, '_')
+           .replace(/\\!\\\[/g, '![').replace(/\\\]/g, ']');
 };
 
-export default function Editor({ value, onChange, onSave, isDark }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, isDark: boolean }) {
+const ImagePastingExtension = Extension.create({
+  name: 'imagePasting',
+  addOptions() {
+    return {
+      onPasteImage: null as ((file: File) => Promise<string>) | null,
+    };
+  },
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey('imagePasting'),
+        props: {
+          handlePaste: (view, event) => {
+            const { onPasteImage } = this.options;
+            if (!onPasteImage) return false;
+
+            const items = Array.from(event.clipboardData?.items || []);
+            const imageItem = items.find(item => item.type.startsWith('image/'));
+            
+            if (imageItem) {
+              const file = imageItem.getAsFile();
+              if (file) {
+                event.preventDefault();
+                onPasteImage(file).then((relativePath: string) => {
+                  if (relativePath) {
+                    const { state, dispatch } = view;
+                    const node = state.schema.nodes.image.create({ src: relativePath, alt: file.name });
+                    const tr = state.tr.replaceSelectionWith(node);
+                    dispatch(tr);
+                  }
+                });
+                return true;
+              }
+            }
+            return false;
+          }
+        }
+      })
+    ];
+  }
+});
+
+const CustomImage = Image.extend<any>({
+  addOptions() {
+    return {
+      ...(this.parent?.() as any),
+      resolveImage: null,
+      inline: true,
+    };
+  },
+  addNodeView() {
+    return ({ node, extension, getPos, editor }: any) => {
+      const dom = document.createElement('img');
+      const { src, alt } = node.attrs;
+      
+      dom.setAttribute('alt', alt || '');
+      dom.style.maxWidth = '100%';
+      dom.style.borderRadius = '8px';
+      dom.style.margin = '16px 0';
+      dom.style.cursor = 'pointer';
+      dom.style.display = 'inline-block';
+
+      if (src && extension.options.resolveImage) {
+        extension.options.resolveImage(src).then((url: string) => {
+          if (url) dom.setAttribute('src', url);
+        });
+      } else if (src) {
+        dom.setAttribute('src', src);
+      }
+
+      dom.addEventListener('click', () => {
+        if (typeof getPos === 'function') {
+          editor.commands.setTextSelection(getPos());
+        }
+      });
+
+      return {
+        dom,
+      };
+    };
+  }
+});
+
+export default function Editor({ value, onChange, onSave, onPasteImage, resolveImage, isDark }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean }) {
 
   const SaveShortcut = Extension.create({
     name: 'saveShortcut',
@@ -579,7 +740,9 @@ export default function Editor({ value, onChange, onSave, isDark }: { value: str
       CustomCodeBlock,
       CustomHeading,
       CustomBlockquote,
+      ImagePastingExtension.configure({ onPasteImage }),
       LiveMarkdownExtension,
+      CustomImage.configure({ resolveImage }),
       Markdown,
       MathExtension.configure({ evaluation: false }),
       SaveShortcut,

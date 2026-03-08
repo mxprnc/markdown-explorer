@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Platform, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
+import { format } from 'date-fns';
 
 import Editor from '@/components/Editor';
 import Terminal from '@/components/Terminal';
@@ -16,6 +17,7 @@ export default function App() {
   const [selectedFolder, setSelectedFolder] = useState('');
   const [selectedFile, setSelectedFile] = useState('');
   const [localFiles, setLocalFiles] = useState<Record<string, string>>({});
+  const [dirHandle, setDirHandle] = useState<any>(null);
 
   const handleOpenDirectory = async () => {
     if (Platform.OS !== 'web') {
@@ -24,12 +26,13 @@ export default function App() {
     }
     try {
       // @ts-ignore: File System Access API 타입
-      const dirHandle = await window.showDirectoryPicker();
-      setSelectedFolder(dirHandle.name);
+      const handle = await window.showDirectoryPicker();
+      setDirHandle(handle);
+      setSelectedFolder(handle.name);
       
       const newFiles: Record<string, string> = {};
       // @ts-ignore
-      for await (const entry of dirHandle.values()) {
+      for await (const entry of handle.values()) {
         if (entry.kind === 'file' && (entry.name.endsWith('.md') || entry.name.endsWith('.txt'))) {
           const file = await entry.getFile();
           const text = await file.text();
@@ -48,6 +51,58 @@ export default function App() {
       }
     } catch (e) {
       console.log('User cancelled or error', e);
+    }
+  };
+
+  const handlePasteImage = async (file: File) => {
+    if (!dirHandle || !selectedFile) return '';
+    try {
+      const extMatch = file.name.match(/\.(png|jpe?g|gif|webp)$/i);
+      const ext = extMatch ? extMatch[1] : 'png';
+      
+      const fileNameWithoutExt = selectedFile.replace(/\.[^/.]+$/, '');
+      const dateStr = format(new Date(), 'yyyy-MM-dd-HHmmssSSS');
+      const imgTargetName = `${dateStr}.${ext}`;
+      
+      const imgDirHandle = await dirHandle.getDirectoryHandle('img', { create: true });
+      const currentMdDirHandle = await imgDirHandle.getDirectoryHandle(fileNameWithoutExt, { create: true });
+      
+      const fileHandle = await currentMdDirHandle.getFileHandle(imgTargetName, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(file);
+      await writable.close();
+      
+      const relativePath = `img/${fileNameWithoutExt}/${imgTargetName}`;
+      return relativePath;
+    } catch (err) {
+      console.error('Failed to save pasted image', err);
+      // Fallback
+      return `붙여넣기_실패_권한필요`;
+    }
+  };
+
+  const resolveImage = async (relativePath: string) => {
+    if (!dirHandle) return relativePath;
+    try {
+      if (relativePath.startsWith('http') || relativePath.startsWith('data:') || relativePath.startsWith('blob:')) {
+        return relativePath;
+      }
+      let cleaned = relativePath;
+      if (cleaned.startsWith('./')) {
+         cleaned = cleaned.slice(2);
+      }
+      const parts = cleaned.split('/').filter(Boolean);
+      if (parts.length === 0) return relativePath;
+      let currentHandle = dirHandle;
+      for (let i = 0; i < parts.length - 1; i++) {
+        currentHandle = await currentHandle.getDirectoryHandle(parts[i]);
+      }
+      const fileHandle = await currentHandle.getFileHandle(parts[parts.length - 1]);
+      const file = await fileHandle.getFile();
+      return URL.createObjectURL(file);
+    } catch (err) {
+      console.warn('Failed to resolve image', relativePath, err);
+      return relativePath;
     }
   };
 
@@ -308,6 +363,8 @@ export default function App() {
                    if (Platform.OS === 'web') window.alert('에디터 내용이 임시 저장되었습니다.');
                    else Alert.alert('저장됨', '에디터 내용이 임시 저장되었습니다.');
                  }} 
+                 onPasteImage={handlePasteImage}
+                 resolveImage={resolveImage}
                  isDark={isDark} 
                />
              </View>
