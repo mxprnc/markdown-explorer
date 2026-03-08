@@ -109,6 +109,23 @@ export default function App() {
   const getAbsolutePath = () => `/Users/alpha300uk/Documents/toy-projects/${selectedFolder}/${selectedFile}`;
   const getRelativePath = () => `./${selectedFolder}/${selectedFile}`;
 
+  const handleSaveToDisk = async (content: string) => {
+    if (!dirHandle || !selectedFile) return false;
+    try {
+      if (Platform.OS === 'web') {
+        const fileHandle = await dirHandle.getFileHandle(selectedFile, { create: false });
+        const writable = await fileHandle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error('Save to disk failed', e);
+      return false;
+    }
+  };
+
   const copyAbsolutePath = async () => {
     const p = getAbsolutePath();
     await Clipboard.setStringAsync(p);
@@ -387,10 +404,15 @@ export default function App() {
                 <Text style={s.paneTitle}>WYSIWYG 에디터 - {selectedFile}</Text>
                 <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center' }}>
                   <Pressable 
-                    onPress={() => {
+                    onPress={async () => {
                       setLocalFiles(prev => ({ ...prev, [selectedFile]: editorContent }));
-                      if (Platform.OS === 'web') window.alert('에디터 내용이 임시 저장되었습니다.');
-                      else Alert.alert('저장됨', '에디터 내용이 임시 저장되었습니다.');
+                      const saved = await handleSaveToDisk(editorContent);
+                      if (saved) {
+                        if (Platform.OS === 'web') window.alert('파일이 로컬 디스크에 완전히 저장되었습니다.');
+                      } else {
+                        if (Platform.OS === 'web') window.alert('에디터 내용이 임시 저장되었습니다 (디스크 쓰기 실패).');
+                        else Alert.alert('저장됨', '에디터 내용이 임시 저장되었습니다.');
+                      }
                     }} 
                     style={{ marginRight: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 4, flexDirection: 'row', alignItems: 'center' }}
                   >
@@ -409,11 +431,16 @@ export default function App() {
                    key={selectedFile}
                    value={editorContent} 
                    onChange={setEditorContent} 
-                   onSave={(val: string) => {
+                   onSave={async (val: string) => {
                      setEditorContent(val);
                      setLocalFiles(prev => ({ ...prev, [selectedFile]: val }));
-                     if (Platform.OS === 'web') window.alert('에디터 내용이 임시 저장되었습니다.');
-                     else Alert.alert('저장됨', '에디터 내용이 임시 저장되었습니다.');
+                     const saved = await handleSaveToDisk(val);
+                     if (saved) {
+                       if (Platform.OS === 'web') window.alert('파일이 로컬 디스크에 완전히 저장되었습니다.');
+                     } else {
+                       if (Platform.OS === 'web') window.alert('에디터 내용이 임시 저장되었습니다 (디스크 쓰기 실패).');
+                       else Alert.alert('저장됨', '에디터 내용이 임시 저장되었습니다.');
+                     }
                    }} 
                    onPasteImage={handlePasteImage}
                    resolveImage={resolveImage}
