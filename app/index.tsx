@@ -19,6 +19,38 @@ export default function App() {
   const [localFiles, setLocalFiles] = useState<Record<string, string>>({});
   const [dirHandle, setDirHandle] = useState<any>(null);
 
+  const [openedFiles, setOpenedFiles] = useState<string[]>([]);
+  
+  const handleSelectFile = (file: string) => {
+    if (file === selectedFile) return;
+    if (selectedFile) {
+      setLocalFiles(prev => ({ ...prev, [selectedFile]: editorContent }));
+    }
+    setOpenedFiles(prev => {
+      if (!prev.includes(file)) return [...prev, file];
+      return prev;
+    });
+    setSelectedFile(file);
+    setEditorContent(localFiles[file] !== undefined ? localFiles[file] : '');
+  };
+
+  const closeTab = (fileToClose: string) => {
+    setOpenedFiles(prev => {
+      const newTabs = prev.filter(f => f !== fileToClose);
+      if (selectedFile === fileToClose) {
+        if (newTabs.length > 0) {
+          const newSelected = newTabs[newTabs.length - 1];
+          setSelectedFile(newSelected);
+          setEditorContent(localFiles[newSelected] || '');
+        } else {
+          setSelectedFile('');
+          setEditorContent('');
+        }
+      }
+      return newTabs;
+    });
+  };
+
   const leftPaneWidthRef = React.useRef(250);
   const [leftPaneWidth, setLeftPaneWidth] = useState(250);
   const startLeftWidthRef = React.useRef(250);
@@ -112,9 +144,11 @@ export default function App() {
         const firstFile = Object.keys(newFiles)[0];
         setSelectedFile(firstFile);
         setEditorContent(newFiles[firstFile]);
+        setOpenedFiles([firstFile]);
       } else {
         setSelectedFile('');
         setEditorContent('# 불러올 파일이 없습니다.');
+        setOpenedFiles([]);
       }
     } catch (e) {
       console.log('User cancelled or error', e);
@@ -347,6 +381,48 @@ export default function App() {
       fontFamily: fontFamilyCode,
       fontSize: 12,
     },
+    tabBar: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      height: 38,
+      alignItems: 'center',
+    },
+    tabItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      height: '100%',
+      borderRightWidth: 1,
+      borderRightColor: colors.border,
+      backgroundColor: colors.surface,
+      borderTopWidth: 2,
+      borderTopColor: 'transparent',
+    },
+    tabItemActive: {
+      backgroundColor: colors.background,
+      borderTopColor: colors.primary,
+    },
+    tabText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginRight: 6,
+      fontFamily: fontFamilyUI,
+    },
+    tabTextActive: {
+      color: colors.text,
+      fontWeight: 'bold',
+    },
+    tabCloseBtn: {
+      padding: 4,
+      borderRadius: 4,
+    },
+    tabCloseText: {
+      fontSize: 10,
+      color: colors.textMuted,
+      fontWeight: 'bold'
+    },
     footerPath: {
       position: 'absolute',
       bottom: 0, left: 0, right: 0,
@@ -403,6 +479,34 @@ export default function App() {
     }
     return toc;
   }, [editorContent]);
+
+  const renderTabBar = () => {
+    if (openedFiles.length === 0) return null;
+    return (
+      <View style={s.tabBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{flexGrow: 1}}>
+          {openedFiles.map(file => {
+             const isActive = file === selectedFile;
+             return (
+               <Pressable key={file} onPress={() => handleSelectFile(file)} style={[s.tabItem, isActive && s.tabItemActive]}>
+                 <Text style={[s.tabText, isActive && s.tabTextActive]}>{file}</Text>
+                 <Pressable 
+                    onPress={(e) => { 
+                      if (Platform.OS === 'web') e.preventDefault();
+                      e.stopPropagation(); 
+                      closeTab(file); 
+                    }} 
+                    style={s.tabCloseBtn}
+                  >
+                   <Text style={s.tabCloseText}>✕</Text>
+                 </Pressable>
+               </Pressable>
+             )
+          })}
+        </ScrollView>
+      </View>
+    );
+  };
 
   return (
     <View style={[s.container, { userSelect: isResizing ? 'none' : 'auto' } as any]}>
@@ -471,7 +575,7 @@ export default function App() {
               <View style={s.paneHeader}><Text style={s.paneTitle}>{selectedFolder || 'No Folder Selected'}</Text></View>
               <ScrollView>
                 {selectedFolder ? Object.keys(localFiles).map(file => (
-                  <Pressable key={file} onPress={() => { setSelectedFile(file); setEditorContent(localFiles[file] || ''); }}>
+                  <Pressable key={file} onPress={() => handleSelectFile(file)}>
                     <View style={[s.listItem, selectedFile === file && s.listItemSelected]}>
                       <Text style={[s.listItemText, selectedFile === file && {fontWeight: 'bold' }]}>
                         📄 {file}
@@ -491,6 +595,7 @@ export default function App() {
 
             {/* PANE 3: Preview */}
             <View style={s.paneRight}>
+              {renderTabBar()}
               <View style={s.paneHeader}>
                 <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
                   <Text style={s.paneTitle}>Preview (Read-Only)</Text>
@@ -518,6 +623,7 @@ export default function App() {
         ) : (
           /* PANE 2: WYSIWYG Editor Mode */
           <View style={{ flex: 1 }}>
+             {renderTabBar()}
              <View style={[{borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: isDark ? '#1E1E1E' : '#F9FAFB', height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12}]}>
                 <Text style={s.paneTitle}>WYSIWYG 에디터 - {selectedFile}</Text>
                 <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center' }}>
