@@ -106,6 +106,49 @@ export default function App() {
     }
   };
 
+  const handleRenameImage = async (oldRelativePath: string, newFileName: string) => {
+    if (!dirHandle || !selectedFile) return '';
+    try {
+      const parts = oldRelativePath.split('/');
+      const oldFileName = parts.pop()!;
+      if (oldFileName === newFileName) return oldRelativePath;
+      
+      let cleaned = oldRelativePath;
+      if (cleaned.startsWith('./')) {
+         cleaned = cleaned.slice(2);
+      }
+      const dirParts = cleaned.split('/').filter(Boolean);
+      dirParts.pop(); // remove file name
+
+      let currentHandle = dirHandle;
+      for (const p of dirParts) {
+        currentHandle = await currentHandle.getDirectoryHandle(p);
+      }
+
+      const fileHandle = await currentHandle.getFileHandle(oldFileName);
+      const file = await fileHandle.getFile();
+      
+      const newFileHandle = await currentHandle.getFileHandle(newFileName, { create: true });
+      const writable = await newFileHandle.createWritable();
+      await writable.write(file);
+      await writable.close();
+      
+      try {
+        await currentHandle.removeEntry(oldFileName);
+      } catch (e) {
+        console.warn('Cannot delete old file during rename', e);
+      }
+      
+      let rootPath = dirParts.join('/');
+      if (rootPath) rootPath += '/';
+      return rootPath + newFileName;
+    } catch (err: any) {
+      console.error('Rename image failed', err);
+      window.alert('이미지 파일명 변경 실패: ' + err.message);
+      return '';
+    }
+  };
+
   const getAbsolutePath = () => `/Users/alpha300uk/Documents/toy-projects/${selectedFolder}/${selectedFile}`;
   const getRelativePath = () => `./${selectedFolder}/${selectedFile}`;
 
@@ -443,6 +486,7 @@ export default function App() {
                      }
                    }} 
                    onPasteImage={handlePasteImage}
+                   onRenameImage={handleRenameImage}
                    resolveImage={resolveImage}
                    isDark={isDark} 
                  />

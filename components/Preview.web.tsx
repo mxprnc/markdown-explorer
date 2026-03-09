@@ -128,6 +128,26 @@ export default function Preview({ content, isDark }: { content: string, isDark: 
             }
             return <a href={href} {...rest} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'none' }}>{children}</a>;
           },
+          img(props: any) {
+            const { src, alt, node, ...rest } = props;
+            let finalAlt = alt || '';
+            let widthStyle = '100%';
+            
+            if (finalAlt.includes('|width=')) {
+              const parts = finalAlt.split('|width=');
+              finalAlt = parts[0];
+              widthStyle = parts[1];
+            }
+            
+            return (
+              <img 
+                src={src} 
+                alt={finalAlt} 
+                style={{ maxWidth: '100%', width: widthStyle, borderRadius: '8px', display: 'block', margin: '16px 0' }} 
+                {...rest} 
+              />
+            );
+          },
           code(props: any) {
             const {children, className, node, ...rest} = props;
             const match = /language-(\w+)/.exec(className || '');

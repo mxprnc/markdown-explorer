@@ -720,15 +720,29 @@ const CustomImage = Image.extend<any>({
   },
   addNodeView() {
     return ({ node, extension, getPos, editor }: any) => {
+      const container = document.createElement('span');
+      container.style.position = 'relative';
+      container.style.display = 'block';
+      container.style.margin = '16px 0';
+      container.style.maxWidth = '100%';
+
       const dom = document.createElement('img');
       const { src, alt } = node.attrs;
       
-      dom.setAttribute('alt', alt || '');
+      let altText = alt || '';
+      let widthStyle = '100%';
+      if (altText.includes('|width=')) {
+        const parts = altText.split('|width=');
+        altText = parts[0];
+        widthStyle = parts[1];
+      }
+      
+      dom.setAttribute('alt', altText);
       dom.style.maxWidth = '100%';
+      dom.style.width = widthStyle;
       dom.style.borderRadius = '8px';
-      dom.style.margin = '16px 0';
       dom.style.cursor = 'pointer';
-      dom.style.display = 'inline-block';
+      dom.style.display = 'block';
 
       if (src && extension.options.resolveImage) {
         extension.options.resolveImage(src).then((url: string) => {
@@ -738,14 +752,227 @@ const CustomImage = Image.extend<any>({
         dom.setAttribute('src', src);
       }
 
-      dom.addEventListener('click', () => {
+      const linkContainer = document.createElement('div');
+      linkContainer.style.display = 'flex';
+      linkContainer.style.alignItems = 'center';
+      linkContainer.style.marginTop = '8px';
+      linkContainer.style.gap = '8px';
+
+      const link = document.createElement('div');
+      link.innerText = src.split('/').pop() || altText || '';
+      link.style.fontSize = '14px';
+      link.style.color = '#3b82f6';
+      link.style.wordBreak = 'break-all';
+      link.style.whiteSpace = 'nowrap';
+      link.style.overflow = 'hidden';
+      link.style.textOverflow = 'ellipsis';
+      link.style.flex = '1';
+
+      link.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.style.display = 'flex';
+      actionsDiv.style.alignItems = 'center';
+      actionsDiv.style.gap = '8px';
+
+      const widthLabel = document.createElement('span');
+      widthLabel.innerText = 'Scale:';
+      widthLabel.style.fontSize = '12px';
+      widthLabel.style.color = '#6b7280';
+
+      const widthInput = document.createElement('input');
+      widthInput.value = widthStyle === '100%' ? '' : widthStyle;
+      widthInput.placeholder = '100%';
+      widthInput.style.width = '60px';
+      widthInput.style.fontSize = '12px';
+      widthInput.style.padding = '4px 6px';
+      widthInput.style.border = '1px solid #d1d5db';
+      widthInput.style.borderRadius = '4px';
+      widthInput.style.background = 'transparent';
+      widthInput.style.color = 'inherit';
+      widthInput.style.outline = 'none';
+
+      const renameBtn = document.createElement('button');
+      renameBtn.innerHTML = 'Rename';
+      renameBtn.style.fontSize = '12px';
+      renameBtn.style.padding = '4px 8px';
+      renameBtn.style.cursor = 'pointer';
+      renameBtn.style.background = '#f3f4f6';
+      renameBtn.style.border = '1px solid #d1d5db';
+      renameBtn.style.borderRadius = '4px';
+      renameBtn.style.color = '#374151';
+
+      actionsDiv.appendChild(widthLabel);
+      actionsDiv.appendChild(widthInput);
+      actionsDiv.appendChild(renameBtn);
+
+      const editDiv = document.createElement('div');
+      editDiv.style.display = 'none';
+      editDiv.style.alignItems = 'center';
+      editDiv.style.gap = '4px';
+
+      const renameInput = document.createElement('input');
+      renameInput.style.width = '120px';
+      renameInput.style.fontSize = '12px';
+      renameInput.style.padding = '4px 6px';
+      renameInput.style.border = '1px solid #d1d5db';
+      renameInput.style.borderRadius = '4px';
+      renameInput.style.background = 'transparent';
+      renameInput.style.color = 'inherit';
+      renameInput.style.outline = 'none';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.innerHTML = 'v';
+      saveBtn.style.cursor = 'pointer';
+      saveBtn.style.fontSize = '12px';
+      saveBtn.style.padding = '4px 8px';
+      saveBtn.style.background = '#10b981';
+      saveBtn.style.color = 'white';
+      saveBtn.style.border = 'none';
+      saveBtn.style.borderRadius = '4px';
+      saveBtn.title = '적용';
+      
+      const cancelBtn = document.createElement('button');
+      cancelBtn.innerHTML = 'x';
+      cancelBtn.style.cursor = 'pointer';
+      cancelBtn.style.fontSize = '12px';
+      cancelBtn.style.padding = '4px 8px';
+      cancelBtn.style.background = '#ef4444';
+      cancelBtn.style.color = 'white';
+      cancelBtn.style.border = 'none';
+      cancelBtn.style.borderRadius = '4px';
+      cancelBtn.title = '취소';
+
+      editDiv.appendChild(renameInput);
+      editDiv.appendChild(saveBtn);
+      editDiv.appendChild(cancelBtn);
+
+      linkContainer.appendChild(link);
+      linkContainer.appendChild(actionsDiv);
+      linkContainer.appendChild(editDiv);
+
+      container.appendChild(dom);
+      container.appendChild(linkContainer);
+
+      let isDestroyed = false;
+
+       const updateWidth = () => {
+         if (isDestroyed) return;
+         if (typeof getPos === 'function') {
+            try {
+              const pos = getPos();
+              if (pos === undefined) return;
+              
+              let finalWidth = widthInput.value.trim();
+              if (/^\d+(\.\d+)?$/.test(finalWidth)) {
+                finalWidth += '%';
+                widthInput.value = finalWidth;
+              }
+              
+              if ((finalWidth || '100%') === widthStyle) return;
+              const newAlt = finalWidth ? `${altText}|width=${finalWidth}` : altText;
+              const tr = editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, alt: newAlt });
+              editor.view.dispatch(tr);
+            } catch(e) {
+              console.warn('Cannot update width', e);
+            }
+         }
+       };
+
+      widthInput.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          widthInput.blur(); // this will trigger focusout/blur immediately
+        }
+      });
+      widthInput.addEventListener('blur', updateWidth);
+
+      renameBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        actionsDiv.style.display = 'none';
+        editDiv.style.display = 'flex';
+        renameInput.value = src.split('/').pop() || '';
+        setTimeout(() => renameInput.focus(), 0);
+      });
+
+      cancelBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        editDiv.style.display = 'none';
+        actionsDiv.style.display = 'flex';
+      });
+
+      const executeRename = () => {
+        if (isDestroyed) return;
+        const oldName = src.split('/').pop() || '';
+        const newName = renameInput.value.trim();
+        if (newName && newName !== oldName && extension.options.onRenameImage) {
+           renameInput.disabled = true;
+           saveBtn.disabled = true;
+           saveBtn.innerHTML = '...';
+           extension.options.onRenameImage(src, newName).then((newSrc: string) => {
+              if (newSrc && typeof getPos === 'function' && !isDestroyed) {
+                 try {
+                   const pos = getPos();
+                   if (pos !== undefined) {
+                     const tr = editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, src: newSrc, alt: newName + (widthStyle !== '100%' ? `|width=${widthStyle}` : '') });
+                     editor.view.dispatch(tr);
+                   }
+                 } catch(e) { console.warn(e); }
+              } else {
+                 if (!isDestroyed) {
+                   renameInput.disabled = false;
+                   saveBtn.disabled = false;
+                   saveBtn.innerHTML = 'v';
+                   editDiv.style.display = 'none';
+                   actionsDiv.style.display = 'flex';
+                 }
+              }
+           });
+        } else {
+           editDiv.style.display = 'none';
+           actionsDiv.style.display = 'flex';
+        }
+      };
+
+      saveBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        executeRename();
+      });
+
+      renameInput.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          executeRename();
+        } else if (e.key === 'Escape') {
+          editDiv.style.display = 'none';
+          actionsDiv.style.display = 'flex';
+        }
+      });
+
+      [widthInput, renameBtn, renameInput, saveBtn, cancelBtn].forEach(el => {
+        el.addEventListener('mousedown', (e) => e.stopPropagation());
+      });
+
+      dom.addEventListener('click', (e) => {
+        e.preventDefault();
         if (typeof getPos === 'function') {
-          editor.commands.setTextSelection(getPos());
+          try {
+            const pos = getPos();
+            if (pos !== undefined) editor.commands.setTextSelection(pos);
+          } catch(e){}
         }
       });
 
       return {
-        dom,
+        dom: container,
+        destroy: () => {
+          isDestroyed = true;
+        }
       };
     };
   }
@@ -889,7 +1116,7 @@ const CustomYoutube = Node.create<any>({
   }
 });
 
-export default function Editor({ value, onChange, onSave, onPasteImage, resolveImage, isDark }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean }) {
+export default function Editor({ value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, isDark }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean }) {
 
   const SaveShortcut = Extension.create({
     name: 'saveShortcut',
@@ -914,7 +1141,7 @@ export default function Editor({ value, onChange, onSave, onPasteImage, resolveI
       CustomBlockquote,
       ImagePastingExtension.configure({ onPasteImage }),
       LiveMarkdownExtension,
-      CustomImage.configure({ resolveImage }),
+      CustomImage.configure({ resolveImage, onRenameImage }),
       CustomYoutube,
       Markdown,
       MathExtension.configure({ evaluation: false }),
