@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Platform, Alert, PanResponder } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
@@ -18,6 +18,73 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState('');
   const [localFiles, setLocalFiles] = useState<Record<string, string>>({});
   const [dirHandle, setDirHandle] = useState<any>(null);
+
+  const leftPaneWidthRef = React.useRef(250);
+  const [leftPaneWidth, setLeftPaneWidth] = useState(250);
+  const startLeftWidthRef = React.useRef(250);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const leftPaneResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        startLeftWidthRef.current = leftPaneWidthRef.current;
+        setIsResizing(true);
+      },
+      onPanResponderMove: (e, gestureState) => {
+        const newWidth = Math.max(150, Math.min(800, startLeftWidthRef.current + gestureState.dx));
+        leftPaneWidthRef.current = newWidth;
+        setLeftPaneWidth(newWidth);
+      },
+      onPanResponderRelease: () => setIsResizing(false),
+      onPanResponderTerminate: () => setIsResizing(false),
+    })
+  ).current;
+
+  const tocPaneWidthRef = React.useRef(220);
+  const [tocPaneWidth, setTocPaneWidth] = useState(220);
+  const startTocWidthRef = React.useRef(220);
+
+  const tocPaneResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        startTocWidthRef.current = tocPaneWidthRef.current;
+        setIsResizing(true);
+      },
+      onPanResponderMove: (e, gestureState) => {
+        const newWidth = Math.max(150, Math.min(800, startTocWidthRef.current - gestureState.dx));
+        tocPaneWidthRef.current = newWidth;
+        setTocPaneWidth(newWidth);
+      },
+      onPanResponderRelease: () => setIsResizing(false),
+      onPanResponderTerminate: () => setIsResizing(false),
+    })
+  ).current;
+
+  const middlePaneWidthRef = React.useRef(300);
+  const [middlePaneWidth, setMiddlePaneWidth] = useState(300);
+  const startMiddleWidthRef = React.useRef(300);
+
+  const middlePaneResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        startMiddleWidthRef.current = middlePaneWidthRef.current;
+        setIsResizing(true);
+      },
+      onPanResponderMove: (e, gestureState) => {
+        const newWidth = Math.max(150, Math.min(800, startMiddleWidthRef.current + gestureState.dx));
+        middlePaneWidthRef.current = newWidth;
+        setMiddlePaneWidth(newWidth);
+      },
+      onPanResponderRelease: () => setIsResizing(false),
+      onPanResponderTerminate: () => setIsResizing(false),
+    })
+  ).current;
 
   const handleOpenDirectory = async () => {
     if (Platform.OS !== 'web') {
@@ -235,10 +302,8 @@ export default function App() {
       backgroundColor: colors.surface,
     },
     paneMiddle: {
-      flex: 1,
       borderRightWidth: 1,
       borderRightColor: colors.border,
-      minWidth: 300,
     },
     paneRight: {
       flex: 1,
@@ -340,7 +405,7 @@ export default function App() {
   }, [editorContent]);
 
   return (
-    <View style={s.container}>
+    <View style={[s.container, { userSelect: isResizing ? 'none' : 'auto' } as any]}>
       {/* HEADER */}
       <View style={s.header}>
         <View style={s.headerLeft}>
@@ -365,7 +430,7 @@ export default function App() {
       {/* BODY */}
       <View style={s.body}>
         {/* PANE 1: Directory List (Explorer 1) */}
-        <View style={s.paneLeft}>
+        <View style={[s.paneLeft, { width: leftPaneWidth }]}>
           <View style={s.paneHeader}>
             <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
               <Text style={s.paneTitle}>Explorer</Text>
@@ -394,10 +459,15 @@ export default function App() {
           </ScrollView>
         </View>
 
+        <View
+          {...leftPaneResponder.panHandlers}
+          style={{ width: 14, marginLeft: -7, marginRight: -7, backgroundColor: 'transparent', cursor: 'col-resize', zIndex: 10 } as any}
+        />
+
         {activeTab === 'files' ? (
           <>
             {/* PANE 2: File List (Explorer 2) */}
-            <View style={s.paneMiddle}>
+            <View style={[s.paneMiddle, { width: middlePaneWidth }]}>
               <View style={s.paneHeader}><Text style={s.paneTitle}>{selectedFolder || 'No Folder Selected'}</Text></View>
               <ScrollView>
                 {selectedFolder ? Object.keys(localFiles).map(file => (
@@ -413,6 +483,11 @@ export default function App() {
                 )}
               </ScrollView>
             </View>
+
+            <View
+              {...middlePaneResponder.panHandlers}
+              style={{ width: 14, marginLeft: -7, marginRight: -7, backgroundColor: 'transparent', cursor: 'col-resize', zIndex: 10 } as any}
+            />
 
             {/* PANE 3: Preview */}
             <View style={s.paneRight}>
@@ -491,7 +566,13 @@ export default function App() {
                    isDark={isDark} 
                  />
                </View>
-               <View style={s.paneTOC}>
+
+               <View
+                 {...tocPaneResponder.panHandlers}
+                 style={{ width: 14, marginLeft: -7, marginRight: -7, backgroundColor: 'transparent', cursor: 'col-resize', zIndex: 10 } as any}
+               />
+
+               <View style={[s.paneTOC, { width: tocPaneWidth }]}>
                  <View style={[s.paneHeader, { borderBottomWidth: 1, borderBottomColor: colors.border }]}><Text style={s.paneTitle}>목차 (TOC)</Text></View>
                  <ScrollView style={{ flex: 1 }}>
                    {tocList.length === 0 ? (
