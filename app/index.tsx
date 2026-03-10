@@ -21,34 +21,67 @@ export default function App() {
 
   const [openedFiles, setOpenedFiles] = useState<string[]>([]);
   
-  const handleSelectFile = (file: string) => {
-    if (file === selectedFile) return;
-    if (selectedFile) {
-      setLocalFiles(prev => ({ ...prev, [selectedFile]: editorContent }));
+  // Drag & Drop State
+  const [draggingTab, setDraggingTab] = useState<{file: string, sourcePane: 1 | 2} | null>(null);
+  const [isDragOverRight, setIsDragOverRight] = useState(false);
+
+  // Pane 2 State
+  const [isSplitMode, setIsSplitMode] = useState(false);
+  const [activePane, setActivePane] = useState<1 | 2>(1);
+  const [openedFiles2, setOpenedFiles2] = useState<string[]>([]);
+  const [selectedFile2, setSelectedFile2] = useState('');
+  const [editorContent2, setEditorContent2] = useState('');
+
+  const handleSelectFile = (file: string, targetPane: 1 | 2 = activePane) => {
+    if (targetPane === 1) {
+      if (file === selectedFile) return;
+      if (selectedFile) setLocalFiles(prev => ({ ...prev, [selectedFile]: editorContent }));
+      setOpenedFiles(prev => !prev.includes(file) ? [...prev, file] : prev);
+      setSelectedFile(file);
+      setEditorContent(localFiles[file] !== undefined ? localFiles[file] : '');
+      setActivePane(1);
+    } else {
+      if (file === selectedFile2) return;
+      if (selectedFile2) setLocalFiles(prev => ({ ...prev, [selectedFile2]: editorContent2 }));
+      setOpenedFiles2(prev => !prev.includes(file) ? [...prev, file] : prev);
+      setSelectedFile2(file);
+      setEditorContent2(localFiles[file] !== undefined ? localFiles[file] : '');
+      setActivePane(2);
     }
-    setOpenedFiles(prev => {
-      if (!prev.includes(file)) return [...prev, file];
-      return prev;
-    });
-    setSelectedFile(file);
-    setEditorContent(localFiles[file] !== undefined ? localFiles[file] : '');
   };
 
-  const closeTab = (fileToClose: string) => {
-    setOpenedFiles(prev => {
-      const newTabs = prev.filter(f => f !== fileToClose);
-      if (selectedFile === fileToClose) {
-        if (newTabs.length > 0) {
-          const newSelected = newTabs[newTabs.length - 1];
-          setSelectedFile(newSelected);
-          setEditorContent(localFiles[newSelected] || '');
-        } else {
-          setSelectedFile('');
-          setEditorContent('');
+  const closeTab = (fileToClose: string, targetPane: 1 | 2) => {
+    if (targetPane === 1) {
+      setOpenedFiles(prev => {
+        const newTabs = prev.filter(f => f !== fileToClose);
+        if (selectedFile === fileToClose) {
+          if (newTabs.length > 0) {
+            const newSelected = newTabs[newTabs.length - 1];
+            setSelectedFile(newSelected);
+            setEditorContent(localFiles[newSelected] || '');
+          } else {
+            setSelectedFile('');
+            setEditorContent('');
+          }
         }
-      }
-      return newTabs;
-    });
+        return newTabs;
+      });
+    } else {
+      setOpenedFiles2(prev => {
+        const newTabs = prev.filter(f => f !== fileToClose);
+        if (selectedFile2 === fileToClose) {
+          if (newTabs.length > 0) {
+            const newSelected = newTabs[newTabs.length - 1];
+            setSelectedFile2(newSelected);
+            setEditorContent2(localFiles[newSelected] || '');
+          } else {
+            setSelectedFile2('');
+            setEditorContent2('');
+          }
+        }
+        return newTabs;
+      });
+    }
   };
 
   const leftPaneWidthRef = React.useRef(250);
@@ -145,10 +178,16 @@ export default function App() {
         setSelectedFile(firstFile);
         setEditorContent(newFiles[firstFile]);
         setOpenedFiles([firstFile]);
+        setSelectedFile2('');
+        setEditorContent2('');
+        setOpenedFiles2([]);
       } else {
         setSelectedFile('');
         setEditorContent('# 불러올 파일이 없습니다.');
         setOpenedFiles([]);
+        setSelectedFile2('');
+        setEditorContent2('');
+        setOpenedFiles2([]);
       }
     } catch (e) {
       console.log('User cancelled or error', e);
@@ -253,11 +292,12 @@ export default function App() {
   const getAbsolutePath = () => `/Users/alpha300uk/Documents/toy-projects/${selectedFolder}/${selectedFile}`;
   const getRelativePath = () => `./${selectedFolder}/${selectedFile}`;
 
-  const handleSaveToDisk = async (content: string) => {
-    if (!dirHandle || !selectedFile) return false;
+  const handleSaveToDisk = async (content: string, overrideFile?: string) => {
+    const targetFile = overrideFile || selectedFile;
+    if (!dirHandle || !targetFile) return false;
     try {
       if (Platform.OS === 'web') {
-        const fileHandle = await dirHandle.getFileHandle(selectedFile, { create: false });
+        const fileHandle = await dirHandle.getFileHandle(targetFile, { create: false });
         const writable = await fileHandle.createWritable();
         await writable.write(content);
         await writable.close();
@@ -399,7 +439,8 @@ export default function App() {
       backgroundColor: colors.surface,
       borderTopWidth: 2,
       borderTopColor: 'transparent',
-    },
+      userSelect: 'none',
+    } as any,
     tabItemActive: {
       backgroundColor: colors.background,
       borderTopColor: colors.primary,
@@ -409,7 +450,8 @@ export default function App() {
       color: colors.textMuted,
       marginRight: 6,
       fontFamily: fontFamilyUI,
-    },
+      userSelect: 'none',
+    } as any,
     tabTextActive: {
       color: colors.text,
       fontWeight: 'bold',
@@ -421,8 +463,9 @@ export default function App() {
     tabCloseText: {
       fontSize: 10,
       color: colors.textMuted,
-      fontWeight: 'bold'
-    },
+      fontWeight: 'bold',
+      userSelect: 'none',
+    } as any,
     footerPath: {
       position: 'absolute',
       bottom: 0, left: 0, right: 0,
@@ -456,7 +499,8 @@ export default function App() {
   };
 
   const tocList = React.useMemo(() => {
-    const lines = editorContent.split('\n');
+    const currentContent = activePane === 1 ? editorContent : editorContent2;
+    const lines = currentContent.split('\n');
     const toc: { id: string, text: string, level: number }[] = [];
     let inCodeBlock = false;
 
@@ -478,30 +522,73 @@ export default function App() {
       }
     }
     return toc;
-  }, [editorContent]);
+  }, [editorContent, editorContent2, activePane]);
 
-  const renderTabBar = () => {
-    if (openedFiles.length === 0) return null;
+  const renderTabBar = (paneId: 1 | 2) => {
+    const tabs = paneId === 1 ? openedFiles : openedFiles2;
+    const selFile = paneId === 1 ? selectedFile : selectedFile2;
+    
+    if (tabs.length === 0) return (
+       <View style={[s.tabBar, activePane === paneId && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}>
+         <Text style={{color: colors.textMuted, fontSize: 12, paddingHorizontal: 12}}>No file opened</Text>
+       </View>
+    );
+
     return (
-      <View style={s.tabBar}>
+      <View style={[s.tabBar, activePane === paneId && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{flexGrow: 1}}>
-          {openedFiles.map(file => {
-             const isActive = file === selectedFile;
-             return (
-               <Pressable key={file} onPress={() => handleSelectFile(file)} style={[s.tabItem, isActive && s.tabItemActive]}>
-                 <Text style={[s.tabText, isActive && s.tabTextActive]}>{file}</Text>
+          {tabs.map(file => {
+             const isActive = file === selFile;
+             const tabContent = (
                  <Pressable 
-                    onPress={(e) => { 
-                      if (Platform.OS === 'web') e.preventDefault();
-                      e.stopPropagation(); 
-                      closeTab(file); 
-                    }} 
-                    style={s.tabCloseBtn}
-                  >
-                   <Text style={s.tabCloseText}>✕</Text>
+                   style={[s.tabItem, isActive && s.tabItemActive]}
+                   onPress={() => {
+                     setActivePane(paneId);
+                     handleSelectFile(file, paneId);
+                   }} 
+                 >
+                   <Text selectable={false} style={[s.tabText, isActive && s.tabTextActive]}>{file}</Text>
+                   <Pressable 
+                      onPress={(e) => { 
+                        if (Platform.OS === 'web') e.preventDefault();
+                        e.stopPropagation(); 
+                        closeTab(file, paneId); 
+                      }} 
+                      style={s.tabCloseBtn}
+                    >
+                     <Text selectable={false} style={s.tabCloseText}>✕</Text>
+                   </Pressable>
                  </Pressable>
-               </Pressable>
-             )
+             );
+
+             if (Platform.OS === 'web') {
+               return (
+                 <div 
+                   key={file} 
+                   draggable="true"
+                   onDragStart={(e: any) => {
+                     if (e.dataTransfer) {
+                       e.dataTransfer.effectAllowed = "move";
+                       e.dataTransfer.setData("text/plain", file);
+                     }
+                     setDraggingTab({ file, sourcePane: paneId });
+                   }}
+                   onDragEnd={() => {
+                     setDraggingTab(null);
+                     setIsDragOverRight(false);
+                   }}
+                   style={{ display: 'flex', flexDirection: 'row', userSelect: 'none', WebkitUserSelect: 'none', cursor: 'grab' } as any}
+                 >
+                   {tabContent}
+                 </div>
+               );
+             }
+
+             return (
+               <View key={file} style={{ flexDirection: 'row' }}>
+                 {tabContent}
+               </View>
+             );
           })}
         </ScrollView>
       </View>
@@ -595,7 +682,7 @@ export default function App() {
 
             {/* PANE 3: Preview */}
             <View style={s.paneRight}>
-              {renderTabBar()}
+              {renderTabBar(1)}
               <View style={s.paneHeader}>
                 <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
                   <Text style={s.paneTitle}>Preview (Read-Only)</Text>
@@ -623,25 +710,44 @@ export default function App() {
         ) : (
           /* PANE 2: WYSIWYG Editor Mode */
           <View style={{ flex: 1 }}>
-             {renderTabBar()}
              <View style={[{borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: isDark ? '#1E1E1E' : '#F9FAFB', height: 40, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12}]}>
-                <Text style={s.paneTitle}>WYSIWYG 에디터 - {selectedFile}</Text>
+                <Text style={s.paneTitle}>WYSIWYG 에디터</Text>
                 <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center' }}>
                   <Pressable 
+                    onPress={() => {
+                      setIsSplitMode(!isSplitMode);
+                      if (!isSplitMode) {
+                        setOpenedFiles2(openedFiles.length > 0 ? [...openedFiles] : []);
+                        setSelectedFile2(selectedFile);
+                        setEditorContent2(editorContent);
+                      }
+                    }}
+                    style={{ marginRight: 16, flexDirection: 'row', alignItems: 'center' }}
+                  >
+                     <Ionicons name="browsers-outline" size={16} color={isSplitMode ? colors.primary : colors.textMuted} style={{ marginRight: 4 }} />
+                     <Text style={{color: isSplitMode ? colors.primary : colors.textMuted, fontSize: 13, fontWeight: 'bold'}}>
+                       {isSplitMode ? '화면분할 끄기' : '화면분할'}
+                     </Text>
+                  </Pressable>
+                  <Pressable 
                     onPress={async () => {
-                      setLocalFiles(prev => ({ ...prev, [selectedFile]: editorContent }));
-                      const saved = await handleSaveToDisk(editorContent);
+                      const curFile = activePane === 1 ? selectedFile : selectedFile2;
+                      const curContent = activePane === 1 ? editorContent : editorContent2;
+                      if (!curFile) return;
+
+                      setLocalFiles(prev => ({ ...prev, [curFile]: curContent }));
+                      const saved = await handleSaveToDisk(curContent);
                       if (saved) {
-                        if (Platform.OS === 'web') window.alert('파일이 로컬 디스크에 완전히 저장되었습니다.');
+                        if (Platform.OS === 'web') window.alert(`${curFile} 파일이 로컬 디스크에 완전히 저장되었습니다.`);
                       } else {
-                        if (Platform.OS === 'web') window.alert('에디터 내용이 임시 저장되었습니다 (디스크 쓰기 실패).');
-                        else Alert.alert('저장됨', '에디터 내용이 임시 저장되었습니다.');
+                        if (Platform.OS === 'web') window.alert(`${curFile} 에디터 내용이 임시 저장되었습니다 (디스크 쓰기 실패).`);
+                        else Alert.alert('저장됨', `${curFile} 에디터 내용이 임시 저장되었습니다.`);
                       }
                     }} 
                     style={{ marginRight: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 4, flexDirection: 'row', alignItems: 'center' }}
                   >
                     <Ionicons name="save-outline" size={14} color={colors.primary} style={{ marginRight: 6 }} />
-                    <Text style={{color: colors.primary, fontSize: 13, fontWeight: 'bold'}}>저장 (Cmd+S)</Text>
+                    <Text style={{color: colors.primary, fontSize: 13, fontWeight: 'bold'}}>현재 창 저장 (Cmd+S)</Text>
                   </Pressable>
                   <Pressable onPress={() => setActiveTab('files')}>
                     <Text style={{color: colors.textMuted, fontSize: 13, fontWeight: 'bold'}}>닫기 (탐색기로 돌아가기)</Text>
@@ -649,29 +755,148 @@ export default function App() {
                 </View>
              </View>
              <View style={{ flex: 1, flexDirection: 'row' }}>
-               {/* WYSIWYG Editor replaces the split view */}
-               <View style={{ flex: 1 }}>
-                 <Editor
-                   key={selectedFile}
-                   value={editorContent} 
-                   onChange={setEditorContent} 
-                   onSave={async (val: string) => {
-                     setEditorContent(val);
-                     setLocalFiles(prev => ({ ...prev, [selectedFile]: val }));
-                     const saved = await handleSaveToDisk(val);
-                     if (saved) {
-                       if (Platform.OS === 'web') window.alert('파일이 로컬 디스크에 완전히 저장되었습니다.');
-                     } else {
-                       if (Platform.OS === 'web') window.alert('에디터 내용이 임시 저장되었습니다 (디스크 쓰기 실패).');
-                       else Alert.alert('저장됨', '에디터 내용이 임시 저장되었습니다.');
-                     }
-                   }} 
-                   onPasteImage={handlePasteImage}
-                   onRenameImage={handleRenameImage}
-                   resolveImage={resolveImage}
-                   isDark={isDark} 
-                 />
+               
+               {/* Editor Pane 1 */}
+               <View 
+                 style={{ flex: 1, borderRightWidth: isSplitMode ? 1 : 0, borderRightColor: colors.border, position: 'relative' }} 
+                 onTouchStart={() => setActivePane(1)} 
+                 {...({ onClick: () => setActivePane(1) } as any)}
+               >
+                 {renderTabBar(1)}
+                 {Platform.OS === 'web' && isSplitMode && draggingTab && draggingTab.sourcePane === 2 && (
+                   <div
+                     onDragOver={(e: any) => { 
+                       e.preventDefault(); 
+                       if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
+                     }}
+                     onDrop={(e: any) => {
+                       e.preventDefault();
+                       const file = draggingTab?.file;
+                       setDraggingTab(null);
+                       if (file) {
+                         closeTab(file, 2);
+                         handleSelectFile(file, 1);
+                       }
+                     }}
+                     style={{ 
+                       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                       zIndex: 999, backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                       display: 'flex', justifyContent: 'center', alignItems: 'center'
+                     }}
+                   >
+                     <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동</Text>
+                   </div>
+                 )}
+                 {selectedFile ? (
+                   <Editor
+                     key={'pane1-' + selectedFile}
+                     value={editorContent} 
+                     onChange={setEditorContent} 
+                     onSave={async (val: string) => {
+                       setEditorContent(val);
+                       setLocalFiles(prev => ({ ...prev, [selectedFile]: val }));
+                       const saved = await handleSaveToDisk(val, selectedFile);
+                       if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
+                     }} 
+                     onPasteImage={handlePasteImage}
+                     onRenameImage={handleRenameImage}
+                     resolveImage={resolveImage}
+                     isDark={isDark} 
+                   />
+                 ) : (
+                   <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
+                 )}
                </View>
+
+               {/* Editor Pane 2 */}
+               {isSplitMode && (
+                 <View 
+                   style={{ flex: 1, position: 'relative', backgroundColor: isDragOverRight ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent' }} 
+                   onTouchStart={() => setActivePane(2)} 
+                   {...({ onClick: () => setActivePane(2) } as any)}
+                 >
+                   {renderTabBar(2)}
+                   {Platform.OS === 'web' && isSplitMode && draggingTab && draggingTab.sourcePane === 1 && (
+                     <div
+                       onDragOver={(e: any) => { 
+                         e.preventDefault(); 
+                         setIsDragOverRight(true); 
+                         if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
+                       }}
+                       onDragLeave={() => setIsDragOverRight(false)}
+                       onDrop={(e: any) => {
+                         e.preventDefault();
+                         setIsDragOverRight(false);
+                         const file = draggingTab?.file;
+                         setDraggingTab(null);
+                         if (file) {
+                           closeTab(file, 1);
+                           handleSelectFile(file, 2);
+                         }
+                       }}
+                       style={{ 
+                         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                         zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center' 
+                       }}
+                     >
+                       <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동</Text>
+                     </div>
+                   )}
+                   {selectedFile2 ? (
+                     <Editor
+                       key={'pane2-' + selectedFile2}
+                       value={editorContent2} 
+                       onChange={setEditorContent2} 
+                       onSave={async (val: string) => {
+                         setEditorContent2(val);
+                         setLocalFiles(prev => ({ ...prev, [selectedFile2]: val }));
+                         const saved = await handleSaveToDisk(val, selectedFile2);
+                         if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
+                       }} 
+                       onPasteImage={handlePasteImage}
+                       onRenameImage={handleRenameImage}
+                       resolveImage={resolveImage}
+                       isDark={isDark} 
+                     />
+                   ) : (
+                     <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
+                   )}
+                 </View>
+               )}
+
+               {/* Split Mode Drop Zone (When not split, overlay on right side) */}
+               {!isSplitMode && draggingTab && draggingTab.sourcePane === 1 && (
+                 Platform.OS === 'web' ? (
+                   <div 
+                     onDragOver={(e: any) => { 
+                       e.preventDefault(); 
+                       setIsDragOverRight(true); 
+                       if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+                     }}
+                     onDragLeave={() => setIsDragOverRight(false)}
+                     onDrop={(e: any) => {
+                       e.preventDefault();
+                       setIsDragOverRight(false);
+                       const file = draggingTab?.file;
+                       setDraggingTab(null);
+                       setIsSplitMode(true);
+                       if (file) {
+                         closeTab(file, 1);
+                         handleSelectFile(file, 2);
+                       }
+                     }}
+                     style={{
+                       position: 'absolute',
+                       right: 0, top: 0, bottom: 0, width: '50%',
+                       backgroundColor: isDragOverRight ? (isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.1)') : 'transparent',
+                       borderLeft: `2px dashed ${colors.primary}`,
+                       zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center'
+                     }}
+                   >
+                     <Text style={{color: colors.primary, fontWeight: 'bold', fontSize: 16}}>이곳에 드롭하여 화면 분할</Text>
+                   </div>
+                 ) : null
+               )}
 
                <View
                  {...tocPaneResponder.panHandlers}
