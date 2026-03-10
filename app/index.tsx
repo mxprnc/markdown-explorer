@@ -41,6 +41,10 @@ export default function App() {
   const [renamingItem, setRenamingItem] = useState<any | null>(null);
   const [newName, setNewName] = useState('');
 
+  // Creation State
+  const [creatingItem, setCreatingItem] = useState<{ parentPath: string, kind: 'file' | 'directory' } | null>(null);
+  const [creationName, setCreationName] = useState('');
+
   const handleSelectFile = async (file: string, targetPane: 1 | 2 = activePane) => {
     const isImage = /\.(png|jpe?g|gif|webp)$/i.test(file);
     let content = localFiles[file];
@@ -282,6 +286,67 @@ export default function App() {
       console.error('Rename failed', e);
       if (Platform.OS === 'web') window.alert('이름 변경 오류: ' + e);
       setRenamingItem(null);
+    }
+  };
+
+  const handleConfirmCreation = async () => {
+    if (!creatingItem || !creationName || !dirHandle) {
+      setCreatingItem(null);
+      return;
+    }
+
+    try {
+      const parentPath = creatingItem.parentPath;
+      const pathParts = parentPath ? parentPath.split('/') : [];
+      let parentDir = dirHandle;
+      for (const p of pathParts) {
+        parentDir = await parentDir.getDirectoryHandle(p);
+      }
+
+      let newHandle;
+      if (creatingItem.kind === 'file') {
+        newHandle = await parentDir.getFileHandle(creationName, { create: true });
+      } else {
+        newHandle = await parentDir.getDirectoryHandle(creationName, { create: true });
+      }
+
+      const newPath = parentPath ? `${parentPath}/${creationName}` : creationName;
+      const newItem = {
+        kind: creatingItem.kind,
+        name: creationName,
+        path: newPath,
+        handle: newHandle,
+        children: creatingItem.kind === 'directory' ? [] : undefined,
+        isLoaded: creatingItem.kind === 'directory'
+      };
+
+      const addItemToData = (items: any[], path: string, item: any): any[] => {
+        if (!path) return [...items, item];
+        return items.map(it => {
+          if (it.path === path) {
+            return { ...it, children: [...(it.children || []), item], isLoaded: true };
+          }
+          if (it.children && path.startsWith(it.path + '/')) {
+            return { ...it, children: addItemToData(it.children, path, item) };
+          }
+          return it;
+        });
+      };
+
+      setFileSystemData(prev => addItemToData(prev, parentPath, newItem));
+      
+      if (creatingItem.kind === 'file') {
+        handleSelectFile(newPath);
+      } else {
+        setExpandedFolders(prev => ({ ...prev, [parentPath]: true }));
+      }
+
+      setCreatingItem(null);
+      setCreationName('');
+    } catch (e) {
+      console.error('Creation failed', e);
+      if (Platform.OS === 'web') window.alert('생성 오류: ' + e);
+      setCreatingItem(null);
     }
   };
 
@@ -756,25 +821,25 @@ export default function App() {
           {tabs.map(file => {
              const isActive = file === selFile;
              const tabContent = (
-                 <Pressable 
-                   style={[s.tabItem, isActive && s.tabItemActive]}
-                   onPress={() => {
-                     setActivePane(paneId);
-                     handleSelectFile(file, paneId);
-                   }} 
-                 >
-                   <Text selectable={false} style={[s.tabText, isActive && s.tabTextActive]}>{file}</Text>
-                   <Pressable 
-                      onPress={(e) => { 
-                        if (Platform.OS === 'web') e.preventDefault();
-                        e.stopPropagation(); 
-                        closeTab(file, paneId); 
-                      }} 
-                      style={s.tabCloseBtn}
-                    >
-                     <Text selectable={false} style={s.tabCloseText}>✕</Text>
-                   </Pressable>
-                 </Pressable>
+                  <Pressable 
+                    style={[s.tabItem, isActive && s.tabItemActive]}
+                    onPress={() => {
+                      setActivePane(paneId);
+                      handleSelectFile(file, paneId);
+                    }} 
+                  >
+                    <Text selectable={false} style={[s.tabText, isActive && s.tabTextActive]}>{file}</Text>
+                    <Pressable 
+                       onPress={(e) => { 
+                         if (Platform.OS === 'web') e.preventDefault();
+                         e.stopPropagation(); 
+                         closeTab(file, paneId); 
+                       }} 
+                       style={s.tabCloseBtn}
+                     >
+                      <Text selectable={false} style={s.tabCloseText}>✕</Text>
+                    </Pressable>
+                  </Pressable>
              );
 
              if (Platform.OS === 'web') {
@@ -811,8 +876,8 @@ export default function App() {
     );
   };
 
-  const renderFileSystem = (items: any[], depth = 0) => {
-    return items.map((item) => {
+  const renderFileSystem = (items: any[], depth = 0, parentPath = ''): any => {
+    const list = items.map((item) => {
       const isSelected = selectedFile === item.path || selectedFile2 === item.path;
       const isExpanded = !!expandedFolders[item.path];
       const isImage = /\.(png|jpe?g|gif|webp)$/i.test(item.name);
@@ -832,14 +897,17 @@ export default function App() {
                     e.preventDefault();
                     setContextMenu({ x: e.clientX, y: e.clientY, visible: true, item });
                   }
-                }
+                },
+                onMouseEnter: () => setHoveredItemPath(item.path),
+                onMouseLeave: () => setHoveredItemPath(null),
               } as any)}
               style={{ 
                 paddingLeft: 12 + depth * 12, 
                 paddingVertical: 6, 
+                paddingRight: 12,
                 flexDirection: 'row', 
                 alignItems: 'center',
-                backgroundColor: 'transparent'
+                backgroundColor: hoveredItemPath === item.path ? (isDark ? '#2D3748' : '#F3F4F6') : 'transparent'
               }}
             >
               <Ionicons 
@@ -848,9 +916,20 @@ export default function App() {
                 color={colors.textMuted} 
                 style={{ marginRight: 4 }}
               />
-              <Text style={{ fontSize: 13, color: colors.text, fontWeight: '500' }}>📁 {item.name}</Text>
+              <Text style={{ fontSize: 13, color: colors.text, fontWeight: '500', flex: 1 }}>📁 {item.name}</Text>
+              
+              {hoveredItemPath === item.path && (
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <Pressable onPress={(e) => { e.stopPropagation(); setCreatingItem({ parentPath: item.path, kind: 'file' }); setCreationName(''); }}>
+                    <Ionicons name="document-outline" size={14} color={colors.primary} />
+                  </Pressable>
+                  <Pressable onPress={(e) => { e.stopPropagation(); setCreatingItem({ parentPath: item.path, kind: 'directory' }); setCreationName(''); }}>
+                    <Ionicons name="folder-outline" size={14} color={colors.primary} />
+                  </Pressable>
+                </View>
+              )}
             </Pressable>
-            {isExpanded && item.children && renderFileSystem(item.children, depth + 1)}
+            {isExpanded && item.children && renderFileSystem(item.children, depth + 1, item.path)}
           </View>
         );
       }
@@ -885,6 +964,39 @@ export default function App() {
         </Pressable>
       );
     });
+
+    if (creatingItem && creatingItem.parentPath === parentPath) {
+      list.push(
+        <View key="creation-input" style={{ paddingLeft: 30 + depth * 12, paddingVertical: 4, flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={{ fontSize: 13, marginRight: 4 }}>{creatingItem.kind === 'directory' ? '📁' : '📄'}</Text>
+          <div style={{ flex: 1 }}>
+            <input
+              autoFocus
+              value={creationName}
+              onChange={(e) => setCreationName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleConfirmCreation();
+                if (e.key === 'Escape') setCreatingItem(null);
+              }}
+              onBlur={() => {
+                if (!creationName) setCreatingItem(null);
+              }}
+              style={{
+                width: '90%',
+                padding: '2px 6px',
+                fontSize: '13px',
+                border: `1px solid ${colors.primary}`,
+                backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                color: isDark ? '#fff' : '#000',
+                outline: 'none',
+                borderRadius: '3px'
+              }}
+            />
+          </div>
+        </View>
+      );
+    }
+    return list;
   };
 
   const ImageViewer = ({ uri, name }: { uri: string, name: string }) => {
@@ -1024,11 +1136,23 @@ export default function App() {
           <View style={s.paneHeader}>
             <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
               <Text style={s.paneTitle}>Explorer</Text>
-              {Platform.OS === 'web' && (
-                <Pressable onPress={handleOpenDirectory}>
-                  <Text style={{color: colors.primary, fontSize: 12, fontWeight: 'bold'}}>폴더 열기</Text>
-                </Pressable>
-              )}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                {selectedFolder && (
+                  <>
+                    <Pressable onPress={() => { setCreatingItem({ parentPath: '', kind: 'file' }); setCreationName(''); }}>
+                      <Ionicons name="document-outline" size={18} color={colors.primary} />
+                    </Pressable>
+                    <Pressable onPress={() => { setCreatingItem({ parentPath: '', kind: 'directory' }); setCreationName(''); }}>
+                      <Ionicons name="folder-outline" size={18} color={colors.primary} />
+                    </Pressable>
+                  </>
+                )}
+                {Platform.OS === 'web' && (
+                  <Pressable onPress={handleOpenDirectory}>
+                    <Text style={{color: colors.primary, fontSize: 12, fontWeight: 'bold'}}>열기</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
           </View>
           <ScrollView>
@@ -1467,6 +1591,41 @@ export default function App() {
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             zIndex: 9999
           }}>
+            {contextMenu.item?.kind === 'directory' && (
+              <>
+                <Pressable 
+                  onPress={() => {
+                    setContextMenu({ ...contextMenu, visible: false });
+                    setCreatingItem({ parentPath: contextMenu.item.path, kind: 'file' });
+                    setCreationName('');
+                    setExpandedFolders(prev => ({ ...prev, [contextMenu.item.path]: true }));
+                  }}
+                  style={({ hovered }: any) => [
+                    { paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },
+                    hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
+                  ]}
+                >
+                  <Ionicons name="document-outline" size={16} color={colors.text} style={{ marginRight: 10 }} />
+                  <Text style={{ color: colors.text, fontSize: 13 }}>새 파일</Text>
+                </Pressable>
+                <Pressable 
+                  onPress={() => {
+                    setContextMenu({ ...contextMenu, visible: false });
+                    setCreatingItem({ parentPath: contextMenu.item.path, kind: 'directory' });
+                    setCreationName('');
+                    setExpandedFolders(prev => ({ ...prev, [contextMenu.item.path]: true }));
+                  }}
+                  style={({ hovered }: any) => [
+                    { paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },
+                    hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
+                  ]}
+                >
+                  <Ionicons name="folder-outline" size={16} color={colors.text} style={{ marginRight: 10 }} />
+                  <Text style={{ color: colors.text, fontSize: 13 }}>새 폴더</Text>
+                </Pressable>
+                <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+              </>
+            )}
             <Pressable 
               onPress={() => {
                 setContextMenu({ ...contextMenu, visible: false });
