@@ -20,6 +20,9 @@ export default function App() {
   const [dirHandle, setDirHandle] = useState<any>(null);
 
   const [openedFiles, setOpenedFiles] = useState<string[]>([]);
+  const [fileSystemData, setFileSystemData] = useState<any[]>([]);
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+  const [selectedDirPath, setSelectedDirPath] = useState<string>('');
   
   // Drag & Drop State
   const [draggingTab, setDraggingTab] = useState<{file: string, sourcePane: 1 | 2} | null>(null);
@@ -32,22 +35,97 @@ export default function App() {
   const [selectedFile2, setSelectedFile2] = useState('');
   const [editorContent2, setEditorContent2] = useState('');
 
-  const handleSelectFile = (file: string, targetPane: 1 | 2 = activePane) => {
+  const handleSelectFile = async (file: string, targetPane: 1 | 2 = activePane) => {
+    let content = localFiles[file];
+    if (content === undefined) {
+      // Lazy load content
+      const findHandle = (items: any[], path: string): any => {
+        for (const item of items) {
+          if (item.path === path) return item.handle;
+          if (item.children) {
+            const h = findHandle(item.children, path);
+            if (h) return h;
+          }
+        }
+        return null;
+      };
+      const handle = findHandle(fileSystemData, file);
+      if (handle && handle.kind === 'file') {
+        try {
+          const f = await handle.getFile();
+          content = await f.text();
+          setLocalFiles(prev => ({ ...prev, [file]: content }));
+        } catch (e) {
+          console.warn('Failed to read file lazy', e);
+          content = '';
+        }
+      } else {
+        content = '';
+      }
+    }
+
     if (targetPane === 1) {
       if (file === selectedFile) return;
       if (selectedFile) setLocalFiles(prev => ({ ...prev, [selectedFile]: editorContent }));
       setOpenedFiles(prev => !prev.includes(file) ? [...prev, file] : prev);
       setSelectedFile(file);
-      setEditorContent(localFiles[file] !== undefined ? localFiles[file] : '');
+      setEditorContent(content);
       setActivePane(1);
     } else {
       if (file === selectedFile2) return;
       if (selectedFile2) setLocalFiles(prev => ({ ...prev, [selectedFile2]: editorContent2 }));
       setOpenedFiles2(prev => !prev.includes(file) ? [...prev, file] : prev);
       setSelectedFile2(file);
-      setEditorContent2(localFiles[file] !== undefined ? localFiles[file] : '');
+      setEditorContent2(content);
       setActivePane(2);
     }
+  };
+
+  const loadDirectory = async (path: string) => {
+    const findAndLoad = async (items: any[]): Promise<any[]> => {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].path === path && items[i].kind === 'directory') {
+          if (items[i].isLoaded) return items;
+          
+          const newChildren: any[] = [];
+          // @ts-ignore
+          for await (const entry of items[i].handle.values()) {
+            const entryPath = `${path}/${entry.name}`;
+            if (entry.kind === 'file' && /\.(md|txt|png|jpe?g|gif|webp)$/i.test(entry.name)) {
+              newChildren.push({ name: entry.name, path: entryPath, kind: 'file', handle: entry });
+            } else if (entry.kind === 'directory') {
+              newChildren.push({ name: entry.name, path: entryPath, kind: 'directory', handle: entry, children: [], isLoaded: false });
+            }
+          }
+          newChildren.sort((a, b) => {
+            if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
+            return a.name.localeCompare(b.name);
+          });
+          
+          const newItems = [...items];
+          newItems[i] = { ...items[i], children: newChildren, isLoaded: true };
+          return newItems;
+        }
+        if (items[i].children && path.startsWith(items[i].path)) {
+          const updatedChildren = await findAndLoad(items[i].children);
+          const newItems = [...items];
+          newItems[i] = { ...items[i], children: updatedChildren };
+          return newItems;
+        }
+      }
+      return items;
+    };
+
+    const updatedFS = await findAndLoad(fileSystemData);
+    setFileSystemData(updatedFS);
+  };
+
+  const toggleFolder = async (path: string) => {
+    const isExpanding = !expandedFolders[path];
+    if (isExpanding) {
+      await loadDirectory(path);
+    }
+    setExpandedFolders(prev => ({ ...prev, [path]: !prev[path] }));
   };
 
   const closeTab = (fileToClose: string, targetPane: 1 | 2) => {
@@ -157,38 +235,53 @@ export default function App() {
       return;
     }
     try {
-      // @ts-ignore: File System Access API 타입
+      // @ts-ignore
       const handle = await window.showDirectoryPicker();
       setDirHandle(handle);
       setSelectedFolder(handle.name);
       
-      const newFiles: Record<string, string> = {};
-      // @ts-ignore
-      for await (const entry of handle.values()) {
-        if (entry.kind === 'file' && (entry.name.endsWith('.md') || entry.name.endsWith('.txt'))) {
-          const file = await entry.getFile();
-          const text = await file.text();
-          newFiles[entry.name] = text;
+      async function scanLevel(currentHandle: any, path = '') {
+        const items: any[] = [];
+        // @ts-ignore
+        for await (const entry of currentHandle.values()) {
+          const entryPath = path ? `${path}/${entry.name}` : entry.name;
+          if (entry.kind === 'file') {
+            const isSupported = /\.(md|txt|png|jpe?g|gif|webp)$/i.test(entry.name);
+            if (isSupported) {
+              items.push({ name: entry.name, path: entryPath, kind: 'file', handle: entry });
+            }
+          } else if (entry.kind === 'directory') {
+            items.push({ name: entry.name, path: entryPath, kind: 'directory', children: [], handle: entry, isLoaded: false });
+          }
         }
+        return items.sort((a, b) => {
+          if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
+          return a.name.localeCompare(b.name);
+        });
       }
-      setLocalFiles(newFiles);
 
-      if (Object.keys(newFiles).length > 0) {
-        const firstFile = Object.keys(newFiles)[0];
-        setSelectedFile(firstFile);
-        setEditorContent(newFiles[firstFile]);
-        setOpenedFiles([firstFile]);
-        setSelectedFile2('');
-        setEditorContent2('');
-        setOpenedFiles2([]);
+      const topLevelItems = await scanLevel(handle);
+      setFileSystemData(topLevelItems);
+      setLocalFiles({}); 
+      setSelectedDirPath('');
+
+      const firstMd = topLevelItems.find(item => item.kind === 'file' && (item.name.endsWith('.md') || item.name.endsWith('.txt')));
+      if (firstMd) {
+        // Read content for the first file specifically
+        const f = await firstMd.handle.getFile();
+        const text = await f.text();
+        setLocalFiles({ [firstMd.path]: text });
+        setSelectedFile(firstMd.path);
+        setEditorContent(text);
+        setOpenedFiles([firstMd.path]);
       } else {
         setSelectedFile('');
-        setEditorContent('# 불러올 파일이 없습니다.');
+        setEditorContent('# 불러올 Markdown 파일이 없습니다.');
         setOpenedFiles([]);
-        setSelectedFile2('');
-        setEditorContent2('');
-        setOpenedFiles2([]);
       }
+      setSelectedFile2('');
+      setEditorContent2('');
+      setOpenedFiles2([]);
     } catch (e) {
       console.log('User cancelled or error', e);
     }
@@ -595,6 +688,71 @@ export default function App() {
     );
   };
 
+  const renderFileSystem = (items: any[], depth = 0) => {
+    return items.map((item) => {
+      const isSelected = selectedFile === item.path || selectedFile2 === item.path;
+      const isExpanded = !!expandedFolders[item.path];
+      const isImage = /\.(png|jpe?g|gif|webp)$/i.test(item.name);
+      const isDoc = /\.(md|txt)$/i.test(item.name);
+
+      if (item.kind === 'directory') {
+        return (
+          <View key={item.path}>
+            <Pressable 
+              onPress={() => {
+                toggleFolder(item.path);
+                setSelectedDirPath(item.path);
+              }}
+              style={{ 
+                paddingLeft: 12 + depth * 12, 
+                paddingVertical: 6, 
+                flexDirection: 'row', 
+                alignItems: 'center',
+                backgroundColor: 'transparent'
+              }}
+            >
+              <Ionicons 
+                name={isExpanded ? "chevron-down" : "chevron-forward"} 
+                size={14} 
+                color={colors.textMuted} 
+                style={{ marginRight: 4 }}
+              />
+              <Text style={{ fontSize: 13, color: colors.text, fontWeight: '500' }}>📁 {item.name}</Text>
+            </Pressable>
+            {isExpanded && item.children && renderFileSystem(item.children, depth + 1)}
+          </View>
+        );
+      }
+
+      return (
+        <Pressable 
+          key={item.path} 
+          onPress={() => {
+            if (isDoc) handleSelectFile(item.path);
+            else if (isImage) {
+              // Optionally show info or do nothing
+            }
+          }}
+        >
+          <View style={[
+            { paddingLeft: 30 + depth * 12, paddingVertical: 6, paddingRight: 12, flexDirection: 'row', alignItems: 'center' },
+            isSelected && { backgroundColor: isDark ? '#2D3748' : '#EFF6FF', borderLeftWidth: 3, borderLeftColor: colors.primary, paddingLeft: 27 + depth * 12 }
+          ]}>
+            <Text 
+              numberOfLines={1} 
+              style={[
+                { fontSize: 13, color: isDoc ? colors.text : colors.textMuted, flex: 1 },
+                isSelected && { fontWeight: 'bold', color: colors.primary }
+              ]}
+            >
+              {isImage ? '🖼️' : '📄'} {item.name}
+            </Text>
+          </View>
+        </Pressable>
+      );
+    });
+  };
+
   return (
     <View style={[s.container, { userSelect: isResizing ? 'none' : 'auto' } as any]}>
       {/* HEADER */}
@@ -634,11 +792,14 @@ export default function App() {
           </View>
           <ScrollView>
             {selectedFolder ? (
-              <Pressable onPress={() => {}}>
-                <View style={[s.listItem, s.listItemSelected]}>
-                  <Text style={[s.listItemText, {fontWeight: 'bold' }]}>📁 {selectedFolder}</Text>
+              <View style={{ paddingVertical: 8 }}>
+                <View style={{ paddingHorizontal: 12, paddingVertical: 4, flexDirection: 'row', alignItems: 'center' }}>
+                  <Pressable onPress={() => setSelectedDirPath('')}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: colors.primary }}>📁 {selectedFolder}</Text>
+                  </Pressable>
                 </View>
-              </Pressable>
+                {renderFileSystem(fileSystemData)}
+              </View>
             ) : (
               <View style={{ padding: 24 }}>
                 <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 12 }}>작업하실 로컬 폴더를 열어주세요.</Text>
@@ -659,17 +820,61 @@ export default function App() {
           <>
             {/* PANE 2: File List (Explorer 2) */}
             <View style={[s.paneMiddle, { width: middlePaneWidth }]}>
-              <View style={s.paneHeader}><Text style={s.paneTitle}>{selectedFolder || 'No Folder Selected'}</Text></View>
+              <View style={s.paneHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  {selectedDirPath ? (
+                    <Pressable onPress={() => {
+                      const parts = selectedDirPath.split('/');
+                      parts.pop();
+                      setSelectedDirPath(parts.join('/'));
+                    }} style={{ marginRight: 8 }}>
+                      <Ionicons name="arrow-back" size={16} color={colors.primary} />
+                    </Pressable>
+                  ) : null}
+                  <Text style={s.paneTitle}>{selectedDirPath || selectedFolder || 'No Folder Selected'}</Text>
+                </View>
+              </View>
               <ScrollView>
-                {selectedFolder ? Object.keys(localFiles).map(file => (
-                  <Pressable key={file} onPress={() => handleSelectFile(file)}>
-                    <View style={[s.listItem, selectedFile === file && s.listItemSelected]}>
-                      <Text style={[s.listItemText, selectedFile === file && {fontWeight: 'bold' }]}>
-                        📄 {file}
-                      </Text>
-                    </View>
-                  </Pressable>
-                )) : (
+                {selectedFolder ? (
+                  (() => {
+                    let itemsToShow = fileSystemData;
+                    if (selectedDirPath) {
+                      const findItems = (data: any[], path: string): any[] => {
+                        for (const item of data) {
+                          if (item.path === path) return item.children || [];
+                          if (item.children) {
+                            const found = findItems(item.children, path);
+                            if (found.length > 0 || (item.path === path)) return found;
+                          }
+                        }
+                        return [];
+                      };
+                      itemsToShow = findItems(fileSystemData, selectedDirPath);
+                    }
+
+                    if (itemsToShow.length === 0) {
+                      return <View style={{ padding: 24 }}><Text style={{ color: colors.textMuted }}>이 폴더는 비어 있습니다.</Text></View>;
+                    }
+
+                    return itemsToShow.map(item => (
+                      <Pressable key={item.path} onPress={async () => {
+                        if (item.kind === 'directory') {
+                          await loadDirectory(item.path);
+                          setSelectedDirPath(item.path);
+                          setExpandedFolders(prev => ({ ...prev, [item.path]: true }));
+                        } else {
+                          handleSelectFile(item.path);
+                        }
+                      }}>
+                        <View style={[s.listItem, (selectedFile === item.path || selectedFile2 === item.path) && s.listItemSelected]}>
+                          <Text style={[s.listItemText, (selectedFile === item.path || selectedFile2 === item.path) && {fontWeight: 'bold' }]}>
+                            {item.kind === 'directory' ? '📁' : (/\.(png|jpe?g|gif|webp)$/i.test(item.name) ? '🖼️' : '📄')} {item.name}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    ));
+                  })()
+                ) : (
                   <View style={{ padding: 24 }}><Text style={{ color: colors.textMuted }}>폴더를 열어야 보입니다.</Text></View>
                 )}
               </ScrollView>
