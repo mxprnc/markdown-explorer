@@ -36,7 +36,9 @@ export default function App() {
   const [editorContent2, setEditorContent2] = useState('');
 
   const handleSelectFile = async (file: string, targetPane: 1 | 2 = activePane) => {
+    const isImage = /\.(png|jpe?g|gif|webp)$/i.test(file);
     let content = localFiles[file];
+    
     if (content === undefined) {
       // Lazy load content
       const findHandle = (items: any[], path: string): any => {
@@ -50,10 +52,15 @@ export default function App() {
         return null;
       };
       const handle = findHandle(fileSystemData, file);
-      if (handle && handle.kind === 'file') {
+      if (handle) {
         try {
-          const f = await handle.getFile();
-          content = await f.text();
+          if (isImage) {
+            const f = await handle.getFile();
+            content = URL.createObjectURL(f);
+          } else {
+            const f = await handle.getFile();
+            content = await f.text();
+          }
           setLocalFiles(prev => ({ ...prev, [file]: content }));
         } catch (e) {
           console.warn('Failed to read file lazy', e);
@@ -66,14 +73,18 @@ export default function App() {
 
     if (targetPane === 1) {
       if (file === selectedFile) return;
-      if (selectedFile) setLocalFiles(prev => ({ ...prev, [selectedFile]: editorContent }));
+      if (selectedFile && !/\.(png|jpe?g|gif|webp)$/i.test(selectedFile)) {
+          setLocalFiles(prev => ({ ...prev, [selectedFile]: editorContent }));
+      }
       setOpenedFiles(prev => !prev.includes(file) ? [...prev, file] : prev);
       setSelectedFile(file);
       setEditorContent(content);
       setActivePane(1);
     } else {
       if (file === selectedFile2) return;
-      if (selectedFile2) setLocalFiles(prev => ({ ...prev, [selectedFile2]: editorContent2 }));
+      if (selectedFile2 && !/\.(png|jpe?g|gif|webp)$/i.test(selectedFile2)) {
+          setLocalFiles(prev => ({ ...prev, [selectedFile2]: editorContent2 }));
+      }
       setOpenedFiles2(prev => !prev.includes(file) ? [...prev, file] : prev);
       setSelectedFile2(file);
       setEditorContent2(content);
@@ -727,12 +738,7 @@ export default function App() {
       return (
         <Pressable 
           key={item.path} 
-          onPress={() => {
-            if (isDoc) handleSelectFile(item.path);
-            else if (isImage) {
-              // Optionally show info or do nothing
-            }
-          }}
+          onPress={() => handleSelectFile(item.path)}
         >
           <View style={[
             { paddingLeft: 30 + depth * 12, paddingVertical: 6, paddingRight: 12, flexDirection: 'row', alignItems: 'center' },
@@ -751,6 +757,113 @@ export default function App() {
         </Pressable>
       );
     });
+  };
+
+  const ImageViewer = ({ uri, name }: { uri: string, name: string }) => {
+    const [zoom, setZoom] = useState(1);
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+
+    const handleMouseDown = (e: any) => {
+      e.preventDefault();
+      setIsDragging(true);
+      setStartPos({ x: e.clientX - pos.x, y: e.clientY - pos.y });
+    };
+
+    const handleMouseMove = (e: any) => {
+      if (!isDragging) return;
+      setPos({
+        x: e.clientX - startPos.x,
+        y: e.clientY - startPos.y
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    const handleReset = () => {
+      setZoom(1);
+      setPos({ x: 0, y: 0 });
+    };
+    
+    return (
+      <View style={{ flex: 1, backgroundColor: isDark ? '#1a1a1a' : '#f0f0f0' }}>
+        {/* Toolbar */}
+        <View style={{ 
+          flexDirection: 'row', 
+          backgroundColor: colors.background, 
+          padding: 8, 
+          borderBottomWidth: 1, 
+          borderBottomColor: colors.border,
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 12,
+          zIndex: 10
+        }}>
+          <Pressable onPress={() => setZoom(prev => Math.max(0.1, prev - 0.2))} style={{ padding: 4 }}>
+            <Ionicons name="remove-circle-outline" size={24} color={colors.primary} />
+          </Pressable>
+          <Text style={{ color: colors.text, fontSize: 13, fontWeight: 'bold', minWidth: 50, textAlign: 'center' }}>
+            {Math.round(zoom * 100)}%
+          </Text>
+          <Pressable onPress={() => setZoom(prev => Math.min(10, prev + 0.5))} style={{ padding: 4 }}>
+            <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+          </Pressable>
+          <Pressable onPress={handleReset} style={{ padding: 4, marginLeft: 8 }}>
+            <Ionicons name="refresh-outline" size={20} color={colors.textMuted} />
+          </Pressable>
+          <Text style={{ color: colors.textMuted, fontSize: 11, marginLeft: 12 }}>
+            (마우스 드래그로 이동 가능)
+          </Text>
+        </View>
+
+        {/* Image Container */}
+        <div 
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          style={{ 
+            flex: 1, 
+            overflow: 'hidden', 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            cursor: isDragging ? 'grabbing' : (zoom > 1 ? 'grab' : 'default'),
+            position: 'relative'
+          }}
+        >
+          <div style={{ 
+            backgroundColor: colors.background, 
+            padding: 20, 
+            borderRadius: 12, 
+            boxShadow: '0 4px 30px rgba(0,0,0,0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+            transform: `translate(${pos.x}px, ${pos.y}px) scale(${zoom})`,
+            transformOrigin: 'center center'
+          }}>
+            <Text style={{ color: colors.textMuted, fontSize: 11, marginBottom: 12, fontFamily: fontFamilyCode }}>{name}</Text>
+            <img 
+              src={uri} 
+              alt={name} 
+              draggable="false"
+              style={{ 
+                maxWidth: 'none', 
+                maxHeight: '80vh', 
+                border: `1px solid ${colors.border}`, 
+                borderRadius: 4,
+                userSelect: 'none'
+              }} 
+            />
+          </div>
+        </div>
+      </View>
+    );
   };
 
   return (
@@ -908,7 +1021,11 @@ export default function App() {
                 </View>
               </View>
               <ScrollView style={{ flex: 1 }}>
-                <Preview content={localFiles[selectedFile] || ''} isDark={isDark} />
+                {/\.(png|jpe?g|gif|webp)$/i.test(selectedFile) ? (
+                  <ImageViewer uri={localFiles[selectedFile]} name={selectedFile} />
+                ) : (
+                  <Preview content={localFiles[selectedFile] || ''} isDark={isDark} />
+                )}
               </ScrollView>
             </View>
           </>
@@ -985,89 +1102,96 @@ export default function App() {
                      }}
                      style={{ 
                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-                       zIndex: 999, backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                       display: 'flex', justifyContent: 'center', alignItems: 'center'
+                       zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center' 
                      }}
                    >
                      <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동</Text>
                    </div>
                  )}
-                 {selectedFile ? (
-                   <Editor
-                     key={'pane1-' + selectedFile}
-                     value={editorContent} 
-                     onChange={setEditorContent} 
-                     onSave={async (val: string) => {
-                       setEditorContent(val);
-                       setLocalFiles(prev => ({ ...prev, [selectedFile]: val }));
-                       const saved = await handleSaveToDisk(val, selectedFile);
-                       if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
-                     }} 
-                     onPasteImage={handlePasteImage}
-                     onRenameImage={handleRenameImage}
-                     resolveImage={resolveImage}
-                     isDark={isDark} 
-                   />
-                 ) : (
-                   <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
-                 )}
-               </View>
+                  {selectedFile ? (
+                    /\.(png|jpe?g|gif|webp)$/i.test(selectedFile) ? (
+                      <ImageViewer uri={localFiles[selectedFile]} name={selectedFile} />
+                    ) : (
+                      <Editor
+                        key={'pane1-' + selectedFile}
+                        value={editorContent} 
+                        onChange={setEditorContent} 
+                        onSave={async (val: string) => {
+                          setEditorContent(val);
+                          setLocalFiles(prev => ({ ...prev, [selectedFile]: val }));
+                          const saved = await handleSaveToDisk(val, selectedFile);
+                          if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
+                        }} 
+                        isDark={isDark}
+                        resolveImage={resolveImage}
+                        onPasteImage={handlePasteImage}
+                        onRenameImage={handleRenameImage}
+                      />
+                    )
+                  ) : (
+                    <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
+                  )}
+                </View>
 
-               {/* Editor Pane 2 */}
-               {isSplitMode && (
-                 <View 
-                   style={{ flex: 1, position: 'relative', backgroundColor: isDragOverRight ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent' }} 
-                   onTouchStart={() => setActivePane(2)} 
-                   {...({ onClick: () => setActivePane(2) } as any)}
-                 >
-                   {renderTabBar(2)}
-                   {Platform.OS === 'web' && isSplitMode && draggingTab && draggingTab.sourcePane === 1 && (
-                     <div
-                       onDragOver={(e: any) => { 
-                         e.preventDefault(); 
-                         setIsDragOverRight(true); 
-                         if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
-                       }}
-                       onDragLeave={() => setIsDragOverRight(false)}
-                       onDrop={(e: any) => {
-                         e.preventDefault();
-                         setIsDragOverRight(false);
-                         const file = draggingTab?.file;
-                         setDraggingTab(null);
-                         if (file) {
-                           closeTab(file, 1);
-                           handleSelectFile(file, 2);
-                         }
-                       }}
-                       style={{ 
-                         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-                         zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center' 
-                       }}
-                     >
-                       <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동</Text>
-                     </div>
-                   )}
-                   {selectedFile2 ? (
-                     <Editor
-                       key={'pane2-' + selectedFile2}
-                       value={editorContent2} 
-                       onChange={setEditorContent2} 
-                       onSave={async (val: string) => {
-                         setEditorContent2(val);
-                         setLocalFiles(prev => ({ ...prev, [selectedFile2]: val }));
-                         const saved = await handleSaveToDisk(val, selectedFile2);
-                         if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
-                       }} 
-                       onPasteImage={handlePasteImage}
-                       onRenameImage={handleRenameImage}
-                       resolveImage={resolveImage}
-                       isDark={isDark} 
-                     />
-                   ) : (
-                     <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
-                   )}
-                 </View>
-               )}
+                {/* Editor Pane 2 */}
+                {isSplitMode && (
+                  <View 
+                    style={{ flex: 1, position: 'relative', backgroundColor: isDragOverRight ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent' }} 
+                    onTouchStart={() => setActivePane(2)} 
+                    {...({ onClick: () => setActivePane(2) } as any)}
+                  >
+                    {renderTabBar(2)}
+                    {Platform.OS === 'web' && isSplitMode && draggingTab && draggingTab.sourcePane === 1 && (
+                      <div
+                        onDragOver={(e: any) => { 
+                          e.preventDefault(); 
+                          setIsDragOverRight(true); 
+                          if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
+                        }}
+                        onDragLeave={() => setIsDragOverRight(false)}
+                        onDrop={(e: any) => {
+                          e.preventDefault();
+                          setIsDragOverRight(false);
+                          const file = draggingTab?.file;
+                          setDraggingTab(null);
+                          if (file) {
+                            closeTab(file, 1);
+                            handleSelectFile(file, 2);
+                          }
+                        }}
+                        style={{ 
+                          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                          zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center' 
+                        }}
+                      >
+                        <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동</Text>
+                      </div>
+                    )}
+                    {selectedFile2 ? (
+                      /\.(png|jpe?g|gif|webp)$/i.test(selectedFile2) ? (
+                        <ImageViewer uri={localFiles[selectedFile2]} name={selectedFile2} />
+                      ) : (
+                        <Editor
+                          key={'pane2-' + selectedFile2}
+                          value={editorContent2} 
+                          onChange={setEditorContent2} 
+                          onSave={async (val: string) => {
+                            setEditorContent2(val);
+                            setLocalFiles(prev => ({ ...prev, [selectedFile2]: val }));
+                            const saved = await handleSaveToDisk(val, selectedFile2);
+                            if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
+                          }} 
+                          isDark={isDark}
+                          resolveImage={resolveImage}
+                          onPasteImage={handlePasteImage}
+                          onRenameImage={handleRenameImage}
+                        />
+                      )
+                    ) : (
+                      <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
+                    )}
+                  </View>
+                )}
 
                {/* Split Mode Drop Zone (When not split, overlay on right side) */}
                {!isSplitMode && draggingTab && draggingTab.sourcePane === 1 && (
