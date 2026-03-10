@@ -34,6 +34,12 @@ export default function App() {
   const [openedFiles2, setOpenedFiles2] = useState<string[]>([]);
   const [selectedFile2, setSelectedFile2] = useState('');
   const [editorContent2, setEditorContent2] = useState('');
+  
+  // Context Menu & Hover State
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, visible: boolean, item: any | null }>({ x: 0, y: 0, visible: false, item: null });
+  const [hoveredItemPath, setHoveredItemPath] = useState<string | null>(null);
+  const [renamingItem, setRenamingItem] = useState<any | null>(null);
+  const [newName, setNewName] = useState('');
 
   const handleSelectFile = async (file: string, targetPane: 1 | 2 = activePane) => {
     const isImage = /\.(png|jpe?g|gif|webp)$/i.test(file);
@@ -170,6 +176,112 @@ export default function App() {
         }
         return newTabs;
       });
+    }
+  };
+
+  const updateFileSystemData = (items: any[], oldPath: string, newPath: string, newNameStr: string): any[] => {
+    return items.map(item => {
+      if (item.path === oldPath) {
+        return { ...item, path: newPath, name: newNameStr };
+      }
+      if (item.children && oldPath.startsWith(item.path + '/')) {
+         return { ...item, children: updateFileSystemData(item.children, oldPath, newPath, newNameStr) };
+      }
+      return item;
+    });
+  };
+
+  const removeItemFromData = (items: any[], pathToRemove: string): any[] => {
+    return items.filter(item => item.path !== pathToRemove).map(item => {
+      if (item.children) {
+        return { ...item, children: removeItemFromData(item.children, pathToRemove) };
+      }
+      return item;
+    });
+  };
+
+  const handleDeleteFileSystem = async (item: any) => {
+    if (!dirHandle) return;
+    if (Platform.OS === 'web' && !window.confirm(`'${item.name}'을(를) 삭제하시겠습니까?`)) return;
+
+    try {
+      const parts = item.path.split('/');
+      let parentDir = dirHandle;
+      if (parts.length > 1) {
+        for (let i = 0; i < parts.length - 1; i++) {
+          parentDir = await parentDir.getDirectoryHandle(parts[i]);
+        }
+      }
+      await parentDir.removeEntry(item.name, { recursive: true });
+
+      setFileSystemData(prev => removeItemFromData(prev, item.path));
+      closeTab(item.path, 1);
+      closeTab(item.path, 2);
+      
+      const newLocalFiles = { ...localFiles };
+      delete newLocalFiles[item.path];
+      setLocalFiles(newLocalFiles);
+
+      if (selectedFile === item.path) setSelectedFile('');
+      if (selectedFile2 === item.path) setSelectedFile2('');
+    } catch (e) {
+      console.error('Delete failed', e);
+      if (Platform.OS === 'web') window.alert('삭제 오류: ' + e);
+    }
+  };
+
+  const handleRenameFileSystem = async () => {
+    if (!renamingItem || !newName || !dirHandle) {
+      setRenamingItem(null);
+      return;
+    }
+
+    const oldPath = renamingItem.path;
+    const pathParts = oldPath.split('/');
+    pathParts.pop();
+    const newPath = pathParts.length > 0 ? `${pathParts.join('/')}/${newName}` : newName;
+
+    try {
+      let parentDir = dirHandle;
+      if (pathParts.length > 0) {
+        for (const p of pathParts) {
+          parentDir = await parentDir.getDirectoryHandle(p);
+        }
+      }
+      
+      const entry = renamingItem.handle;
+      // @ts-ignore
+      if (entry.move) {
+        // @ts-ignore
+        await entry.move(newName);
+      } else {
+        throw new Error('이 브라우저는 .move()를 지원하지 않습니다.');
+      }
+
+      setFileSystemData(prev => updateFileSystemData(prev, oldPath, newPath, newName));
+      
+      if (localFiles[oldPath] !== undefined) {
+        setLocalFiles(prev => {
+          const next = { ...prev };
+          next[newPath] = next[oldPath];
+          delete next[oldPath];
+          return next;
+        });
+      }
+
+      if (selectedFile === oldPath) setSelectedFile(newPath);
+      if (selectedFile2 === oldPath) setSelectedFile2(newPath);
+      if (selectedDirPath === oldPath) setSelectedDirPath(newPath);
+
+      setOpenedFiles(prev => prev.map(p => p === oldPath ? newPath : p));
+      setOpenedFiles2(prev => prev.map(p => p === oldPath ? newPath : p));
+
+      setRenamingItem(null);
+      setNewName('');
+    } catch (e) {
+      console.error('Rename failed', e);
+      if (Platform.OS === 'web') window.alert('이름 변경 오류: ' + e);
+      setRenamingItem(null);
     }
   };
 
@@ -714,6 +826,14 @@ export default function App() {
                 toggleFolder(item.path);
                 setSelectedDirPath(item.path);
               }}
+              {...({
+                onContextMenu: (e: any) => {
+                  if (Platform.OS === 'web') {
+                    e.preventDefault();
+                    setContextMenu({ x: e.clientX, y: e.clientY, visible: true, item });
+                  }
+                }
+              } as any)}
               style={{ 
                 paddingLeft: 12 + depth * 12, 
                 paddingVertical: 6, 
@@ -739,6 +859,14 @@ export default function App() {
         <Pressable 
           key={item.path} 
           onPress={() => handleSelectFile(item.path)}
+          {...({
+            onContextMenu: (e: any) => {
+              if (Platform.OS === 'web') {
+                e.preventDefault();
+                setContextMenu({ x: e.clientX, y: e.clientY, visible: true, item });
+              }
+            }
+          } as any)}
         >
           <View style={[
             { paddingLeft: 30 + depth * 12, paddingVertical: 6, paddingRight: 12, flexDirection: 'row', alignItems: 'center' },
@@ -970,19 +1098,60 @@ export default function App() {
                     }
 
                     return itemsToShow.map(item => (
-                      <Pressable key={item.path} onPress={async () => {
-                        if (item.kind === 'directory') {
-                          await loadDirectory(item.path);
-                          setSelectedDirPath(item.path);
-                          setExpandedFolders(prev => ({ ...prev, [item.path]: true }));
-                        } else {
-                          handleSelectFile(item.path);
-                        }
-                      }}>
-                        <View style={[s.listItem, (selectedFile === item.path || selectedFile2 === item.path) && s.listItemSelected]}>
+                      <Pressable 
+                        key={item.path} 
+                        onPress={async () => {
+                          if (item.kind === 'directory') {
+                            await loadDirectory(item.path);
+                            setSelectedDirPath(item.path);
+                            setExpandedFolders(prev => ({ ...prev, [item.path]: true }));
+                          } else {
+                            handleSelectFile(item.path);
+                          }
+                        }}
+                        {...({
+                          onContextMenu: (e: any) => {
+                            if (Platform.OS === 'web') {
+                              e.preventDefault();
+                              setContextMenu({ x: e.clientX, y: e.clientY, visible: true, item });
+                            }
+                          },
+                          onMouseEnter: () => setHoveredItemPath(item.path),
+                          onMouseLeave: () => setHoveredItemPath(null),
+                        } as any)}
+                      >
+                        <View style={[
+                          s.listItem, 
+                          (selectedFile === item.path || selectedFile2 === item.path) && s.listItemSelected,
+                          { position: 'relative', overflow: 'hidden' }
+                        ]}>
                           <Text style={[s.listItemText, (selectedFile === item.path || selectedFile2 === item.path) && {fontWeight: 'bold' }]}>
                             {item.kind === 'directory' ? '📁' : (/\.(png|jpe?g|gif|webp)$/i.test(item.name) ? '🖼️' : '📄')} {item.name}
                           </Text>
+                          
+                          {hoveredItemPath === item.path && (
+                            <View style={{ position: 'absolute', right: 8, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center' }}>
+                              <Pressable 
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  setRenamingItem(item);
+                                  setNewName(item.name);
+                                }}
+                                style={{ padding: 6 }}
+                              >
+                                <Ionicons name="pencil-outline" size={16} color={colors.primary} />
+                              </Pressable>
+                              <Pressable 
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteFileSystem(item);
+                                }}
+                                style={{ padding: 6 }}
+                              >
+                                <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                              </Pressable>
+                            </View>
+                          )}
                         </View>
                       </Pressable>
                     ));
@@ -1279,6 +1448,94 @@ export default function App() {
           <Text style={s.footerPathText}>/Users/alpha300uk/Documents/.../{selectedFolder}/{selectedFile}</Text>
         </View>
       </View>
+      {/* Context Menu Overlay */}
+      {contextMenu.visible && (
+        <Pressable 
+          style={StyleSheet.absoluteFill} 
+          onPress={() => setContextMenu({ ...contextMenu, visible: false })}
+        >
+          <View style={{
+            position: 'absolute',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            backgroundColor: colors.surface,
+            borderRadius: 8,
+            paddingVertical: 6,
+            minWidth: 160,
+            borderWidth: 1,
+            borderColor: colors.border,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            zIndex: 9999
+          }}>
+            <Pressable 
+              onPress={() => {
+                setContextMenu({ ...contextMenu, visible: false });
+                setRenamingItem(contextMenu.item);
+                setNewName(contextMenu.item.name);
+              }}
+              style={({ hovered }: any) => [
+                { paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },
+                hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
+              ]}
+            >
+              <Ionicons name="pencil-outline" size={16} color={colors.text} style={{ marginRight: 10 }} />
+              <Text style={{ color: colors.text, fontSize: 13 }}>이름 바꾸기</Text>
+            </Pressable>
+            <Pressable 
+              onPress={() => {
+                setContextMenu({ ...contextMenu, visible: false });
+                handleDeleteFileSystem(contextMenu.item);
+              }}
+              style={({ hovered }: any) => [
+                { paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },
+                hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
+              ]}
+            >
+              <Ionicons name="trash-outline" size={16} color="#EF4444" style={{ marginRight: 10 }} />
+              <Text style={{ color: "#EF4444", fontSize: 13 }}>삭제</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      )}
+
+      {/* Rename Modal */}
+      {renamingItem && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 10000 }]}>
+          <View style={{ backgroundColor: colors.surface, padding: 24, borderRadius: 12, width: 400, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text, marginBottom: 16 }}>이름 바꾸기</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8 }}>새 이름을 입력해주세요:</Text>
+            <div style={{ marginBottom: 24 }}>
+              <input 
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRenameFileSystem();
+                  if (e.key === 'Escape') setRenamingItem(null);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  border: `1px solid ${colors.border}`,
+                  backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                  color: isDark ? '#fff' : '#000',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+              />
+            </div>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
+              <Pressable onPress={() => setRenamingItem(null)} style={{ paddingVertical: 8, paddingHorizontal: 16 }}>
+                <Text style={{ color: colors.textMuted, fontWeight: 'bold' }}>취소</Text>
+              </Pressable>
+              <Pressable onPress={handleRenameFileSystem} style={{ backgroundColor: colors.primary, paddingVertical: 8, paddingHorizontal: 20, borderRadius: 6 }}>
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>확인</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
