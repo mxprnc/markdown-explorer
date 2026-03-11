@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Platform, Alert, PanResponder } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
@@ -57,6 +57,14 @@ export default function App() {
   const [showGeminiSettings, setShowGeminiSettings] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
   const [tempClientId, setTempClientId] = useState('');
+  const [selectedModel, setSelectedModel] = useState('gemini-1.5-flash');
+  const [tempModel, setTempModel] = useState('gemini-1.5-flash');
+
+  const availableModels = [
+    { label: 'Gemini 1.5 Flash', value: 'gemini-1.5-flash' },
+    { label: 'Gemini 2.0 Flash', value: 'gemini-2.0-flash' },
+    { label: 'Gemini 1.5 Pro', value: 'gemini-1.5-pro' },
+  ];
 
   // OAuth Request Hook
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -89,19 +97,23 @@ export default function App() {
       if (savedKey) { setGeminiApiKey(savedKey); setTempApiKey(savedKey); }
       if (savedClientId) { setGoogleClientId(savedClientId); setTempClientId(savedClientId); }
       if (savedToken) { setGoogleAccessToken(savedToken); }
+      
+      const savedModel = localStorage.getItem('gemini_selected_model');
+      if (savedModel) { setSelectedModel(savedModel); setTempModel(savedModel); }
     }
   }, []);
 
   const saveGeminiKey = () => {
     setGeminiApiKey(tempApiKey);
     setGoogleClientId(tempClientId);
+    setSelectedModel(tempModel);
     if (Platform.OS === 'web') {
       localStorage.setItem('gemini_api_key', tempApiKey);
       localStorage.setItem('google_client_id', tempClientId);
+      localStorage.setItem('gemini_selected_model', tempModel);
     }
     setShowGeminiSettings(false);
   };
-
   const handleLogout = () => {
     setGoogleAccessToken(null);
     if (Platform.OS === 'web') {
@@ -481,6 +493,28 @@ export default function App() {
     })
   ).current;
 
+  const footerHeightRef = React.useRef(250);
+  const [footerHeight, setFooterHeight] = useState(250);
+  const startFooterHeightRef = React.useRef(250);
+
+  const footerResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        startFooterHeightRef.current = footerHeightRef.current;
+        setIsResizing(true);
+      },
+      onPanResponderMove: (e, gestureState) => {
+        const newHeight = Math.max(100, Math.min(800, startFooterHeightRef.current - gestureState.dy));
+        footerHeightRef.current = newHeight;
+        setFooterHeight(newHeight);
+      },
+      onPanResponderRelease: () => setIsResizing(false),
+      onPanResponderTerminate: () => setIsResizing(false),
+    })
+  ).current;
+
   const handleOpenDirectory = async () => {
     if (Platform.OS !== 'web') {
       Alert.alert('알림', '로컬 폴더 열기는 데스크탑 웹 브라우저 (Chrome, Edge 등) 환경에서 지원됩니다.');
@@ -511,6 +545,12 @@ export default function App() {
           return a.name.localeCompare(b.name);
         });
       }
+
+      const refreshFileSystem = async () => {
+        if (!dirHandle) return;
+        const topLevelItems = await scanLevel(dirHandle);
+        setFileSystemData(topLevelItems);
+      };
 
       const topLevelItems = await scanLevel(handle);
       setFileSystemData(topLevelItems);
@@ -638,19 +678,55 @@ export default function App() {
   const getRelativePath = () => `./${selectedFolder}/${selectedFile}`;
 
   const handleSaveToDisk = async (content: string, overrideFile?: string) => {
-    const targetFile = overrideFile || selectedFile;
-    if (!dirHandle || !targetFile) return false;
+    const curFile = overrideFile || (activePane === 1 ? selectedFile : selectedFile2);
+    if (!curFile || !dirHandle) return false;
+
     try {
-      if (Platform.OS === 'web') {
-        const fileHandle = await dirHandle.getFileHandle(targetFile, { create: false });
-        const writable = await fileHandle.createWritable();
-        await writable.write(content);
-        await writable.close();
-        return true;
+      const parts = curFile.split('/');
+      let currentHand = dirHandle;
+      for (let i = 0; i < parts.length - 1; i++) {
+        currentHand = await currentHand.getDirectoryHandle(parts[i]);
       }
+      const fileHand = await currentHand.getFileHandle(parts[parts.length - 1]);
+      const writable = await fileHand.createWritable();
+      await writable.write(content);
+      await writable.close();
+      return true;
+    } catch (err) {
+      console.error('Save to disk failed', err);
       return false;
-    } catch (e) {
-      console.error('Save to disk failed', e);
+    }
+  };
+
+  const handleSaveChatToFile = async (filename: string, content: string) => {
+    if (!dirHandle) return false;
+    try {
+      // If relative path starts with ./ or ../, adjust it
+      let targetPath = filename;
+      if (filename.startsWith('./')) targetPath = filename.slice(2);
+      
+      const parts = targetPath.split('/').filter(Boolean);
+      const name = parts.pop()!;
+      let currentHand = dirHandle;
+      
+      // Navigate to or create directories
+      for (const p of parts) {
+        currentHand = await currentHand.getDirectoryHandle(p, { create: true });
+      }
+
+      const fileHand = await currentHand.getFileHandle(name, { create: true });
+      const writable = await fileHand.createWritable();
+      await writable.write(content);
+      await writable.close();
+      
+      // Update local storage for immediate preview if the file is open
+      if (localFiles[targetPath] !== undefined) {
+        setLocalFiles(prev => ({ ...prev, [targetPath]: content }));
+      }
+      
+      return true;
+    } catch (err) {
+      console.error('Save chat to file failed', err);
       return false;
     }
   };
@@ -755,11 +831,11 @@ export default function App() {
 
     // Footer
     footer: {
-      height: 250, // Gemini Chat height
       borderTopWidth: 1,
       borderTopColor: colors.border,
       backgroundColor: colors.surface,
-      padding: 0, // GeminiChat adds its own padding
+      padding: 0,
+      position: 'relative',
     },
     terminalText: {
       color: '#A7F3D0',
@@ -1629,13 +1705,32 @@ export default function App() {
       </View>
 
       {/* FOOTER */}
-      <View style={s.footer}>
+      <View
+        {...footerResponder.panHandlers}
+        style={{
+          height: 8,
+          marginTop: -4,
+          backgroundColor: 'transparent',
+          cursor: 'ns-resize',
+          zIndex: 100,
+        } as any}
+      />
+      <View style={[s.footer, { height: footerHeight }]}>
         <GeminiChat 
           isDark={isDark} 
           apiKey={geminiApiKey}
           accessToken={googleAccessToken}
           currentContent={activePane === 1 ? editorContent : editorContent2}
           onOpenSettings={() => setShowGeminiSettings(true)}
+          onSaveChatToFile={handleSaveChatToFile}
+          model={selectedModel}
+          onModelChange={(m) => {
+            setSelectedModel(m);
+            setTempModel(m);
+            if (Platform.OS === 'web') localStorage.setItem('gemini_selected_model', m);
+          }}
+          models={availableModels}
+          bottomSpacing={24}
         />
         
         <View style={s.footerPath}>
@@ -1794,6 +1889,28 @@ export default function App() {
                     fontFamily: 'monospace'
                   }}
                 />
+              </View>
+
+              <View style={{ marginBottom: 20, padding: 12, backgroundColor: isDark ? '#121212' : '#F3F4F6', borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ fontSize: 13, color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>모델 선택</Text>
+                <select
+                  value={tempModel}
+                  onChange={(e) => setTempModel(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: `1px solid ${colors.border}`,
+                    backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                    color: isDark ? '#fff' : '#000',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  } as any}
+                >
+                  {availableModels.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
               </View>
 
               <View style={{ marginBottom: 20, padding: 12, backgroundColor: isDark ? '#121212' : '#F3F4F6', borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
