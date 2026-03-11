@@ -3,10 +3,15 @@ import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Platform
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { makeRedirectUri } from 'expo-auth-session';
 
 import Editor from '@/components/Editor';
-import Terminal from '@/components/Terminal';
+import GeminiChat from '@/components/GeminiChat';
 import Preview from '@/components/Preview';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function App() {
   const [editorContent, setEditorContent] = useState('# Markdown Explorer Project\n\n* 실제 작동하는 CodeMirror 기반 에디터입니다.\n* 여기서 타이핑하면 아래 Live Preview 에 반영됩니다.\n\n해봤는데 잘 동작하나요? 😊');
@@ -44,6 +49,65 @@ export default function App() {
   // Creation State
   const [creatingItem, setCreatingItem] = useState<{ parentPath: string, kind: 'file' | 'directory' } | null>(null);
   const [creationName, setCreationName] = useState('');
+
+  // Gemini State
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [googleClientId, setGoogleClientId] = useState('');
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
+  const [showGeminiSettings, setShowGeminiSettings] = useState(false);
+  const [tempApiKey, setTempApiKey] = useState('');
+  const [tempClientId, setTempClientId] = useState('');
+
+  // OAuth Request Hook
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: googleClientId,
+    scopes: [
+      'https://www.googleapis.com/auth/generative-language',
+      'https://www.googleapis.com/auth/drive.file',
+      'https://www.googleapis.com/auth/youtube.force-ssl'
+    ],
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { authentication } = response;
+      if (authentication?.accessToken) {
+        setGoogleAccessToken(authentication.accessToken);
+        if (Platform.OS === 'web') {
+           localStorage.setItem('google_access_token', authentication.accessToken);
+        }
+      }
+    }
+  }, [response]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const savedKey = localStorage.getItem('gemini_api_key');
+      const savedClientId = localStorage.getItem('google_client_id');
+      const savedToken = localStorage.getItem('google_access_token');
+      
+      if (savedKey) { setGeminiApiKey(savedKey); setTempApiKey(savedKey); }
+      if (savedClientId) { setGoogleClientId(savedClientId); setTempClientId(savedClientId); }
+      if (savedToken) { setGoogleAccessToken(savedToken); }
+    }
+  }, []);
+
+  const saveGeminiKey = () => {
+    setGeminiApiKey(tempApiKey);
+    setGoogleClientId(tempClientId);
+    if (Platform.OS === 'web') {
+      localStorage.setItem('gemini_api_key', tempApiKey);
+      localStorage.setItem('google_client_id', tempClientId);
+    }
+    setShowGeminiSettings(false);
+  };
+
+  const handleLogout = () => {
+    setGoogleAccessToken(null);
+    if (Platform.OS === 'web') {
+      localStorage.removeItem('google_access_token');
+    }
+  };
 
   const handleSelectFile = async (file: string, targetPane: 1 | 2 = activePane) => {
     const isImage = /\.(png|jpe?g|gif|webp)$/i.test(file);
@@ -691,11 +755,11 @@ export default function App() {
 
     // Footer
     footer: {
-      height: 120, // Terminal height
+      height: 250, // Gemini Chat height
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      backgroundColor: isDark ? '#000000' : '#1E1E1E', // Terminal look
-      padding: 12,
+      backgroundColor: colors.surface,
+      padding: 0, // GeminiChat adds its own padding
     },
     terminalText: {
       color: '#A7F3D0',
@@ -1566,7 +1630,13 @@ export default function App() {
 
       {/* FOOTER */}
       <View style={s.footer}>
-        <Terminal isDark={isDark} />
+        <GeminiChat 
+          isDark={isDark} 
+          apiKey={geminiApiKey}
+          accessToken={googleAccessToken}
+          currentContent={activePane === 1 ? editorContent : editorContent2}
+          onOpenSettings={() => setShowGeminiSettings(true)}
+        />
         
         <View style={s.footerPath}>
           <Text style={s.footerPathText}>/Users/alpha300uk/Documents/.../{selectedFolder}/{selectedFile}</Text>
@@ -1690,6 +1760,88 @@ export default function App() {
               </Pressable>
               <Pressable onPress={handleRenameFileSystem} style={{ backgroundColor: colors.primary, paddingVertical: 8, paddingHorizontal: 20, borderRadius: 6 }}>
                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>확인</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Gemini Settings Modal */}
+      {showGeminiSettings && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 10000 }]}>
+          <View style={{ backgroundColor: colors.surface, padding: 24, borderRadius: 12, width: 450, borderWidth: 1, borderColor: colors.border }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+              <Ionicons name="sparkles" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>인공지능(Gemini) 설정</Text>
+            </View>
+
+            <ScrollView style={{ maxHeight: 500 }}>
+              <View style={{ marginBottom: 20, padding: 12, backgroundColor: isDark ? '#121212' : '#F3F4F6', borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ fontSize: 13, color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>방법 1: API Key 방식 (추천)</Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 10 }}>가장 빠르고 간편합니다. [Google AI Studio](https://aistudio.google.com/)에서 발급받으세요.</Text>
+                <input 
+                  placeholder="AIzaSy..."
+                  value={tempApiKey}
+                  onChange={(e) => setTempApiKey(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: `1px solid ${colors.border}`,
+                    backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                    color: isDark ? '#fff' : '#000',
+                    fontSize: '12px',
+                    fontFamily: 'monospace'
+                  }}
+                />
+              </View>
+
+              <View style={{ marginBottom: 20, padding: 12, backgroundColor: isDark ? '#121212' : '#F3F4F6', borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ fontSize: 13, color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>방법 2: Google 로그인 방식</Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8 }}>유튜브, 드라이브 연동이 가능합니다. GCP에서 Web Client ID를 발급하여 등록하세요.</Text>
+                
+                <input 
+                  placeholder="OAuth Client ID 입력..."
+                  value={tempClientId}
+                  onChange={(e) => setTempClientId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: `1px solid ${colors.border}`,
+                    backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                    color: isDark ? '#fff' : '#000',
+                    fontSize: '12px',
+                    marginBottom: 10
+                  }}
+                />
+
+                {googleAccessToken ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#E1F5FE', padding: 8, borderRadius: 4 }}>
+                    <Ionicons name="checkmark-circle" size={16} color="#0288D1" style={{ marginRight: 6 }} />
+                    <Text style={{ color: '#0288D1', fontSize: 12, fontWeight: 'bold', flex: 1 }}>로그인됨</Text>
+                    <Pressable onPress={handleLogout}><Text style={{ color: '#EF4444', fontSize: 11 }}>로그아웃</Text></Pressable>
+                  </View>
+                ) : (
+                  <Pressable 
+                    disabled={!googleClientId && !tempClientId}
+                    onPress={() => promptAsync()}
+                    style={({ pressed }: any) => [
+                      { backgroundColor: '#4285F4', padding: 10, borderRadius: 4, alignItems: 'center', opacity: (!googleClientId && !tempClientId) ? 0.5 : (pressed ? 0.8 : 1) }
+                    ]}
+                  >
+                    <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Google로 로그인</Text>
+                  </Pressable>
+                )}
+              </View>
+            </ScrollView>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 12 }}>
+              <Pressable onPress={() => setShowGeminiSettings(false)} style={{ paddingVertical: 8, paddingHorizontal: 16 }}>
+                <Text style={{ color: colors.textMuted, fontWeight: 'bold' }}>취소</Text>
+              </Pressable>
+              <Pressable onPress={saveGeminiKey} style={{ backgroundColor: colors.primary, paddingVertical: 8, paddingHorizontal: 20, borderRadius: 6 }}>
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>설정 저장</Text>
               </Pressable>
             </View>
           </View>
