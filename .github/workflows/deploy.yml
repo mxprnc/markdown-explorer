@@ -50,6 +50,7 @@ jobs:
         uses: expo/expo-github-action@v8
         with:
           expo-version: latest
+          eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Export Web
@@ -65,24 +66,23 @@ jobs:
 
       - name: Trigger EAS Build (Mobile)
         run: |
-          # EAS builds run in the cloud. They won't be attached as files here directly 
-          # but the build logs will link to the binaries.
-          eas build --platform all --profile production --non-interactive --no-wait
+          # EAS builds run in the cloud.
+          npx eas build --platform all --profile production --non-interactive --no-wait
 
   # 3. Build Desktop (MacOS, Windows, Linux)
   # NOTE: This assumes a desktop packaging setup (e.g., Electron Forge/Builder)
   build-desktop:
     needs: create-release
     strategy:
+      fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
         include:
           - os: macos-latest
-            artifact_name: desktop-macos.zip
+            platform_flag: "-m"
           - os: windows-latest
-            artifact_name: desktop-windows.zip
+            platform_flag: "-w"
           - os: ubuntu-latest
-            artifact_name: desktop-linux.zip
+            platform_flag: "-l"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -92,15 +92,10 @@ jobs:
           cache: 'npm'
       - run: npm ci
 
-      - name: Export Web for Desktop
-        run: npx expo export --platform web
-
       - name: Package Desktop
         shell: bash
         run: |
-          npm run build:desktop -- -mlw
-          # Note: -mlw builds for macOS, Linux, and Windows
-          # The files will be in dist-desktop/
+          npm run build:desktop -- ${{ matrix.platform_flag }}
 
       - name: Upload Desktop Artifact
         uses: softprops/action-gh-release@v1

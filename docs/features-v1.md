@@ -236,3 +236,18 @@
   * **사이드바 드래그 지원:** Explorer 트리의 파일 항목에 HTML5 Drag API를 적용하여 드래그 가능한 엔티티로 확장.
   * **드롭 존(Drop Zone) 시각화:** 파일을 끌어올 때 각 미리보기/에디터 창 상단에 하이라이트 레이어를 표시하여 드롭 위치 가이드 제공.
   * **드래그 투 스플릿:** 에디터 모드와 동일하게 탐색기 파일을 화면 우측 끝으로 드래그하면 자동으로 분할 모드가 실행되며 새 창에서 파일이 열리는 워크플로우 통합.
+
+## 29. 멀티 플랫폼 전체 출시 (Full Multi-Platform Deployment)
+* **목표:** iOS, Android 모바일 앱뿐만 아니라 Web, Desktop(MacOS, Windows, Linux)까지 모든 플랫폼을 위한 패키지를 한 번에 빌드하고 GitHub에 자동으로 배포.
+* **내용 & 해결방식:**
+  * **EAS Build & Electron:** 모바일은 EAS(Expo Application Services)를, 데스크톱은 Electron + `electron-builder` 조합을 사용하여 전용 설치 파일(`.dmg`, `.exe`, `.AppImage`) 생성 체계 구축.
+  * **GitHub Actions 자동화:** `workflow_dispatch`를 통해 수동으로 트리거되는 `deploy.yml` 워크플로우를 작성. 모든 플랫폼의 빌드 결과물을 GitHub Release Draft에 한데 모아 업로드하여 관리 편의성 극대화.
+  * **CI 환경 최적화:** 최신 노드 환경 호환성을 위해 GitHub Actions의 Node.js 버전을 22로 상향 조정.
+
+## 30. KaTeX 빌드 최적화 및 에셋 로딩 방식 변경 (CDN 도입)
+* **목표:** Expo Web 빌드 시 발생하는 내부 폰트 에셋 로딩 오류(`Importing local resources in CSS`)를 해결하고 빌드 안정성 확보.
+* **내용 & 해결방식:**
+  * **CDN 전환:** 기존 `node_modules` 내부의 KaTeX CSS를 직접 import하던 방식에서, `app/+html.tsx`를 통해 공식 CDN 경로(`jsdelivr`)에서 스타일시트를 직접 불러오는 방식으로 전환.
+  * **빌드 오류 원천 차단:** Metro 번들러가 웹용 CSS 내부의 font 파일을 직접 처리하지 않게 함으로써 빌드 중단 현상을 해결.
+* **참고 사항 (네트워크 의존성):**
+  * KaTeX 수식 스타일을 CDN으로 불러오기 때문에, **앱 실행 시점에 인터넷 연결이 반드시 필요**합니다. 오프라인 환경에서는 수식의 폰트나 간격이 깨져 보일 수 있습니다. (추후 완전 오프라인 지원을 위해서는 로컬 폰트 파일을 Metro 에셋 파이프라인 외부로 분리하는 추가 작업이 필요할 수 있습니다.)
