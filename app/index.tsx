@@ -788,6 +788,18 @@ export default function App() {
     else Alert.alert('복사됨', `상대 경로가 복사되었습니다:\n${p}`);
   };
 
+  const copyRootAbsolutePath = async () => {
+    const p = `${rootPath}/${selectedFolder}`;
+    await Clipboard.setStringAsync(p);
+    if (Platform.OS === 'web') window.alert(`루트 폴더 절대 경로가 복사되었습니다:\n${p}`);
+  };
+
+  const copyRootRelativePath = async () => {
+    const p = `./`;
+    await Clipboard.setStringAsync(p);
+    if (Platform.OS === 'web') window.alert(`루트 폴더 상대 경로가 복사되었습니다:\n${p}`);
+  };
+
   // Determine current active scheme
   const currentScheme = themeMode === 'system' ? systemScheme : themeMode;
   const isDark = currentScheme === 'dark';
@@ -1348,8 +1360,8 @@ export default function App() {
         <View style={s.headerLeft}>
           <Text style={s.logoText}>Mark Explorer</Text>
           <Text style={s.headerTitle}>{rootPath}/{selectedFolder}</Text>
-          <Pressable onPress={copyRelativePath} style={{ padding: 4, marginHorizontal: 4 }}><Text style={s.actionIcon}>@</Text></Pressable>
-          <Pressable onPress={copyAbsolutePath} style={{ padding: 4, marginHorizontal: 4 }}>
+          <Pressable onPress={copyRootRelativePath} style={{ padding: 4, marginHorizontal: 4 }}><Text style={s.actionIcon}>@</Text></Pressable>
+          <Pressable onPress={copyRootAbsolutePath} style={{ padding: 4, marginHorizontal: 4 }}>
             <Ionicons name="copy-outline" size={18} color={colors.primary} />
           </Pressable>
           <Pressable onPress={toggleTheme}>
