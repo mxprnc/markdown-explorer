@@ -2,7 +2,7 @@ import React from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
-export default function Preview({ content, isDark }: { content: string, isDark: boolean }) {
+export default function Preview({ content, isDark, resolveImage }: { content: string, isDark: boolean, resolveImage?: (src: string) => Promise<string> }) {
   const styles = StyleSheet.create({
     body: { color: isDark ? '#F3F4F6' : '#121212', fontSize: 14, lineHeight: 24 },
     heading1: { color: isDark ? '#FFFFFF' : '#000000', marginTop: 16, marginBottom: 8 },

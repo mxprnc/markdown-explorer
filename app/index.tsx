@@ -134,6 +134,7 @@ export default function App() {
     }
     setShowGeminiSettings(false);
   };
+
   const handleLogout = () => {
     setGoogleAccessToken(null);
     if (Platform.OS === 'web') {
@@ -626,23 +627,45 @@ export default function App() {
     }
   };
 
-  const resolveImage = async (relativePath: string) => {
+  const resolveImage = async (relativePath: string, currentFilePath?: string) => {
     if (!dirHandle) return relativePath;
     try {
       if (relativePath.startsWith('http') || relativePath.startsWith('data:') || relativePath.startsWith('blob:')) {
         return relativePath;
       }
-      let cleaned = relativePath;
-      if (cleaned.startsWith('./')) {
-         cleaned = cleaned.slice(2);
+      
+      let fullPath = relativePath;
+
+      // If it's a relative path (doesn't start with /) and we have a current file context
+      if (!relativePath.startsWith('/') && currentFilePath) {
+        const fileDir = currentFilePath.split('/').slice(0, -1).join('/');
+        if (fileDir) {
+          fullPath = `${fileDir}/${relativePath}`;
+        }
+      } else if (relativePath.startsWith('/')) {
+        // Absolute path from the project root
+        fullPath = relativePath.slice(1);
       }
-      const parts = cleaned.split('/').filter(Boolean);
-      if (parts.length === 0) return relativePath;
+
+      // Handle .. and . in the path
+      const parts = fullPath.split('/').filter(Boolean);
+      const stack: string[] = [];
+      for (const part of parts) {
+        if (part === '.') continue;
+        if (part === '..') {
+          stack.pop();
+        } else {
+          stack.push(part);
+        }
+      }
+
+      if (stack.length === 0) return relativePath;
+
       let currentHandle = dirHandle;
-      for (let i = 0; i < parts.length - 1; i++) {
-        currentHandle = await currentHandle.getDirectoryHandle(parts[i]);
+      for (let i = 0; i < stack.length - 1; i++) {
+        currentHandle = await currentHandle.getDirectoryHandle(stack[i]);
       }
-      const fileHandle = await currentHandle.getFileHandle(parts[parts.length - 1]);
+      const fileHandle = await currentHandle.getFileHandle(stack[stack.length - 1]);
       const file = await fileHandle.getFile();
       return URL.createObjectURL(file);
     } catch (err) {
@@ -1551,7 +1574,11 @@ export default function App() {
                 {/\.(png|jpe?g|gif|webp)$/i.test(selectedFile) ? (
                   <ImageViewer uri={localFiles[selectedFile]} name={selectedFile} />
                 ) : (
-                  <Preview content={localFiles[selectedFile] || ''} isDark={isDark} />
+                  <Preview 
+                    content={localFiles[selectedFile] || ''} 
+                    isDark={isDark} 
+                    resolveImage={(src) => resolveImage(src, selectedFile)}
+                  />
                 )}
               </ScrollView>
             </View>
@@ -1650,7 +1677,7 @@ export default function App() {
                           if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
                         }} 
                         isDark={isDark}
-                        resolveImage={resolveImage}
+                        resolveImage={(src) => resolveImage(src, selectedFile)}
                         onPasteImage={handlePasteImage}
                         onRenameImage={handleRenameImage}
                       />
@@ -1709,7 +1736,7 @@ export default function App() {
                             if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
                           }} 
                           isDark={isDark}
-                          resolveImage={resolveImage}
+                          resolveImage={(src) => resolveImage(src, selectedFile2)}
                           onPasteImage={handlePasteImage}
                           onRenameImage={handleRenameImage}
                         />

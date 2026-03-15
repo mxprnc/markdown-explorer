@@ -36,7 +36,7 @@ function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {
   return <div className="mermaid-diagram" dangerouslySetInnerHTML={{ __html: svg }} style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }} />;
 }
 
-export default function Preview({ content, isDark }: { content: string, isDark: boolean }) {
+export default function Preview({ content, isDark, resolveImage }: { content: string, isDark: boolean, resolveImage?: (src: string) => Promise<string> }) {
   const color = isDark ? '#F3F4F6' : '#121212';
   return (
     <div className="markdown-preview" style={{ padding: '24px', color, fontSize: '14px', lineHeight: '1.6', fontFamily: 'Inter, sans-serif' }}>
@@ -130,6 +130,7 @@ export default function Preview({ content, isDark }: { content: string, isDark: 
           },
           img(props: any) {
             const { src, alt, node, ...rest } = props;
+            const [resolvedSrc, setResolvedSrc] = useState(src);
             let finalAlt = alt || '';
             let widthStyle = '100%';
             
@@ -138,10 +139,18 @@ export default function Preview({ content, isDark }: { content: string, isDark: 
               finalAlt = parts[0];
               widthStyle = parts[1];
             }
+
+            useEffect(() => {
+              if (src && resolveImage) {
+                resolveImage(src).then(url => {
+                  if (url) setResolvedSrc(url);
+                });
+              }
+            }, [src, resolveImage]);
             
             return (
               <img 
-                src={src} 
+                src={resolvedSrc} 
                 alt={finalAlt} 
                 style={{ maxWidth: '100%', width: widthStyle, borderRadius: '8px', display: 'block', margin: '16px 0' }} 
                 {...rest} 
