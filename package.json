@@ -2,6 +2,8 @@
   "name": "project-markdown-explorer",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "description": "A comprehensive Markdown Explorer built with Expo and Electron",
+  "author": "alpha300uk",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -18,10 +20,12 @@
     "directories": {
       "output": "dist-desktop"
     },
+    "extraMetadata": {
+      "main": "electron-main.js"
+    },
     "files": [
       "dist/**/*",
-      "electron-main.js",
-      "package.json"
+      "electron-main.js"
     ],
     "mac": {
       "target": "dmg"
