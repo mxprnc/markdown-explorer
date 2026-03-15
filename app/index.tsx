@@ -59,6 +59,8 @@ export default function App() {
   const [tempClientId, setTempClientId] = useState('');
   const [selectedModel, setSelectedModel] = useState('gemini-2.5-pro');
   const [tempModel, setTempModel] = useState('gemini-2.5-pro');
+  const [rootPath, setRootPath] = useState('~/Documents/toy-projects');
+  const [tempRootPath, setTempRootPath] = useState('~/Documents/toy-projects');
 
   const availableModels = [
     { label: 'Gemini 3.1 Pro (Reasoning)', value: 'gemini-3.1-pro-preview' },
@@ -109,6 +111,12 @@ export default function App() {
         setSelectedModel('gemini-2.5-pro');
         setTempModel('gemini-2.5-pro');
       }
+
+      const savedRootPath = localStorage.getItem('markdown_explorer_root_path');
+      if (savedRootPath) {
+        setRootPath(savedRootPath);
+        setTempRootPath(savedRootPath);
+      }
     }
   }, []);
 
@@ -116,10 +124,13 @@ export default function App() {
     setGeminiApiKey(tempApiKey);
     setGoogleClientId(tempClientId);
     setSelectedModel(tempModel);
+    setSelectedModel(tempModel);
+    setRootPath(tempRootPath);
     if (Platform.OS === 'web') {
       localStorage.setItem('gemini_api_key', tempApiKey);
       localStorage.setItem('google_client_id', tempClientId);
       localStorage.setItem('gemini_selected_model', tempModel);
+      localStorage.setItem('markdown_explorer_root_path', tempRootPath);
     }
     setShowGeminiSettings(false);
   };
@@ -683,7 +694,7 @@ export default function App() {
     }
   };
 
-  const getAbsolutePath = () => `/Users/alpha300uk/Documents/toy-projects/${selectedFolder}/${selectedFile}`;
+  const getAbsolutePath = () => `${rootPath}/${selectedFolder}/${selectedFile}`;
   const getRelativePath = () => `./${selectedFolder}/${selectedFile}`;
 
   const handleSaveToDisk = async (content: string, overrideFile?: string) => {
@@ -1261,7 +1272,7 @@ export default function App() {
       <View style={s.header}>
         <View style={s.headerLeft}>
           <Text style={s.logoText}>Mark Explorer</Text>
-          <Text style={s.headerTitle}>~/Documents/toy-projects/markdown-explorer</Text>
+          <Text style={s.headerTitle}>{rootPath}/{selectedFolder}</Text>
           <Pressable onPress={copyAbsolutePath} style={{ padding: 4, marginHorizontal: 4 }}><Text style={s.actionIcon}>@</Text></Pressable>
           <Pressable onPress={copyRelativePath} style={{ padding: 4, marginHorizontal: 4 }}>
             <Ionicons name="copy-outline" size={18} color={colors.primary} />
@@ -1754,7 +1765,7 @@ export default function App() {
         />
         
         <View style={s.footerPath}>
-          <Text style={s.footerPathText}>/Users/alpha300uk/Documents/.../{selectedFolder}/{selectedFile}</Text>
+          <Text style={s.footerPathText}>{rootPath}/{selectedFolder}/{selectedFile}</Text>
         </View>
       </View>
       {/* Context Menu Overlay */}
@@ -1931,6 +1942,26 @@ export default function App() {
                     <option key={m.value} value={m.value}>{m.label}</option>
                   ))}
                 </select>
+              </View>
+
+              <View style={{ marginBottom: 20, padding: 12, backgroundColor: isDark ? '#121212' : '#F3F4F6', borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ fontSize: 13, color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>기본 경로 (Base Path)</Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8 }}>파일 시스템의 절대 경로 베이스를 지정합니다.</Text>
+                <input 
+                  placeholder="/Users/.../workspace"
+                  value={tempRootPath}
+                  onChange={(e) => setTempRootPath(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: `1px solid ${colors.border}`,
+                    backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                    color: isDark ? '#fff' : '#000',
+                    fontSize: '12px',
+                    fontFamily: 'monospace'
+                  }}
+                />
               </View>
 
               <View style={{ marginBottom: 20, padding: 12, backgroundColor: isDark ? '#121212' : '#F3F4F6', borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>

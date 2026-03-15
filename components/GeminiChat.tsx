@@ -209,7 +209,7 @@ ${userMsg}`;
        </View>
 
         {mode === 'archive' && (
-          <View style={[styles.archiveHeader, { borderBottomColor: colors.border, zIndex: 100 }]}>
+          <View style={[styles.archiveHeader, { borderBottomColor: colors.border, overflow: 'visible' }]}>
             <Text style={[styles.archiveLabel, { color: colors.textMuted }]}>archiving:</Text>
             <View style={{ flex: 1, position: 'relative' }}>
               <TextInput 
