@@ -67,7 +67,7 @@ jobs:
       - name: Trigger EAS Build (Mobile)
         run: |
           # EAS builds run in the cloud.
-          npx eas build --platform all --profile production --non-interactive --no-wait
+          eas build --platform all --profile production --non-interactive --no-wait
 
   # 3. Build Desktop (MacOS, Windows, Linux)
   # NOTE: This assumes a desktop packaging setup (e.g., Electron Forge/Builder)
