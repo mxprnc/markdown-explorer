@@ -1080,6 +1080,28 @@ export default function App() {
               
               {hoveredItemPath === item.path && (
                 <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <Pressable 
+                    onPress={async (e) => {
+                      e.stopPropagation();
+                      const p = `./${item.path}`;
+                      await Clipboard.setStringAsync(p);
+                      if (Platform.OS === 'web') window.alert(`상대 경로가 복사되었습니다:\n${p}`);
+                    }}
+                    style={{ padding: 2 }}
+                  >
+                    <Text style={{ color: colors.primary, fontSize: 12, fontWeight: 'bold' }}>@</Text>
+                  </Pressable>
+                  <Pressable 
+                    onPress={async (e) => {
+                      e.stopPropagation();
+                      const p = `${rootPath}/${selectedFolder}/${item.path}`;
+                      await Clipboard.setStringAsync(p);
+                      if (Platform.OS === 'web') window.alert(`절대 경로가 복사되었습니다:\n${p}`);
+                    }}
+                    style={{ padding: 2 }}
+                  >
+                    <Ionicons name="copy-outline" size={12} color={colors.primary} />
+                  </Pressable>
                   <Pressable onPress={(e) => { e.stopPropagation(); setCreatingItem({ parentPath: item.path, kind: 'file' }); setCreationName(''); }}>
                     <Ionicons name="document-outline" size={14} color={colors.primary} />
                   </Pressable>
@@ -1104,12 +1126,15 @@ export default function App() {
                 e.preventDefault();
                 setContextMenu({ x: e.clientX, y: e.clientY, visible: true, item });
               }
-            }
+            },
+            onMouseEnter: () => setHoveredItemPath(item.path),
+            onMouseLeave: () => setHoveredItemPath(null),
           } as any)}
         >
           <View style={[
             { paddingLeft: 30 + depth * 12, paddingVertical: 6, paddingRight: 12, flexDirection: 'row', alignItems: 'center' },
-            isSelected && { backgroundColor: isDark ? '#2D3748' : '#EFF6FF', borderLeftWidth: 3, borderLeftColor: colors.primary, paddingLeft: 27 + depth * 12 }
+            isSelected && { backgroundColor: isDark ? '#2D3748' : '#EFF6FF', borderLeftWidth: 3, borderLeftColor: colors.primary, paddingLeft: 27 + depth * 12 },
+            hoveredItemPath === item.path && !isSelected && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
           ]}>
             <Text 
               numberOfLines={1} 
@@ -1120,6 +1145,33 @@ export default function App() {
             >
               {isImage ? '🖼️' : '📄'} {item.name}
             </Text>
+
+            {hoveredItemPath === item.path && (
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <Pressable 
+                  onPress={async (e) => {
+                    e.stopPropagation();
+                    const p = `./${item.path}`;
+                    await Clipboard.setStringAsync(p);
+                    if (Platform.OS === 'web') window.alert(`상대 경로가 복사되었습니다:\n${p}`);
+                  }}
+                  style={{ padding: 2 }}
+                >
+                  <Text style={{ color: colors.primary, fontSize: 12, fontWeight: 'bold' }}>@</Text>
+                </Pressable>
+                <Pressable 
+                  onPress={async (e) => {
+                    e.stopPropagation();
+                    const p = `${rootPath}/${selectedFolder}/${item.path}`;
+                    await Clipboard.setStringAsync(p);
+                    if (Platform.OS === 'web') window.alert(`절대 경로가 복사되었습니다:\n${p}`);
+                  }}
+                  style={{ padding: 2 }}
+                >
+                  <Ionicons name="copy-outline" size={12} color={colors.primary} />
+                </Pressable>
+              </View>
+            )}
           </View>
         </Pressable>
       );
@@ -1273,8 +1325,8 @@ export default function App() {
         <View style={s.headerLeft}>
           <Text style={s.logoText}>Mark Explorer</Text>
           <Text style={s.headerTitle}>{rootPath}/{selectedFolder}</Text>
-          <Pressable onPress={copyAbsolutePath} style={{ padding: 4, marginHorizontal: 4 }}><Text style={s.actionIcon}>@</Text></Pressable>
-          <Pressable onPress={copyRelativePath} style={{ padding: 4, marginHorizontal: 4 }}>
+          <Pressable onPress={copyRelativePath} style={{ padding: 4, marginHorizontal: 4 }}><Text style={s.actionIcon}>@</Text></Pressable>
+          <Pressable onPress={copyAbsolutePath} style={{ padding: 4, marginHorizontal: 4 }}>
             <Ionicons name="copy-outline" size={18} color={colors.primary} />
           </Pressable>
           <Pressable onPress={toggleTheme}>
@@ -1414,7 +1466,29 @@ export default function App() {
                           </Text>
                           
                           {hoveredItemPath === item.path && (
-                            <View style={{ position: 'absolute', right: 8, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ position: 'absolute', right: 8, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Pressable 
+                                onPress={async (e) => {
+                                  e.stopPropagation();
+                                  const p = `./${item.path}`;
+                                  await Clipboard.setStringAsync(p);
+                                  if (Platform.OS === 'web') window.alert(`상대 경로가 복사되었습니다:\n${p}`);
+                                }}
+                                style={{ padding: 6 }}
+                              >
+                                <Text style={{ color: colors.primary, fontSize: 14, fontWeight: 'bold' }}>@</Text>
+                              </Pressable>
+                              <Pressable 
+                                onPress={async (e) => {
+                                  e.stopPropagation();
+                                  const p = `${rootPath}/${selectedFolder}/${item.path}`;
+                                  await Clipboard.setStringAsync(p);
+                                  if (Platform.OS === 'web') window.alert(`절대 경로가 복사되었습니다:\n${p}`);
+                                }}
+                                style={{ padding: 6 }}
+                              >
+                                <Ionicons name="copy-outline" size={14} color={colors.primary} />
+                              </Pressable>
                               <Pressable 
                                 onPress={(e) => {
                                   e.stopPropagation();
@@ -1822,6 +1896,37 @@ export default function App() {
                 <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
               </>
             )}
+            <Pressable 
+              onPress={async () => {
+                setContextMenu({ ...contextMenu, visible: false });
+                const p = `./${contextMenu.item?.path}`;
+                await Clipboard.setStringAsync(p);
+                if (Platform.OS === 'web') window.alert(`상대 경로가 복사되었습니다:\n${p}`);
+              }}
+              style={({ hovered }: any) => [
+                { paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },
+                hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
+              ]}
+            >
+              <Text style={{ color: colors.text, fontSize: 13, marginRight: 10, width: 16, textAlign: 'center', fontWeight: 'bold' }}>@</Text>
+              <Text style={{ color: colors.text, fontSize: 13 }}>상대 경로 복사</Text>
+            </Pressable>
+            <Pressable 
+              onPress={async () => {
+                setContextMenu({ ...contextMenu, visible: false });
+                const p = `${rootPath}/${selectedFolder}/${contextMenu.item?.path}`;
+                await Clipboard.setStringAsync(p);
+                if (Platform.OS === 'web') window.alert(`절대 경로가 복사되었습니다:\n${p}`);
+              }}
+              style={({ hovered }: any) => [
+                { paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },
+                hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
+              ]}
+            >
+              <Ionicons name="copy-outline" size={16} color={colors.text} style={{ marginRight: 10 }} />
+              <Text style={{ color: colors.text, fontSize: 13 }}>절대 경로 복사</Text>
+            </Pressable>
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
             <Pressable 
               onPress={() => {
                 setContextMenu({ ...contextMenu, visible: false });
