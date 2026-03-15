@@ -487,21 +487,51 @@ export default function App() {
   const startLeftWidthRef = React.useRef(250);
   const [isResizing, setIsResizing] = useState(false);
 
+  const leftPaneRafRef = React.useRef<number | null>(null);
   const leftPaneResponder = React.useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
         startLeftWidthRef.current = leftPaneWidthRef.current;
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = 'none';
+           // @ts-ignore
+           document.body.style.cursor = 'col-resize';
+        }
         setIsResizing(true);
       },
       onPanResponderMove: (e, gestureState) => {
         const newWidth = Math.max(150, Math.min(800, startLeftWidthRef.current + gestureState.dx));
-        leftPaneWidthRef.current = newWidth;
-        setLeftPaneWidth(newWidth);
+        if (newWidth !== leftPaneWidthRef.current) {
+          leftPaneWidthRef.current = newWidth;
+          if (Platform.OS === 'web') {
+            if (leftPaneRafRef.current) cancelAnimationFrame(leftPaneRafRef.current);
+            leftPaneRafRef.current = requestAnimationFrame(() => {
+              const el = document.getElementById('explorer-pane');
+              if (el) el.style.width = newWidth + 'px';
+            });
+          }
+        }
       },
-      onPanResponderRelease: () => setIsResizing(false),
-      onPanResponderTerminate: () => setIsResizing(false),
+      onPanResponderRelease: () => {
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = '';
+           document.body.style.cursor = '';
+        }
+        setIsResizing(false);
+        setLeftPaneWidth(leftPaneWidthRef.current);
+        if (leftPaneRafRef.current) cancelAnimationFrame(leftPaneRafRef.current);
+      },
+      onPanResponderTerminate: () => {
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = '';
+           document.body.style.cursor = '';
+        }
+        setIsResizing(false);
+        setLeftPaneWidth(leftPaneWidthRef.current);
+        if (leftPaneRafRef.current) cancelAnimationFrame(leftPaneRafRef.current);
+      },
     })
   ).current;
 
@@ -509,21 +539,51 @@ export default function App() {
   const [tocPaneWidth, setTocPaneWidth] = useState(220);
   const startTocWidthRef = React.useRef(220);
 
+  const tocPaneRafRef = React.useRef<number | null>(null);
   const tocPaneResponder = React.useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
         startTocWidthRef.current = tocPaneWidthRef.current;
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = 'none';
+           // @ts-ignore
+           document.body.style.cursor = 'col-resize';
+        }
         setIsResizing(true);
       },
       onPanResponderMove: (e, gestureState) => {
         const newWidth = Math.max(150, Math.min(800, startTocWidthRef.current - gestureState.dx));
-        tocPaneWidthRef.current = newWidth;
-        setTocPaneWidth(newWidth);
+        if (newWidth !== tocPaneWidthRef.current) {
+          tocPaneWidthRef.current = newWidth;
+          if (Platform.OS === 'web') {
+            if (tocPaneRafRef.current) cancelAnimationFrame(tocPaneRafRef.current);
+            tocPaneRafRef.current = requestAnimationFrame(() => {
+              const el = document.getElementById('toc-pane');
+              if (el) el.style.width = newWidth + 'px';
+            });
+          }
+        }
       },
-      onPanResponderRelease: () => setIsResizing(false),
-      onPanResponderTerminate: () => setIsResizing(false),
+      onPanResponderRelease: () => {
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = '';
+           document.body.style.cursor = '';
+        }
+        setIsResizing(false);
+        setTocPaneWidth(tocPaneWidthRef.current);
+        if (tocPaneRafRef.current) cancelAnimationFrame(tocPaneRafRef.current);
+      },
+      onPanResponderTerminate: () => {
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = '';
+           document.body.style.cursor = '';
+        }
+        setIsResizing(false);
+        setTocPaneWidth(tocPaneWidthRef.current);
+        if (tocPaneRafRef.current) cancelAnimationFrame(tocPaneRafRef.current);
+      },
     })
   ).current;
 
@@ -531,21 +591,51 @@ export default function App() {
   const [middlePaneWidth, setMiddlePaneWidth] = useState(300);
   const startMiddleWidthRef = React.useRef(300);
 
+  const middlePaneRafRef = React.useRef<number | null>(null);
   const middlePaneResponder = React.useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
         startMiddleWidthRef.current = middlePaneWidthRef.current;
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = 'none';
+           // @ts-ignore
+           document.body.style.cursor = 'col-resize';
+        }
         setIsResizing(true);
       },
       onPanResponderMove: (e, gestureState) => {
         const newWidth = Math.max(150, Math.min(800, startMiddleWidthRef.current + gestureState.dx));
-        middlePaneWidthRef.current = newWidth;
-        setMiddlePaneWidth(newWidth);
+        if (newWidth !== middlePaneWidthRef.current) {
+          middlePaneWidthRef.current = newWidth;
+          if (Platform.OS === 'web') {
+            if (middlePaneRafRef.current) cancelAnimationFrame(middlePaneRafRef.current);
+            middlePaneRafRef.current = requestAnimationFrame(() => {
+              const el = document.getElementById('pane-1');
+              if (el) el.style.width = newWidth + 'px';
+            });
+          }
+        }
       },
-      onPanResponderRelease: () => setIsResizing(false),
-      onPanResponderTerminate: () => setIsResizing(false),
+      onPanResponderRelease: () => {
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = '';
+           document.body.style.cursor = '';
+        }
+        setIsResizing(false);
+        setMiddlePaneWidth(middlePaneWidthRef.current);
+        if (middlePaneRafRef.current) cancelAnimationFrame(middlePaneRafRef.current);
+      },
+      onPanResponderTerminate: () => {
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = '';
+           document.body.style.cursor = '';
+        }
+        setIsResizing(false);
+        setMiddlePaneWidth(middlePaneWidthRef.current);
+        if (middlePaneRafRef.current) cancelAnimationFrame(middlePaneRafRef.current);
+      },
     })
   ).current;
 
@@ -553,21 +643,51 @@ export default function App() {
   const [footerHeight, setFooterHeight] = useState(250);
   const startFooterHeightRef = React.useRef(250);
 
+  const footerRafRef = React.useRef<number | null>(null);
   const footerResponder = React.useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
         startFooterHeightRef.current = footerHeightRef.current;
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = 'none';
+           // @ts-ignore
+           document.body.style.cursor = 'ns-resize';
+        }
         setIsResizing(true);
       },
       onPanResponderMove: (e, gestureState) => {
         const newHeight = Math.max(100, Math.min(800, startFooterHeightRef.current - gestureState.dy));
-        footerHeightRef.current = newHeight;
-        setFooterHeight(newHeight);
+        if (newHeight !== footerHeightRef.current) {
+          footerHeightRef.current = newHeight;
+          if (Platform.OS === 'web') {
+            if (footerRafRef.current) cancelAnimationFrame(footerRafRef.current);
+            footerRafRef.current = requestAnimationFrame(() => {
+              const el = document.getElementById('gemini-footer');
+              if (el) el.style.height = newHeight + 'px';
+            });
+          }
+        }
       },
-      onPanResponderRelease: () => setIsResizing(false),
-      onPanResponderTerminate: () => setIsResizing(false),
+      onPanResponderRelease: () => {
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = '';
+           document.body.style.cursor = '';
+        }
+        setIsResizing(false);
+        setFooterHeight(footerHeightRef.current);
+        if (footerRafRef.current) cancelAnimationFrame(footerRafRef.current);
+      },
+      onPanResponderTerminate: () => {
+        if (Platform.OS === 'web') {
+           document.body.style.userSelect = '';
+           document.body.style.cursor = '';
+        }
+        setIsResizing(false);
+        setFooterHeight(footerHeightRef.current);
+        if (footerRafRef.current) cancelAnimationFrame(footerRafRef.current);
+      },
     })
   ).current;
 
@@ -1356,9 +1476,7 @@ export default function App() {
             onMouseEnter: () => setHoveredItemPath(item.path),
             onMouseLeave: () => setHoveredItemPath(null),
           } as any)}
-        >
-          {fileContent}
-        </Pressable>
+        >{fileContent}</Pressable>
       );
     });
 
@@ -1451,9 +1569,7 @@ export default function App() {
           <Pressable onPress={handleReset} style={{ padding: 4, marginLeft: 8 }}>
             <Ionicons name="refresh-outline" size={20} color={colors.textMuted} />
           </Pressable>
-          <Text style={{ color: colors.textMuted, fontSize: 11, marginLeft: 12 }}>
-            (마우스 드래그로 이동 가능)
-          </Text>
+          <Text style={{ color: colors.textMuted, fontSize: 11, marginLeft: 12 }}>(마우스 드래그로 이동 가능)</Text>
         </View>
 
         {/* Image Container */}
@@ -1483,28 +1599,17 @@ export default function App() {
             transition: isDragging ? 'none' : 'transform 0.2s ease-out',
             transform: `translate(${pos.x}px, ${pos.y}px) scale(${zoom})`,
             transformOrigin: 'center center'
-          }}>
-            <Text style={{ color: colors.textMuted, fontSize: 11, marginBottom: 12, fontFamily: fontFamilyCode }}>{name}</Text>
-            <img 
+          }}><Text style={{ color: colors.textMuted, fontSize: 11, marginBottom: 12, fontFamily: fontFamilyCode }}>{name}</Text><img 
               src={uri} 
               alt={name} 
               draggable="false"
-              style={{ 
-                maxWidth: 'none', 
-                maxHeight: '80vh', 
-                border: `1px solid ${colors.border}`, 
-                borderRadius: 4,
-                userSelect: 'none'
-              }} 
-            />
-          </div>
-        </div>
-      </View>
+              style={{ maxWidth: 'none', maxHeight: '80vh', border: `1px solid ${colors.border}`, borderRadius: 4, userSelect: 'none' }} 
+            /></div></div></View>
     );
   };
 
   const renderTOC = () => (
-    <View style={[s.paneTOC, { width: tocPaneWidth }]}>
+    <View nativeID="toc-pane" id="toc-pane" style={[s.paneTOC, { width: tocPaneWidth }]}>
       <View style={[s.paneHeader, { borderBottomWidth: 1, borderBottomColor: colors.border }]}><Text style={s.paneTitle}>목차 (TOC)</Text></View>
       <ScrollView style={{ flex: 1 }}>
         {tocList.length === 0 ? (
@@ -1541,7 +1646,7 @@ export default function App() {
   );
 
   return (
-    <View style={[s.container, { userSelect: isResizing ? 'none' : 'auto' } as any]}>
+    <View nativeID="main-container" style={s.container}>
       {/* HEADER */}
       <View style={s.header}>
         <View style={s.headerLeft}>
@@ -1565,7 +1670,7 @@ export default function App() {
       {/* BODY */}
       <View style={s.body}>
         {/* PANE 1: Directory List (Explorer 1) */}
-        <View style={[s.paneLeft, { width: leftPaneWidth }]}>
+        <View nativeID="explorer-pane" id="explorer-pane" style={[s.paneLeft, { width: leftPaneWidth }]}>
           <View style={s.paneHeader}>
             <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
               <Text style={s.paneTitle}>Explorer</Text>
@@ -1631,8 +1736,7 @@ export default function App() {
                 onTouchStart={() => setActivePane(1)} 
                 {...({ onClick: () => setActivePane(1) } as any)}
               >
-                {renderTabBar(1)}
-                <View style={s.paneHeader}>
+                {renderTabBar(1)}<View style={s.paneHeader}>
                   <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
                     <Text style={s.paneTitle}>Preview (Read-Only)</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -1873,8 +1977,6 @@ export default function App() {
                  </View>
               </View>
               <View style={{ flex: 1, flexDirection: 'row' }}>
-                
-                {/* Editor Pane 1 */}
                 <View 
                   id="pane-1"
                   nativeID="pane-1"
@@ -2069,7 +2171,7 @@ export default function App() {
           zIndex: 100,
         } as any}
       />
-      <View style={[s.footer, { height: footerHeight }]}>
+      <View nativeID="gemini-footer" id="gemini-footer" style={[s.footer, { height: footerHeight }]}>
         <GeminiChat 
           isDark={isDark} 
           apiKey={geminiApiKey}
@@ -2098,9 +2200,7 @@ export default function App() {
           bottomSpacing={24}
         />
         
-        <View style={s.footerPath}>
-          <Text style={s.footerPathText}>{rootPath}/{selectedFolder}/{selectedFile}</Text>
-        </View>
+        <View style={s.footerPath}><Text style={s.footerPathText}>{rootPath}/{selectedFolder}/{selectedFile}</Text></View>
       </View>
       {/* Context Menu Overlay */}
       {contextMenu.visible && (

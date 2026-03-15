@@ -1,0 +1,115 @@
+name: Multi-Platform Full Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  # 1. Create the Release Draft first
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Draft Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          name: Release ${{ github.event.inputs.release_tag }}
+          draft: true
+          body: |
+            ## Comprehensive Multi-Platform Release
+            This release contains packages for:
+            - Mobile (AOS, IOS via EAS)
+            - Web (Static Bundle)
+            - Desktop (MacOS, Windows, Linux)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 2. Build Web and Mobile (AOS/IOS)
+  build-web-mobile:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Export Web
+        run: npx expo export --platform web && zip -r web-build.zip dist
+
+      - name: Upload Web Artifact
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          files: web-build.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger EAS Build (Mobile)
+        run: |
+          # EAS builds run in the cloud. They won't be attached as files here directly 
+          # but the build logs will link to the binaries.
+          eas build --platform all --profile production --non-interactive --no-wait
+
+  # 3. Build Desktop (MacOS, Windows, Linux)
+  # NOTE: This assumes a desktop packaging setup (e.g., Electron Forge/Builder)
+  build-desktop:
+    needs: create-release
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+        include:
+          - os: macos-latest
+            artifact_name: desktop-macos.zip
+          - os: windows-latest
+            artifact_name: desktop-windows.zip
+          - os: ubuntu-latest
+            artifact_name: desktop-linux.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Export Web for Desktop
+        run: npx expo export --platform web
+
+      - name: Package Desktop
+        shell: bash
+        run: |
+          npm run build:desktop -- -mlw
+          # Note: -mlw builds for macOS, Linux, and Windows
+          # The files will be in dist-desktop/
+
+      - name: Upload Desktop Artifact
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          files: |
+            dist-desktop/*.dmg
+            dist-desktop/*.exe
+            dist-desktop/*.AppImage
+            dist-desktop/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

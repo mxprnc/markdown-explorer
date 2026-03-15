@@ -8,7 +8,30 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "electron": "electron electron-main.js",
+    "build:desktop": "npx expo export --platform web && electron-builder"
+  },
+  "build": {
+    "appId": "com.alpha300uk.markdownexplorer",
+    "productName": "Markdown Explorer",
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "files": [
+      "dist/**/*",
+      "electron-main.js",
+      "package.json"
+    ],
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   },
   "dependencies": {
     "@aarkue/tiptap-math-extension": "^1.4.0",
@@ -77,6 +100,8 @@
   "devDependencies": {
     "@types/react": "~19.1.0",
     "@types/react-dom": "~19.1.0",
+    "electron": "^41.0.2",
+    "electron-builder": "^26.8.1",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.2"
