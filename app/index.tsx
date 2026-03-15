@@ -30,7 +30,7 @@ export default function App() {
   const [selectedDirPath, setSelectedDirPath] = useState<string>('');
   
   // Drag & Drop State
-  const [draggingTab, setDraggingTab] = useState<{file: string, sourcePane: 1 | 2} | null>(null);
+  const [draggingTab, setDraggingTab] = useState<{file: string, sourcePane: number} | null>(null);
   const [isDragOverRight, setIsDragOverRight] = useState(false);
 
   // Pane 2 State
@@ -991,20 +991,52 @@ export default function App() {
 
   const handleTOCClick = (text: string, index: number) => {
     if (Platform.OS === 'web') {
-      const headers = document.querySelectorAll('.tiptap-wrapper h1, .tiptap-wrapper h2, .tiptap-wrapper h3, .tiptap-wrapper h4, .tiptap-wrapper h5, .tiptap-wrapper h6');
+      const paneId = activePane === 1 ? 'pane-1' : 'pane-2';
+      const pane = document.getElementById(paneId);
+      if (!pane) return;
+
+      const headers = pane.querySelectorAll('h1, h2, h3, h4, h5, h6');
       
-      // Fast path: try to index match exactly
-      if (headers[index] && headers[index].textContent?.trim() === text) {
-        headers[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-      }
+      const getHeaderText = (h: Element) => {
+        const contentNode = h.querySelector('.heading-content');
+        if (contentNode) return contentNode.textContent?.trim() || "";
+        return h.textContent?.trim() || "";
+      };
+
+      let targetHeader: HTMLElement | null = null;
       
-      // Fallback: search by text content across all headers
-      for (let i = 0; i < headers.length; i++) {
-        if (headers[i].textContent?.trim() === text) {
-           headers[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
-           break;
+      // Try index match first
+      if (headers[index] && getHeaderText(headers[index]) === text) {
+        targetHeader = headers[index] as HTMLElement;
+      } else {
+        // Fallback: search by text content
+        for (let i = 0; i < headers.length; i++) {
+          if (getHeaderText(headers[i]) === text) {
+             targetHeader = headers[i] as HTMLElement;
+             break;
+          }
         }
+      }
+
+      if (targetHeader) {
+        targetHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // Offset correction for header
+        setTimeout(() => {
+           let scroller: HTMLElement | null = null;
+           let p = targetHeader!.parentElement;
+           while (p && p !== pane) {
+             const style = window.getComputedStyle(p);
+             if (/(auto|scroll)/.test(style.overflow + style.overflowY)) {
+               scroller = p;
+               break;
+             }
+             p = p.parentElement;
+           }
+           if (scroller) {
+             scroller.scrollBy(0, -20);
+           }
+        }, 500);
       }
     }
   };
@@ -1012,7 +1044,8 @@ export default function App() {
   const tocList = React.useMemo(() => {
     let currentContent = '';
     if (activeTab === 'files') {
-      currentContent = localFiles[selectedFile] || '';
+      const selFile = activePane === 1 ? selectedFile : selectedFile2;
+      currentContent = localFiles[selFile] || '';
     } else {
       currentContent = activePane === 1 ? editorContent : editorContent2;
     }
@@ -1038,7 +1071,7 @@ export default function App() {
       }
     }
     return toc;
-  }, [editorContent, editorContent2, activePane, activeTab, selectedFile, localFiles[selectedFile]]);
+  }, [editorContent, editorContent2, activePane, activeTab, selectedFile, selectedFile2, localFiles]);
 
   const renderTabBar = (paneId: 1 | 2) => {
     const tabs = paneId === 1 ? openedFiles : openedFiles2;
@@ -1210,6 +1243,105 @@ export default function App() {
         );
       }
 
+      const fileContent = (
+        <View style={[
+          { paddingLeft: 30 + depth * 12, paddingVertical: 6, paddingRight: 12, flexDirection: 'row', alignItems: 'center' },
+          isSelected && { backgroundColor: isDark ? '#2D3748' : '#EFF6FF', borderLeftWidth: 3, borderLeftColor: colors.primary, paddingLeft: 27 + depth * 12 },
+          hoveredItemPath === item.path && !isSelected && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
+        ]}>
+          <Text 
+            numberOfLines={1} 
+            style={[
+              { fontSize: 13, color: isDoc ? colors.text : colors.textMuted, flex: 1 },
+              isSelected && { fontWeight: 'bold', color: colors.primary }
+            ]}
+          >
+            {isImage ? '🖼️' : '📄'} {item.name}
+          </Text>
+
+          {hoveredItemPath === item.path && (
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              <Pressable 
+                onPress={async (e) => {
+                  e.stopPropagation();
+                  const p = `./${item.path}`;
+                  await Clipboard.setStringAsync(p);
+                  if (Platform.OS === 'web') window.alert(`상대 경로가 복사되었습니다:\n${p}`);
+                }}
+                style={{ padding: 2 }}
+              >
+                <Text style={{ color: colors.primary, fontSize: 12, fontWeight: 'bold' }}>@</Text>
+              </Pressable>
+              <Pressable 
+                onPress={async (e) => {
+                  e.stopPropagation();
+                  const p = `${rootPath}/${selectedFolder}/${item.path}`;
+                  await Clipboard.setStringAsync(p);
+                  if (Platform.OS === 'web') window.alert(`절대 경로가 복사되었습니다:\n${p}`);
+                }}
+                style={{ padding: 2 }}
+              >
+                <Ionicons name="copy-outline" size={12} color={colors.primary} />
+              </Pressable>
+              <Pressable 
+                onPress={(e) => { 
+                  e.stopPropagation(); 
+                  setRenamingItem(item); 
+                  setNewName(item.name); 
+                }}
+                style={{ padding: 2 }}
+              >
+                <Ionicons name="pencil-outline" size={14} color={colors.primary} />
+              </Pressable>
+              <Pressable 
+                onPress={(e) => { 
+                  e.stopPropagation(); 
+                  handleDeleteFileSystem(item); 
+                }}
+                style={{ padding: 2 }}
+              >
+                <Ionicons name="trash-outline" size={14} color="#EF4444" />
+              </Pressable>
+            </View>
+          )}
+        </View>
+      );
+
+      if (Platform.OS === 'web') {
+        return (
+          <div
+            key={item.path}
+            draggable="true"
+            onDragStart={(e: any) => {
+              if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", item.path);
+              }
+              setDraggingTab({ file: item.path, sourcePane: 0 }); // 0 means from explorer
+            }}
+            onDragEnd={() => {
+              setDraggingTab(null);
+              setIsDragOverRight(false);
+            }}
+            style={{ cursor: 'grab' } as any}
+          >
+            <Pressable 
+              onPress={() => handleSelectFile(item.path)}
+              {...({
+                onContextMenu: (e: any) => {
+                  e.preventDefault();
+                  setContextMenu({ x: e.clientX, y: e.clientY, visible: true, item });
+                },
+                onMouseEnter: () => setHoveredItemPath(item.path),
+                onMouseLeave: () => setHoveredItemPath(null),
+              } as any)}
+            >
+              {fileContent}
+            </Pressable>
+          </div>
+        );
+      }
+
       return (
         <Pressable 
           key={item.path} 
@@ -1225,67 +1357,7 @@ export default function App() {
             onMouseLeave: () => setHoveredItemPath(null),
           } as any)}
         >
-          <View style={[
-            { paddingLeft: 30 + depth * 12, paddingVertical: 6, paddingRight: 12, flexDirection: 'row', alignItems: 'center' },
-            isSelected && { backgroundColor: isDark ? '#2D3748' : '#EFF6FF', borderLeftWidth: 3, borderLeftColor: colors.primary, paddingLeft: 27 + depth * 12 },
-            hoveredItemPath === item.path && !isSelected && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
-          ]}>
-            <Text 
-              numberOfLines={1} 
-              style={[
-                { fontSize: 13, color: isDoc ? colors.text : colors.textMuted, flex: 1 },
-                isSelected && { fontWeight: 'bold', color: colors.primary }
-              ]}
-            >
-              {isImage ? '🖼️' : '📄'} {item.name}
-            </Text>
-
-            {hoveredItemPath === item.path && (
-              <View style={{ flexDirection: 'row', gap: 6 }}>
-                <Pressable 
-                  onPress={async (e) => {
-                    e.stopPropagation();
-                    const p = `./${item.path}`;
-                    await Clipboard.setStringAsync(p);
-                    if (Platform.OS === 'web') window.alert(`상대 경로가 복사되었습니다:\n${p}`);
-                  }}
-                  style={{ padding: 2 }}
-                >
-                  <Text style={{ color: colors.primary, fontSize: 12, fontWeight: 'bold' }}>@</Text>
-                </Pressable>
-                <Pressable 
-                  onPress={async (e) => {
-                    e.stopPropagation();
-                    const p = `${rootPath}/${selectedFolder}/${item.path}`;
-                    await Clipboard.setStringAsync(p);
-                    if (Platform.OS === 'web') window.alert(`절대 경로가 복사되었습니다:\n${p}`);
-                  }}
-                  style={{ padding: 2 }}
-                >
-                  <Ionicons name="copy-outline" size={12} color={colors.primary} />
-                </Pressable>
-                <Pressable 
-                  onPress={(e) => { 
-                    e.stopPropagation(); 
-                    setRenamingItem(item); 
-                    setNewName(item.name); 
-                  }}
-                  style={{ padding: 2 }}
-                >
-                  <Ionicons name="pencil-outline" size={14} color={colors.primary} />
-                </Pressable>
-                <Pressable 
-                  onPress={(e) => { 
-                    e.stopPropagation(); 
-                    handleDeleteFileSystem(item); 
-                  }}
-                  style={{ padding: 2 }}
-                >
-                  <Ionicons name="trash-outline" size={14} color="#EF4444" />
-                </Pressable>
-              </View>
-            )}
-          </View>
+          {fileContent}
         </Pressable>
       );
     });
@@ -1544,43 +1616,206 @@ export default function App() {
 
         {activeTab === 'files' ? (
           <>
-            {/* PANE 3: Preview */}
-            <View style={s.paneRight}>
-              {renderTabBar(1)}
-              <View style={s.paneHeader}>
-                <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-                  <Text style={s.paneTitle}>Preview (Read-Only)</Text>
-                  <Pressable 
-                    onPress={() => setActiveTab('editor')}
-                    style={{
-                      backgroundColor: colors.primary,
-                      paddingVertical: 6,
-                      paddingHorizontal: 16,
-                      borderRadius: 6,
-                      flexDirection: 'row',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <Ionicons name="create-outline" size={14} color="#FFF" style={{ marginRight: 4 }} />
-                    <Text style={{color: '#FFF', fontSize: 13, fontWeight: 'bold'}}>에디터 모드로 열기 (Split View)</Text>
-                  </Pressable>
+            <View style={{ flex: 1, flexDirection: 'row' }}>
+              {/* Files Pane 1 */}
+              <View 
+                id="pane-1"
+                nativeID="pane-1"
+                style={{ 
+                  flex: isSplitMode ? undefined : 1, 
+                  width: isSplitMode ? middlePaneWidth : undefined, 
+                  borderRightWidth: isSplitMode ? 1 : 0, 
+                  borderRightColor: colors.border, 
+                  position: 'relative'
+                }}
+                onTouchStart={() => setActivePane(1)} 
+                {...({ onClick: () => setActivePane(1) } as any)}
+              >
+                {renderTabBar(1)}
+                <View style={s.paneHeader}>
+                  <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <Text style={s.paneTitle}>Preview (Read-Only)</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Pressable 
+                        onPress={() => {
+                          const newSplit = !isSplitMode;
+                          setIsSplitMode(newSplit);
+                          if (newSplit) {
+                            setOpenedFiles2(openedFiles.length > 0 ? [...openedFiles] : (selectedFile ? [selectedFile] : []));
+                            setSelectedFile2(selectedFile);
+                            setActivePane(2); // Focus new pane
+                          }
+                        }}
+                        style={{ marginRight: 16, flexDirection: 'row', alignItems: 'center' }}
+                      >
+                         <Ionicons name="browsers-outline" size={16} color={isSplitMode ? colors.primary : colors.textMuted} style={{ marginRight: 4 }} />
+                         <Text style={{color: isSplitMode ? colors.primary : colors.textMuted, fontSize: 13, fontWeight: 'bold'}}>
+                           {isSplitMode ? '분할 끄기' : '화면분할'}
+                         </Text>
+                      </Pressable>
+                      <Pressable 
+                        onPress={() => setActiveTab('editor')}
+                        style={{
+                          backgroundColor: colors.primary,
+                          paddingVertical: 4,
+                          paddingHorizontal: 12,
+                          borderRadius: 6,
+                          flexDirection: 'row',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Ionicons name="create-outline" size={14} color="#FFF" style={{ marginRight: 4 }} />
+                        <Text style={{color: '#FFF', fontSize: 13, fontWeight: 'bold'}}>에디터로 전환</Text>
+                      </Pressable>
+                    </View>
+                  </View>
                 </View>
+                <ScrollView 
+                  contentContainerStyle={{ flexGrow: 1 }}
+                  style={{ flex: 1 }}
+                >
+                  {Platform.OS === 'web' && isSplitMode && draggingTab && draggingTab.sourcePane !== 1 && (
+                    <div
+                      onDragOver={(e: any) => { 
+                        e.preventDefault(); 
+                        if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
+                      }}
+                      onDrop={(e: any) => {
+                        e.preventDefault();
+                        const file = draggingTab?.file;
+                        setDraggingTab(null);
+                        if (file) {
+                          if (draggingTab.sourcePane === 2) closeTab(file, 2);
+                          handleSelectFile(file, 1);
+                        }
+                      }}
+                      style={{ 
+                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                        zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)'
+                      }}
+                    >
+                      <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동 (미리보기 1)</Text>
+                    </div>
+                  )}
+                  {selectedFile ? (
+                    /\.(png|jpe?g|gif|webp)$/i.test(selectedFile) ? (
+                      <ImageViewer uri={localFiles[selectedFile]} name={selectedFile} />
+                    ) : (
+                      <Preview 
+                        content={localFiles[selectedFile] || ''} 
+                        isDark={isDark} 
+                        resolveImage={(src) => resolveImage(src, selectedFile)}
+                      />
+                    )
+                  ) : (
+                    <View style={{flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
+                  )}
+                </ScrollView>
               </View>
-              <ScrollView style={{ flex: 1 }}>
-                {/\.(png|jpe?g|gif|webp)$/i.test(selectedFile) ? (
-                  <ImageViewer uri={localFiles[selectedFile]} name={selectedFile} />
-                ) : (
-                  <Preview 
-                    content={localFiles[selectedFile] || ''} 
-                    isDark={isDark} 
-                    resolveImage={(src) => resolveImage(src, selectedFile)}
+
+              {isSplitMode && (
+                <>
+                  <View
+                    {...middlePaneResponder.panHandlers}
+                    style={{ width: 14, marginLeft: -7, marginRight: -7, backgroundColor: 'transparent', cursor: 'col-resize', zIndex: 10 } as any}
                   />
-                )}
-              </ScrollView>
+                  {/* Files Pane 2 */}
+                  <View 
+                    id="pane-2"
+                    nativeID="pane-2"
+                    style={{ 
+                      flex: 1, 
+                      position: 'relative'
+                    }}
+                    onTouchStart={() => setActivePane(2)} 
+                    {...({ onClick: () => setActivePane(2) } as any)}
+                  >
+                    {renderTabBar(2)}
+                    <View style={s.paneHeader}>
+                      <Text style={s.paneTitle}>Preview 2 (Read-Only)</Text>
+                    </View>
+                    <ScrollView 
+                      contentContainerStyle={{ flexGrow: 1 }}
+                      style={{ flex: 1 }}
+                    >
+                      {Platform.OS === 'web' && draggingTab && draggingTab.sourcePane !== 2 && (
+                        <div
+                          onDragOver={(e: any) => { 
+                            e.preventDefault(); 
+                            if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
+                          }}
+                          onDrop={(e: any) => {
+                            e.preventDefault();
+                            const file = draggingTab?.file;
+                            setDraggingTab(null);
+                            if (file) {
+                              if (draggingTab.sourcePane === 1) closeTab(file, 1);
+                              handleSelectFile(file, 2);
+                            }
+                          }}
+                          style={{ 
+                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                            zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)'
+                          }}
+                        >
+                          <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동 (미리보기 2)</Text>
+                        </div>
+                      )}
+                      {selectedFile2 ? (
+                        /\.(png|jpe?g|gif|webp)$/i.test(selectedFile2) ? (
+                          <ImageViewer uri={localFiles[selectedFile2]} name={selectedFile2} />
+                        ) : (
+                          <Preview 
+                            content={localFiles[selectedFile2] || ''} 
+                            isDark={isDark} 
+                            resolveImage={(src) => resolveImage(src, selectedFile2)}
+                          />
+                        )
+                      ) : (
+                        <View style={{flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
+                      )}
+                    </ScrollView>
+                  </View>
+                </>
+              )}
+
+              {/* Split Mode Drop Zone for Files tab (When not split) */}
+              {Platform.OS === 'web' && !isSplitMode && draggingTab && (
+                <div
+                  onDragOver={(e: any) => { 
+                    e.preventDefault(); 
+                    setIsDragOverRight(true); 
+                    if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
+                  }}
+                  onDragLeave={() => setIsDragOverRight(false)}
+                  onDrop={(e: any) => {
+                    e.preventDefault();
+                    setIsDragOverRight(false);
+                    const file = draggingTab?.file;
+                    setDraggingTab(null);
+                    if (file) {
+                      setIsSplitMode(true);
+                      setOpenedFiles2([file]);
+                      setSelectedFile2(file);
+                      setActivePane(2);
+                    }
+                  }}
+                  style={{ 
+                    position: 'absolute', top: 0, right: 0, width: '30%', bottom: 0, 
+                    zIndex: 1000, backgroundColor: isDragOverRight ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent',
+                    borderLeftWidth: 2, borderLeftColor: colors.primary, borderStyle: 'dashed',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center'
+                  }}
+                >
+                  <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳에 드롭하여 화면 분할</Text>
+                </div>
+              )}
             </View>
 
             {/* TOC for Preview */}
-            {!/\.(png|jpe?g|gif|webp)$/i.test(selectedFile) && selectedFile && (
+            {!(activePane === 1 ? /\.(png|jpe?g|gif|webp)$/i.test(selectedFile) : /\.(png|jpe?g|gif|webp)$/i.test(selectedFile2)) && (activePane === 1 ? selectedFile : selectedFile2) && (
               <>
                 <View
                   {...tocPaneResponder.panHandlers}
@@ -1641,7 +1876,15 @@ export default function App() {
                 
                 {/* Editor Pane 1 */}
                 <View 
-                  style={{ flex: 1, borderRightWidth: isSplitMode ? 1 : 0, borderRightColor: colors.border, position: 'relative' }} 
+                  id="pane-1"
+                  nativeID="pane-1"
+                  style={{ 
+                    flex: isSplitMode ? undefined : 1, 
+                    width: isSplitMode ? middlePaneWidth : undefined, 
+                    borderRightWidth: isSplitMode ? 1 : 0, 
+                    borderRightColor: colors.border, 
+                    position: 'relative'
+                  }} 
                   onTouchStart={() => setActivePane(1)} 
                   {...({ onClick: () => setActivePane(1) } as any)}
                 >
@@ -1696,62 +1939,74 @@ export default function App() {
 
                  {/* Editor Pane 2 */}
                  {isSplitMode && (
-                   <View 
-                     style={{ flex: 1, position: 'relative', backgroundColor: isDragOverRight ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent' }} 
-                     onTouchStart={() => setActivePane(2)} 
-                     {...({ onClick: () => setActivePane(2) } as any)}
-                   >
-                     {renderTabBar(2)}
-                     {Platform.OS === 'web' && isSplitMode && draggingTab && draggingTab.sourcePane === 1 && (
-                       <div
-                         onDragOver={(e: any) => { 
-                           e.preventDefault(); 
-                           setIsDragOverRight(true); 
-                           if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
-                         }}
-                         onDragLeave={() => setIsDragOverRight(false)}
-                         onDrop={(e: any) => {
-                           e.preventDefault();
-                           setIsDragOverRight(false);
-                           const file = draggingTab?.file;
-                           setDraggingTab(null);
-                           if (file) {
-                             closeTab(file, 1);
-                             handleSelectFile(file, 2);
-                           }
-                         }}
-                         style={{ 
-                           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-                           zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center' 
-                         }}
-                       >
-                         <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동</Text>
-                       </div>
-                     )}
-                     {selectedFile2 ? (
-                       /\.(png|jpe?g|gif|webp)$/i.test(selectedFile2) ? (
-                         <ImageViewer uri={localFiles[selectedFile2]} name={selectedFile2} />
-                       ) : (
-                         <Editor
-                           key={'pane2-' + selectedFile2}
-                           value={editorContent2} 
-                           onChange={setEditorContent2} 
-                           onSave={async (val: string) => {
-                             setEditorContent2(val);
-                             setLocalFiles(prev => ({ ...prev, [selectedFile2]: val }));
-                             const saved = await handleSaveToDisk(val, selectedFile2);
-                             if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
-                           }} 
-                           isDark={isDark}
-                           resolveImage={(src) => resolveImage(src, selectedFile2)}
-                           onPasteImage={handlePasteImage}
-                           onRenameImage={handleRenameImage}
-                         />
-                       )
-                     ) : (
-                       <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
-                     )}
-                   </View>
+                   <>
+                    <View
+                      {...middlePaneResponder.panHandlers}
+                      style={{ width: 14, marginLeft: -7, marginRight: -7, backgroundColor: 'transparent', cursor: 'col-resize', zIndex: 10 } as any}
+                    />
+                    <View 
+                      id="pane-2"
+                      nativeID="pane-2"
+                      style={{ 
+                        flex: 1, 
+                        position: 'relative', 
+                        backgroundColor: isDragOverRight ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'
+                      }} 
+                      onTouchStart={() => setActivePane(2)} 
+                      {...({ onClick: () => setActivePane(2) } as any)}
+                    >
+                      {renderTabBar(2)}
+                      {Platform.OS === 'web' && isSplitMode && draggingTab && draggingTab.sourcePane === 1 && (
+                        <div
+                          onDragOver={(e: any) => { 
+                            e.preventDefault(); 
+                            setIsDragOverRight(true); 
+                            if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
+                          }}
+                          onDragLeave={() => setIsDragOverRight(false)}
+                          onDrop={(e: any) => {
+                            e.preventDefault();
+                            setIsDragOverRight(false);
+                            const file = draggingTab?.file;
+                            setDraggingTab(null);
+                            if (file) {
+                              closeTab(file, 1);
+                              handleSelectFile(file, 2);
+                            }
+                          }}
+                          style={{ 
+                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                            zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center' 
+                          }}
+                        >
+                          <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동</Text>
+                        </div>
+                      )}
+                      {selectedFile2 ? (
+                        /\.(png|jpe?g|gif|webp)$/i.test(selectedFile2) ? (
+                          <ImageViewer uri={localFiles[selectedFile2]} name={selectedFile2} />
+                        ) : (
+                          <Editor
+                            key={'pane2-' + selectedFile2}
+                            value={editorContent2} 
+                            onChange={setEditorContent2} 
+                            onSave={async (val: string) => {
+                              setEditorContent2(val);
+                              setLocalFiles(prev => ({ ...prev, [selectedFile2]: val }));
+                              const saved = await handleSaveToDisk(val, selectedFile2);
+                              if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
+                            }} 
+                            isDark={isDark}
+                            resolveImage={(src) => resolveImage(src, selectedFile2)}
+                            onPasteImage={handlePasteImage}
+                            onRenameImage={handleRenameImage}
+                          />
+                        )
+                      ) : (
+                        <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
+                      )}
+                    </View>
+                   </>
                  )}
 
                 {/* Split Mode Drop Zone (When not split, overlay on right side) */}
@@ -1789,7 +2044,7 @@ export default function App() {
                 )}
 
                 {/* TOC for Editor */}
-                {!isSplitMode && !/\.(png|jpe?g|gif|webp)$/i.test(selectedFile) && selectedFile && (
+                {!(activePane === 1 ? /\.(png|jpe?g|gif|webp)$/i.test(selectedFile) : /\.(png|jpe?g|gif|webp)$/i.test(selectedFile2)) && (activePane === 1 ? selectedFile : selectedFile2) && (
                   <>
                     <View
                       {...tocPaneResponder.panHandlers}
