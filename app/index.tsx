@@ -1739,6 +1739,17 @@ export default function App() {
             if (Platform.OS === 'web') localStorage.setItem('gemini_selected_model', m);
           }}
           models={availableModels}
+          fileList={(() => {
+            const list: string[] = [];
+            const collect = (items: any[]) => {
+              for (const it of items) {
+                if (it.kind === 'file') list.push(it.path);
+                if (it.children) collect(it.children);
+              }
+            };
+            collect(fileSystemData);
+            return list;
+          })()}
           bottomSpacing={24}
         />
         

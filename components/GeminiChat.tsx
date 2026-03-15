@@ -15,6 +15,7 @@ interface GeminiChatProps {
   model: string;
   onModelChange: (model: string) => void;
   models?: { label: string, value: string }[];
+  fileList?: string[];
 }
 
 interface Message {
@@ -22,12 +23,14 @@ interface Message {
   content: string;
 }
 
-export default function GeminiChat({ isDark, apiKey, accessToken, currentContent, onOpenSettings, onSaveChatToFile, bottomSpacing = 0, model, onModelChange, models = [] }: GeminiChatProps) {
+export default function GeminiChat({ isDark, apiKey, accessToken, currentContent, onOpenSettings, onSaveChatToFile, bottomSpacing = 0, model, onModelChange, models = [], fileList = [] }: GeminiChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'general' | 'archive'>('general');
   const [archivePath, setArchivePath] = useState('chat-history.md');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const colors = {
@@ -126,6 +129,24 @@ ${userMsg}`;
       handleSend();
     }
   };
+  
+  const handleArchiveInputChange = (text: string) => {
+    setArchivePath(text);
+    if (text.length > 0) {
+      const filtered = fileList.filter(f => 
+        f.toLowerCase().includes(text.toLowerCase()) && f !== text
+      ).slice(0, 5); // Limit to 5 suggestions
+      setFilteredSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSelectSuggestion = (suggestion: string) => {
+    setArchivePath(suggestion);
+    setShowSuggestions(false);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingBottom: bottomSpacing }]}>
@@ -187,18 +208,52 @@ ${userMsg}`;
           </View>
        </View>
 
-       {mode === 'archive' && (
-         <View style={[styles.archiveHeader, { borderBottomColor: colors.border }]}>
+        {mode === 'archive' && (
+          <View style={[styles.archiveHeader, { borderBottomColor: colors.border, zIndex: 100 }]}>
             <Text style={[styles.archiveLabel, { color: colors.textMuted }]}>archiving:</Text>
-            <TextInput 
-              style={[styles.archiveInput, { color: colors.text, borderColor: colors.border }]}
-              value={archivePath}
-              onChangeText={setArchivePath}
-              placeholder="파일명.md"
-              placeholderTextColor={colors.textMuted}
-            />
-         </View>
-       )}
+            <View style={{ flex: 1, position: 'relative' }}>
+              <TextInput 
+                style={[styles.archiveInput, { color: colors.text, borderColor: colors.border }]}
+                value={archivePath}
+                onChangeText={handleArchiveInputChange}
+                onFocus={() => {
+                  if (archivePath.length > 0) {
+                    const filtered = fileList.filter(f => f.toLowerCase().includes(archivePath.toLowerCase()) && f !== archivePath).slice(0, 5);
+                    if (filtered.length > 0) {
+                      setFilteredSuggestions(filtered);
+                      setShowSuggestions(true);
+                    }
+                  }
+                }}
+                onBlur={() => {
+                  // Small delay to allow Pressable to trigger
+                  setTimeout(() => setShowSuggestions(false), 200);
+                }}
+                placeholder="파일명.md"
+                placeholderTextColor={colors.textMuted}
+              />
+              {showSuggestions && filteredSuggestions.length > 0 && (
+                <View style={[styles.suggestionBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  {filteredSuggestions.map((item, idx) => (
+                    <Pressable 
+                      key={idx} 
+                      onPress={() => handleSelectSuggestion(item)}
+                      style={({ hovered }: any) => [
+                        styles.suggestionItem,
+                        hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
+                      ]}
+                    >
+                      <Ionicons name="document-outline" size={12} color={colors.textMuted} style={{ marginRight: 6 }} />
+                      <Text style={[styles.suggestionText, { color: colors.text }]} numberOfLines={1}>
+                        {item}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
        
        <ScrollView 
          ref={scrollViewRef}
@@ -293,9 +348,29 @@ const styles = StyleSheet.create({
   settingsBtn: { flexDirection: 'row', alignItems: 'center', padding: 4 },
   settingsBtnText: { fontSize: 10, marginLeft: 4, fontWeight: '600' },
   
-  archiveHeader: { height: 32, paddingHorizontal: 12, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center' },
+  archiveHeader: { height: 32, paddingHorizontal: 12, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center', zIndex: 1000 },
   archiveLabel: { fontSize: 10, fontWeight: 'bold', marginRight: 8 },
-  archiveInput: { flex: 1, fontSize: 11, padding: 0, height: '100%' },
+  archiveInput: { flex: 1, fontSize: 11, padding: 0, height: '100%', outlineStyle: 'none' } as any,
+  suggestionBox: {
+    position: 'absolute',
+    top: 32,
+    left: 0,
+    right: 0,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 4,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    zIndex: 2000,
+  } as any,
+  suggestionItem: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  suggestionText: {
+    fontSize: 11,
+  },
 
   chatArea: { flex: 1, padding: 12 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 10, opacity: 0.6 },
