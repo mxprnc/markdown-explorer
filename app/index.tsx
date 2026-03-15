@@ -283,7 +283,21 @@ export default function App() {
   const updateFileSystemData = (items: any[], oldPath: string, newPath: string, newNameStr: string): any[] => {
     return items.map(item => {
       if (item.path === oldPath) {
-        return { ...item, path: newPath, name: newNameStr };
+        const updatedItem = { ...item, path: newPath, name: newNameStr };
+        if (updatedItem.children) {
+          const updateChildrenPaths = (children: any[], oldBase: string, newBase: string): any[] => {
+            return children.map(child => {
+              const childNewPath = newBase + child.path.slice(oldBase.length);
+              const updatedChild = { ...child, path: childNewPath };
+              if (updatedChild.children) {
+                updatedChild.children = updateChildrenPaths(updatedChild.children, oldBase, newBase);
+              }
+              return updatedChild;
+            });
+          };
+          updatedItem.children = updateChildrenPaths(updatedItem.children, oldPath, newPath);
+        }
+        return updatedItem;
       }
       if (item.children && oldPath.startsWith(item.path + '/')) {
          return { ...item, children: updateFileSystemData(item.children, oldPath, newPath, newNameStr) };
@@ -315,16 +329,29 @@ export default function App() {
       }
       await parentDir.removeEntry(item.name, { recursive: true });
 
-      setFileSystemData(prev => removeItemFromData(prev, item.path));
-      closeTab(item.path, 1);
-      closeTab(item.path, 2);
-      
-      const newLocalFiles = { ...localFiles };
-      delete newLocalFiles[item.path];
-      setLocalFiles(newLocalFiles);
+      const isInside = (path: string) => path === item.path || path.startsWith(item.path + '/');
 
-      if (selectedFile === item.path) setSelectedFile('');
-      if (selectedFile2 === item.path) setSelectedFile2('');
+      setFileSystemData(prev => removeItemFromData(prev, item.path));
+      
+      setOpenedFiles(prev => prev.filter(p => !isInside(p)));
+      setOpenedFiles2(prev => prev.filter(p => !isInside(p)));
+      
+      setLocalFiles(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(k => {
+          if (isInside(k)) delete next[k];
+        });
+        return next;
+      });
+
+      if (isInside(selectedFile)) {
+        setSelectedFile('');
+        setEditorContent('');
+      }
+      if (isInside(selectedFile2)) {
+        setSelectedFile2('');
+        setEditorContent2('');
+      }
     } catch (e) {
       console.error('Delete failed', e);
       if (Platform.OS === 'web') window.alert('삭제 오류: ' + e);
@@ -359,23 +386,31 @@ export default function App() {
         throw new Error('이 브라우저는 .move()를 지원하지 않습니다.');
       }
 
+      const updatePath = (path: string) => {
+        if (path === oldPath) return newPath;
+        if (path.startsWith(oldPath + '/')) {
+          return newPath + path.slice(oldPath.length);
+        }
+        return path;
+      };
+
       setFileSystemData(prev => updateFileSystemData(prev, oldPath, newPath, newName));
       
-      if (localFiles[oldPath] !== undefined) {
-        setLocalFiles(prev => {
-          const next = { ...prev };
-          next[newPath] = next[oldPath];
-          delete next[oldPath];
-          return next;
+      setLocalFiles(prev => {
+        const next: Record<string, string> = {};
+        Object.keys(prev).forEach(key => {
+          const newKey = updatePath(key);
+          next[newKey] = prev[key];
         });
-      }
+        return next;
+      });
 
-      if (selectedFile === oldPath) setSelectedFile(newPath);
-      if (selectedFile2 === oldPath) setSelectedFile2(newPath);
-      if (selectedDirPath === oldPath) setSelectedDirPath(newPath);
+      setSelectedFile(prev => updatePath(prev));
+      setSelectedFile2(prev => updatePath(prev));
+      setSelectedDirPath(prev => updatePath(prev));
 
-      setOpenedFiles(prev => prev.map(p => p === oldPath ? newPath : p));
-      setOpenedFiles2(prev => prev.map(p => p === oldPath ? newPath : p));
+      setOpenedFiles(prev => prev.map(updatePath));
+      setOpenedFiles2(prev => prev.map(updatePath));
 
       setRenamingItem(null);
       setNewName('');
@@ -975,7 +1010,12 @@ export default function App() {
   };
 
   const tocList = React.useMemo(() => {
-    const currentContent = activePane === 1 ? editorContent : editorContent2;
+    let currentContent = '';
+    if (activeTab === 'files') {
+      currentContent = localFiles[selectedFile] || '';
+    } else {
+      currentContent = activePane === 1 ? editorContent : editorContent2;
+    }
     const lines = currentContent.split('\n');
     const toc: { id: string, text: string, level: number }[] = [];
     let inCodeBlock = false;
@@ -998,7 +1038,7 @@ export default function App() {
       }
     }
     return toc;
-  }, [editorContent, editorContent2, activePane]);
+  }, [editorContent, editorContent2, activePane, activeTab, selectedFile, localFiles[selectedFile]]);
 
   const renderTabBar = (paneId: 1 | 2) => {
     const tabs = paneId === 1 ? openedFiles : openedFiles2;
@@ -1143,6 +1183,25 @@ export default function App() {
                   <Pressable onPress={(e) => { e.stopPropagation(); setCreatingItem({ parentPath: item.path, kind: 'directory' }); setCreationName(''); }}>
                     <Ionicons name="folder-outline" size={14} color={colors.primary} />
                   </Pressable>
+                  <Pressable 
+                    onPress={(e) => { 
+                      e.stopPropagation(); 
+                      setRenamingItem(item); 
+                      setNewName(item.name); 
+                    }}
+                    style={{ padding: 2 }}
+                  >
+                    <Ionicons name="pencil-outline" size={14} color={colors.primary} />
+                  </Pressable>
+                  <Pressable 
+                    onPress={(e) => { 
+                      e.stopPropagation(); 
+                      handleDeleteFileSystem(item); 
+                    }}
+                    style={{ padding: 2 }}
+                  >
+                    <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                  </Pressable>
                 </View>
               )}
             </Pressable>
@@ -1204,6 +1263,25 @@ export default function App() {
                   style={{ padding: 2 }}
                 >
                   <Ionicons name="copy-outline" size={12} color={colors.primary} />
+                </Pressable>
+                <Pressable 
+                  onPress={(e) => { 
+                    e.stopPropagation(); 
+                    setRenamingItem(item); 
+                    setNewName(item.name); 
+                  }}
+                  style={{ padding: 2 }}
+                >
+                  <Ionicons name="pencil-outline" size={14} color={colors.primary} />
+                </Pressable>
+                <Pressable 
+                  onPress={(e) => { 
+                    e.stopPropagation(); 
+                    handleDeleteFileSystem(item); 
+                  }}
+                  style={{ padding: 2 }}
+                >
+                  <Ionicons name="trash-outline" size={14} color="#EF4444" />
                 </Pressable>
               </View>
             )}
@@ -1353,6 +1431,43 @@ export default function App() {
     );
   };
 
+  const renderTOC = () => (
+    <View style={[s.paneTOC, { width: tocPaneWidth }]}>
+      <View style={[s.paneHeader, { borderBottomWidth: 1, borderBottomColor: colors.border }]}><Text style={s.paneTitle}>목차 (TOC)</Text></View>
+      <ScrollView style={{ flex: 1 }}>
+        {tocList.length === 0 ? (
+          <View style={{ padding: 16 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 12 }}>작성된 헤딩(제목)이 없습니다.</Text>
+          </View>
+        ) : (
+          tocList.map((item, index) => (
+            <Pressable key={item.id} onPress={() => handleTOCClick(item.text, index)}>
+              <View style={{ 
+                paddingVertical: 8, 
+                paddingRight: 12,
+                paddingLeft: 12 + (item.level - 1) * 12,
+                borderBottomWidth: 1, 
+                borderBottomColor: isDark ? '#374151' : '#F3F4F6',
+                cursor: 'pointer'
+              } as any}>
+                <Text 
+                  numberOfLines={1} 
+                  style={{ 
+                    color: item.level === 1 ? colors.text : colors.textMuted, 
+                    fontSize: item.level <= 2 ? 13 : 12,
+                    fontWeight: item.level <= 2 ? 'bold' : 'normal',
+                    fontFamily: 'Inter, sans-serif'
+                  }}>
+                  {item.text}
+                </Text>
+              </View>
+            </Pressable>
+          ))
+        )}
+      </ScrollView>
+    </View>
+  );
+
   return (
     <View style={[s.container, { userSelect: isResizing ? 'none' : 'auto' } as any]}>
       {/* HEADER */}
@@ -1360,7 +1475,6 @@ export default function App() {
         <View style={s.headerLeft}>
           <Text style={s.logoText}>Mark Explorer</Text>
           <Text style={s.headerTitle}>{rootPath}/{selectedFolder}</Text>
-          <Pressable onPress={copyRootRelativePath} style={{ padding: 4, marginHorizontal: 4 }}><Text style={s.actionIcon}>@</Text></Pressable>
           <Pressable onPress={copyRootAbsolutePath} style={{ padding: 4, marginHorizontal: 4 }}>
             <Ionicons name="copy-outline" size={18} color={colors.primary} />
           </Pressable>
@@ -1430,136 +1544,6 @@ export default function App() {
 
         {activeTab === 'files' ? (
           <>
-            {/* PANE 2: File List (Explorer 2) */}
-            <View style={[s.paneMiddle, { width: middlePaneWidth }]}>
-              <View style={s.paneHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  {selectedDirPath ? (
-                    <Pressable onPress={() => {
-                      const parts = selectedDirPath.split('/');
-                      parts.pop();
-                      setSelectedDirPath(parts.join('/'));
-                    }} style={{ marginRight: 8 }}>
-                      <Ionicons name="arrow-back" size={16} color={colors.primary} />
-                    </Pressable>
-                  ) : null}
-                  <Text style={s.paneTitle}>{selectedDirPath || selectedFolder || 'No Folder Selected'}</Text>
-                </View>
-              </View>
-              <ScrollView>
-                {selectedFolder ? (
-                  (() => {
-                    let itemsToShow = fileSystemData;
-                    if (selectedDirPath) {
-                      const findItems = (data: any[], path: string): any[] => {
-                        for (const item of data) {
-                          if (item.path === path) return item.children || [];
-                          if (item.children) {
-                            const found = findItems(item.children, path);
-                            if (found.length > 0 || (item.path === path)) return found;
-                          }
-                        }
-                        return [];
-                      };
-                      itemsToShow = findItems(fileSystemData, selectedDirPath);
-                    }
-
-                    if (itemsToShow.length === 0) {
-                      return <View style={{ padding: 24 }}><Text style={{ color: colors.textMuted }}>이 폴더는 비어 있습니다.</Text></View>;
-                    }
-
-                    return itemsToShow.map(item => (
-                      <Pressable 
-                        key={item.path} 
-                        onPress={async () => {
-                          if (item.kind === 'directory') {
-                            await loadDirectory(item.path);
-                            setSelectedDirPath(item.path);
-                            setExpandedFolders(prev => ({ ...prev, [item.path]: true }));
-                          } else {
-                            handleSelectFile(item.path);
-                          }
-                        }}
-                        {...({
-                          onContextMenu: (e: any) => {
-                            if (Platform.OS === 'web') {
-                              e.preventDefault();
-                              setContextMenu({ x: e.clientX, y: e.clientY, visible: true, item });
-                            }
-                          },
-                          onMouseEnter: () => setHoveredItemPath(item.path),
-                          onMouseLeave: () => setHoveredItemPath(null),
-                        } as any)}
-                      >
-                        <View style={[
-                          s.listItem, 
-                          (selectedFile === item.path || selectedFile2 === item.path) && s.listItemSelected,
-                          { position: 'relative', overflow: 'hidden' }
-                        ]}>
-                          <Text style={[s.listItemText, (selectedFile === item.path || selectedFile2 === item.path) && {fontWeight: 'bold' }]}>
-                            {item.kind === 'directory' ? '📁' : (/\.(png|jpe?g|gif|webp)$/i.test(item.name) ? '🖼️' : '📄')} {item.name}
-                          </Text>
-                          
-                          {hoveredItemPath === item.path && (
-                            <View style={{ position: 'absolute', right: 8, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                              <Pressable 
-                                onPress={async (e) => {
-                                  e.stopPropagation();
-                                  const p = `./${item.path}`;
-                                  await Clipboard.setStringAsync(p);
-                                  if (Platform.OS === 'web') window.alert(`상대 경로가 복사되었습니다:\n${p}`);
-                                }}
-                                style={{ padding: 6 }}
-                              >
-                                <Text style={{ color: colors.primary, fontSize: 14, fontWeight: 'bold' }}>@</Text>
-                              </Pressable>
-                              <Pressable 
-                                onPress={async (e) => {
-                                  e.stopPropagation();
-                                  const p = `${rootPath}/${selectedFolder}/${item.path}`;
-                                  await Clipboard.setStringAsync(p);
-                                  if (Platform.OS === 'web') window.alert(`절대 경로가 복사되었습니다:\n${p}`);
-                                }}
-                                style={{ padding: 6 }}
-                              >
-                                <Ionicons name="copy-outline" size={14} color={colors.primary} />
-                              </Pressable>
-                              <Pressable 
-                                onPress={(e) => {
-                                  e.stopPropagation();
-                                  setRenamingItem(item);
-                                  setNewName(item.name);
-                                }}
-                                style={{ padding: 6 }}
-                              >
-                                <Ionicons name="pencil-outline" size={16} color={colors.primary} />
-                              </Pressable>
-                              <Pressable 
-                                onPress={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteFileSystem(item);
-                                }}
-                                style={{ padding: 6 }}
-                              >
-                                <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                              </Pressable>
-                            </View>
-                          )}
-                        </View>
-                      </Pressable>
-                    ));
-                  })()
-                ) : (
-                  <View style={{ padding: 24 }}><Text style={{ color: colors.textMuted }}>폴더를 열어야 보입니다.</Text></View>
-                )}
-              </ScrollView>
-            </View>
-
-            <View
-              {...middlePaneResponder.panHandlers}
-              style={{ width: 14, marginLeft: -7, marginRight: -7, backgroundColor: 'transparent', cursor: 'col-resize', zIndex: 10 } as any}
-            />
-
             {/* PANE 3: Preview */}
             <View style={s.paneRight}>
               {renderTabBar(1)}
@@ -1594,6 +1578,17 @@ export default function App() {
                 )}
               </ScrollView>
             </View>
+
+            {/* TOC for Preview */}
+            {!/\.(png|jpe?g|gif|webp)$/i.test(selectedFile) && selectedFile && (
+              <>
+                <View
+                  {...tocPaneResponder.panHandlers}
+                  style={{ width: 14, marginLeft: -7, marginRight: -7, backgroundColor: 'transparent', cursor: 'col-resize', zIndex: 10 } as any}
+                />
+                {renderTOC()}
+              </>
+            )}
           </>
         ) : (
           /* PANE 2: WYSIWYG Editor Mode */
@@ -1603,235 +1598,206 @@ export default function App() {
                 <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center' }}>
                   <Pressable 
                     onPress={() => {
-                      setIsSplitMode(!isSplitMode);
-                      if (!isSplitMode) {
-                        setOpenedFiles2(openedFiles.length > 0 ? [...openedFiles] : []);
-                        setSelectedFile2(selectedFile);
-                        setEditorContent2(editorContent);
-                      }
-                    }}
-                    style={{ marginRight: 16, flexDirection: 'row', alignItems: 'center' }}
-                  >
-                     <Ionicons name="browsers-outline" size={16} color={isSplitMode ? colors.primary : colors.textMuted} style={{ marginRight: 4 }} />
-                     <Text style={{color: isSplitMode ? colors.primary : colors.textMuted, fontSize: 13, fontWeight: 'bold'}}>
-                       {isSplitMode ? '화면분할 끄기' : '화면분할'}
-                     </Text>
-                  </Pressable>
-                  <Pressable 
-                    onPress={async () => {
-                      const curFile = activePane === 1 ? selectedFile : selectedFile2;
-                      const curContent = activePane === 1 ? editorContent : editorContent2;
-                      if (!curFile) return;
-
-                      setLocalFiles(prev => ({ ...prev, [curFile]: curContent }));
-                      const saved = await handleSaveToDisk(curContent);
-                      if (saved) {
-                        if (Platform.OS === 'web') window.alert(`${curFile} 파일이 로컬 디스크에 완전히 저장되었습니다.`);
-                      } else {
-                        if (Platform.OS === 'web') window.alert(`${curFile} 에디터 내용이 임시 저장되었습니다 (디스크 쓰기 실패).`);
-                        else Alert.alert('저장됨', `${curFile} 에디터 내용이 임시 저장되었습니다.`);
-                      }
-                    }} 
-                    style={{ marginRight: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 4, flexDirection: 'row', alignItems: 'center' }}
-                  >
-                    <Ionicons name="save-outline" size={14} color={colors.primary} style={{ marginRight: 6 }} />
-                    <Text style={{color: colors.primary, fontSize: 13, fontWeight: 'bold'}}>현재 창 저장 (Cmd+S)</Text>
-                  </Pressable>
-                  <Pressable onPress={() => setActiveTab('files')}>
-                    <Text style={{color: colors.textMuted, fontSize: 13, fontWeight: 'bold'}}>닫기 (탐색기로 돌아가기)</Text>
-                  </Pressable>
-                </View>
-             </View>
-             <View style={{ flex: 1, flexDirection: 'row' }}>
-               
-               {/* Editor Pane 1 */}
-               <View 
-                 style={{ flex: 1, borderRightWidth: isSplitMode ? 1 : 0, borderRightColor: colors.border, position: 'relative' }} 
-                 onTouchStart={() => setActivePane(1)} 
-                 {...({ onClick: () => setActivePane(1) } as any)}
-               >
-                 {renderTabBar(1)}
-                 {Platform.OS === 'web' && isSplitMode && draggingTab && draggingTab.sourcePane === 2 && (
-                   <div
-                     onDragOver={(e: any) => { 
-                       e.preventDefault(); 
-                       if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
-                     }}
-                     onDrop={(e: any) => {
-                       e.preventDefault();
-                       const file = draggingTab?.file;
-                       setDraggingTab(null);
-                       if (file) {
-                         closeTab(file, 2);
-                         handleSelectFile(file, 1);
+                       setIsSplitMode(!isSplitMode);
+                       if (!isSplitMode) {
+                         setOpenedFiles2(openedFiles.length > 0 ? [...openedFiles] : []);
+                         setSelectedFile2(selectedFile);
+                         setEditorContent2(editorContent);
                        }
                      }}
-                     style={{ 
-                       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-                       zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center' 
-                     }}
+                     style={{ marginRight: 16, flexDirection: 'row', alignItems: 'center' }}
                    >
-                     <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동</Text>
-                   </div>
-                 )}
-                  {selectedFile ? (
-                    /\.(png|jpe?g|gif|webp)$/i.test(selectedFile) ? (
-                      <ImageViewer uri={localFiles[selectedFile]} name={selectedFile} />
-                    ) : (
-                      <Editor
-                        key={'pane1-' + selectedFile}
-                        value={editorContent} 
-                        onChange={setEditorContent} 
-                        onSave={async (val: string) => {
-                          setEditorContent(val);
-                          setLocalFiles(prev => ({ ...prev, [selectedFile]: val }));
-                          const saved = await handleSaveToDisk(val, selectedFile);
-                          if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
-                        }} 
-                        isDark={isDark}
-                        resolveImage={(src) => resolveImage(src, selectedFile)}
-                        onPasteImage={handlePasteImage}
-                        onRenameImage={handleRenameImage}
-                      />
-                    )
-                  ) : (
-                    <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
-                  )}
-                </View>
+                      <Ionicons name="browsers-outline" size={16} color={isSplitMode ? colors.primary : colors.textMuted} style={{ marginRight: 4 }} />
+                      <Text style={{color: isSplitMode ? colors.primary : colors.textMuted, fontSize: 13, fontWeight: 'bold'}}>
+                        {isSplitMode ? '화면분할 끄기' : '화면분할'}
+                      </Text>
+                   </Pressable>
+                   <Pressable 
+                     onPress={async () => {
+                       const curFile = activePane === 1 ? selectedFile : selectedFile2;
+                       const curContent = activePane === 1 ? editorContent : editorContent2;
+                       if (!curFile) return;
 
-                {/* Editor Pane 2 */}
-                {isSplitMode && (
-                  <View 
-                    style={{ flex: 1, position: 'relative', backgroundColor: isDragOverRight ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent' }} 
-                    onTouchStart={() => setActivePane(2)} 
-                    {...({ onClick: () => setActivePane(2) } as any)}
-                  >
-                    {renderTabBar(2)}
-                    {Platform.OS === 'web' && isSplitMode && draggingTab && draggingTab.sourcePane === 1 && (
-                      <div
-                        onDragOver={(e: any) => { 
-                          e.preventDefault(); 
-                          setIsDragOverRight(true); 
-                          if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
-                        }}
-                        onDragLeave={() => setIsDragOverRight(false)}
-                        onDrop={(e: any) => {
-                          e.preventDefault();
-                          setIsDragOverRight(false);
-                          const file = draggingTab?.file;
-                          setDraggingTab(null);
-                          if (file) {
-                            closeTab(file, 1);
-                            handleSelectFile(file, 2);
-                          }
-                        }}
-                        style={{ 
-                          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-                          zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center' 
-                        }}
-                      >
-                        <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동</Text>
-                      </div>
-                    )}
-                    {selectedFile2 ? (
-                      /\.(png|jpe?g|gif|webp)$/i.test(selectedFile2) ? (
-                        <ImageViewer uri={localFiles[selectedFile2]} name={selectedFile2} />
-                      ) : (
-                        <Editor
-                          key={'pane2-' + selectedFile2}
-                          value={editorContent2} 
-                          onChange={setEditorContent2} 
-                          onSave={async (val: string) => {
-                            setEditorContent2(val);
-                            setLocalFiles(prev => ({ ...prev, [selectedFile2]: val }));
-                            const saved = await handleSaveToDisk(val, selectedFile2);
-                            if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
-                          }} 
-                          isDark={isDark}
-                          resolveImage={(src) => resolveImage(src, selectedFile2)}
-                          onPasteImage={handlePasteImage}
-                          onRenameImage={handleRenameImage}
-                        />
-                      )
-                    ) : (
-                      <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
-                    )}
-                  </View>
+                       setLocalFiles(prev => ({ ...prev, [curFile]: curContent }));
+                       const saved = await handleSaveToDisk(curContent);
+                       if (saved) {
+                         if (Platform.OS === 'web') window.alert(`${curFile} 파일이 로컬 디스크에 완전히 저장되었습니다.`);
+                       } else {
+                         if (Platform.OS === 'web') window.alert(`${curFile} 에디터 내용이 임시 저장되었습니다 (디스크 쓰기 실패).`);
+                         else Alert.alert('저장됨', `${curFile} 에디터 내용이 임시 저장되었습니다.`);
+                       }
+                     }} 
+                     style={{ marginRight: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 4, flexDirection: 'row', alignItems: 'center' }}
+                   >
+                     <Ionicons name="save-outline" size={14} color={colors.primary} style={{ marginRight: 6 }} />
+                     <Text style={{color: colors.primary, fontSize: 13, fontWeight: 'bold'}}>현재 창 저장 (Cmd+S)</Text>
+                   </Pressable>
+                   <Pressable onPress={() => setActiveTab('files')}>
+                     <Text style={{color: colors.textMuted, fontSize: 13, fontWeight: 'bold'}}>닫기 (탐색기로 돌아가기)</Text>
+                   </Pressable>
+                 </View>
+              </View>
+              <View style={{ flex: 1, flexDirection: 'row' }}>
+                
+                {/* Editor Pane 1 */}
+                <View 
+                  style={{ flex: 1, borderRightWidth: isSplitMode ? 1 : 0, borderRightColor: colors.border, position: 'relative' }} 
+                  onTouchStart={() => setActivePane(1)} 
+                  {...({ onClick: () => setActivePane(1) } as any)}
+                >
+                  {renderTabBar(1)}
+                  {Platform.OS === 'web' && isSplitMode && draggingTab && draggingTab.sourcePane === 2 && (
+                    <div
+                      onDragOver={(e: any) => { 
+                        e.preventDefault(); 
+                        if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
+                      }}
+                      onDrop={(e: any) => {
+                        e.preventDefault();
+                        const file = draggingTab?.file;
+                        setDraggingTab(null);
+                        if (file) {
+                          closeTab(file, 2);
+                          handleSelectFile(file, 1);
+                        }
+                      }}
+                      style={{ 
+                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                        zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center' 
+                      }}
+                    >
+                      <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동</Text>
+                    </div>
+                  )}
+                   {selectedFile ? (
+                     /\.(png|jpe?g|gif|webp)$/i.test(selectedFile) ? (
+                       <ImageViewer uri={localFiles[selectedFile]} name={selectedFile} />
+                     ) : (
+                       <Editor
+                         key={'pane1-' + selectedFile}
+                         value={editorContent} 
+                         onChange={setEditorContent} 
+                         onSave={async (val: string) => {
+                           setEditorContent(val);
+                           setLocalFiles(prev => ({ ...prev, [selectedFile]: val }));
+                           const saved = await handleSaveToDisk(val, selectedFile);
+                           if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
+                         }} 
+                         isDark={isDark}
+                         resolveImage={(src) => resolveImage(src, selectedFile)}
+                         onPasteImage={handlePasteImage}
+                         onRenameImage={handleRenameImage}
+                       />
+                     )
+                   ) : (
+                     <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
+                   )}
+                 </View>
+
+                 {/* Editor Pane 2 */}
+                 {isSplitMode && (
+                   <View 
+                     style={{ flex: 1, position: 'relative', backgroundColor: isDragOverRight ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent' }} 
+                     onTouchStart={() => setActivePane(2)} 
+                     {...({ onClick: () => setActivePane(2) } as any)}
+                   >
+                     {renderTabBar(2)}
+                     {Platform.OS === 'web' && isSplitMode && draggingTab && draggingTab.sourcePane === 1 && (
+                       <div
+                         onDragOver={(e: any) => { 
+                           e.preventDefault(); 
+                           setIsDragOverRight(true); 
+                           if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; 
+                         }}
+                         onDragLeave={() => setIsDragOverRight(false)}
+                         onDrop={(e: any) => {
+                           e.preventDefault();
+                           setIsDragOverRight(false);
+                           const file = draggingTab?.file;
+                           setDraggingTab(null);
+                           if (file) {
+                             closeTab(file, 1);
+                             handleSelectFile(file, 2);
+                           }
+                         }}
+                         style={{ 
+                           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                           zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center' 
+                         }}
+                       >
+                         <Text style={{color: colors.primary, fontWeight: 'bold'}}>이곳으로 이동</Text>
+                       </div>
+                     )}
+                     {selectedFile2 ? (
+                       /\.(png|jpe?g|gif|webp)$/i.test(selectedFile2) ? (
+                         <ImageViewer uri={localFiles[selectedFile2]} name={selectedFile2} />
+                       ) : (
+                         <Editor
+                           key={'pane2-' + selectedFile2}
+                           value={editorContent2} 
+                           onChange={setEditorContent2} 
+                           onSave={async (val: string) => {
+                             setEditorContent2(val);
+                             setLocalFiles(prev => ({ ...prev, [selectedFile2]: val }));
+                             const saved = await handleSaveToDisk(val, selectedFile2);
+                             if (saved && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
+                           }} 
+                           isDark={isDark}
+                           resolveImage={(src) => resolveImage(src, selectedFile2)}
+                           onPasteImage={handlePasteImage}
+                           onRenameImage={handleRenameImage}
+                         />
+                       )
+                     ) : (
+                       <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}><Text style={{color: colors.textMuted}}>파일을 선택해주세요.</Text></View>
+                     )}
+                   </View>
+                 )}
+
+                {/* Split Mode Drop Zone (When not split, overlay on right side) */}
+                {!isSplitMode && draggingTab && draggingTab.sourcePane === 1 && (
+                  Platform.OS === 'web' ? (
+                    <div 
+                      onDragOver={(e: any) => { 
+                        e.preventDefault(); 
+                        setIsDragOverRight(true); 
+                        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDragLeave={() => setIsDragOverRight(false)}
+                      onDrop={(e: any) => {
+                        e.preventDefault();
+                        setIsDragOverRight(false);
+                        const file = draggingTab?.file;
+                        setDraggingTab(null);
+                        setIsSplitMode(true);
+                        if (file) {
+                          closeTab(file, 1);
+                          handleSelectFile(file, 2);
+                        }
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: 0, top: 0, bottom: 0, width: '50%',
+                        backgroundColor: isDragOverRight ? (isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.1)') : 'transparent',
+                        borderLeft: `2px dashed ${colors.primary}`,
+                        zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center'
+                      }}
+                    >
+                      <Text style={{color: colors.primary, fontWeight: 'bold', fontSize: 16}}>이곳에 드롭하여 화면 분할</Text>
+                    </div>
+                  ) : null
                 )}
 
-               {/* Split Mode Drop Zone (When not split, overlay on right side) */}
-               {!isSplitMode && draggingTab && draggingTab.sourcePane === 1 && (
-                 Platform.OS === 'web' ? (
-                   <div 
-                     onDragOver={(e: any) => { 
-                       e.preventDefault(); 
-                       setIsDragOverRight(true); 
-                       if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-                     }}
-                     onDragLeave={() => setIsDragOverRight(false)}
-                     onDrop={(e: any) => {
-                       e.preventDefault();
-                       setIsDragOverRight(false);
-                       const file = draggingTab?.file;
-                       setDraggingTab(null);
-                       setIsSplitMode(true);
-                       if (file) {
-                         closeTab(file, 1);
-                         handleSelectFile(file, 2);
-                       }
-                     }}
-                     style={{
-                       position: 'absolute',
-                       right: 0, top: 0, bottom: 0, width: '50%',
-                       backgroundColor: isDragOverRight ? (isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.1)') : 'transparent',
-                       borderLeft: `2px dashed ${colors.primary}`,
-                       zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center'
-                     }}
-                   >
-                     <Text style={{color: colors.primary, fontWeight: 'bold', fontSize: 16}}>이곳에 드롭하여 화면 분할</Text>
-                   </div>
-                 ) : null
+                {/* TOC for Editor */}
+                {!isSplitMode && !/\.(png|jpe?g|gif|webp)$/i.test(selectedFile) && selectedFile && (
+                  <>
+                    <View
+                      {...tocPaneResponder.panHandlers}
+                      style={{ width: 14, marginLeft: -7, marginRight: -7, backgroundColor: 'transparent', cursor: 'col-resize', zIndex: 10 } as any}
+                    />
+                   {renderTOC()}
+                 </>
                )}
-
-               <View
-                 {...tocPaneResponder.panHandlers}
-                 style={{ width: 14, marginLeft: -7, marginRight: -7, backgroundColor: 'transparent', cursor: 'col-resize', zIndex: 10 } as any}
-               />
-
-               <View style={[s.paneTOC, { width: tocPaneWidth }]}>
-                 <View style={[s.paneHeader, { borderBottomWidth: 1, borderBottomColor: colors.border }]}><Text style={s.paneTitle}>목차 (TOC)</Text></View>
-                 <ScrollView style={{ flex: 1 }}>
-                   {tocList.length === 0 ? (
-                     <View style={{ padding: 16 }}>
-                       <Text style={{ color: colors.textMuted, fontSize: 12 }}>작성된 헤딩(제목)이 없습니다.</Text>
-                     </View>
-                   ) : (
-                     tocList.map((item, index) => (
-                       <Pressable key={item.id} onPress={() => handleTOCClick(item.text, index)}>
-                         <View style={{ 
-                           paddingVertical: 8, 
-                           paddingRight: 12,
-                           paddingLeft: 12 + (item.level - 1) * 12,
-                           borderBottomWidth: 1, 
-                           borderBottomColor: isDark ? '#374151' : '#F3F4F6',
-                           cursor: 'pointer'
-                         } as any}>
-                           <Text 
-                             numberOfLines={1} 
-                             style={{ 
-                               color: item.level === 1 ? colors.text : colors.textMuted, 
-                               fontSize: item.level <= 2 ? 13 : 12,
-                               fontWeight: item.level <= 2 ? 'bold' : 'normal',
-                               fontFamily: 'Inter, sans-serif'
-                             }}>
-                             {item.text}
-                           </Text>
-                         </View>
-                       </Pressable>
-                     ))
-                   )}
-                 </ScrollView>
-               </View>
              </View>
           </View>
         )}
