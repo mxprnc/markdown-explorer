@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
-import 'katex/dist/katex.min.css';
+// import 'katex/dist/katex.min.css'; // Loaded via CDN in +html.tsx for web
 import mermaid from 'mermaid';
 
 function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {

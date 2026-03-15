@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import mermaid from 'mermaid';
-import 'katex/dist/katex.min.css';
+// import 'katex/dist/katex.min.css'; // Loaded via CDN in +html.tsx for web
 
 const ThemeContext = React.createContext({ isDark: false });
 
