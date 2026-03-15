@@ -57,14 +57,17 @@ export default function App() {
   const [showGeminiSettings, setShowGeminiSettings] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
   const [tempClientId, setTempClientId] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gemini-1.5-flash');
-  const [tempModel, setTempModel] = useState('gemini-1.5-flash');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-pro');
+  const [tempModel, setTempModel] = useState('gemini-2.5-pro');
 
   const availableModels = [
-    { label: 'Gemini 1.5 Flash', value: 'gemini-1.5-flash' },
-    { label: 'Gemini 2.0 Flash', value: 'gemini-2.0-flash' },
-    { label: 'Gemini 1.5 Pro', value: 'gemini-1.5-pro' },
+    { label: 'Gemini 3.1 Pro (Reasoning)', value: 'gemini-3.1-pro-preview' },
+    { label: 'Gemini 3.1 Flash Lite', value: 'gemini-3.1-flash-lite-preview' },
+    { label: 'Gemini 3 Flash (Fast)', value: 'gemini-3-flash-preview' },
+    { label: 'Gemini 2.5 Pro (GA)', value: 'gemini-2.5-pro' },
+    { label: 'Gemini 2.5 Flash (GA)', value: 'gemini-2.5-flash' },
   ];
+
 
   // OAuth Request Hook
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -99,7 +102,13 @@ export default function App() {
       if (savedToken) { setGoogleAccessToken(savedToken); }
       
       const savedModel = localStorage.getItem('gemini_selected_model');
-      if (savedModel) { setSelectedModel(savedModel); setTempModel(savedModel); }
+      if (savedModel && availableModels.some(m => m.value === savedModel)) {
+        setSelectedModel(savedModel); 
+        setTempModel(savedModel); 
+      } else {
+        setSelectedModel('gemini-2.5-pro');
+        setTempModel('gemini-2.5-pro');
+      }
     }
   }, []);
 

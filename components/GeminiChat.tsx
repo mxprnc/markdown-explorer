@@ -4,11 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as Clipboard from 'expo-clipboard';
 
-interface Message {
-  role: 'user' | 'model';
-  content: string;
-}
-
 interface GeminiChatProps {
   isDark: boolean;
   apiKey: string;
@@ -19,10 +14,15 @@ interface GeminiChatProps {
   bottomSpacing?: number;
   model: string;
   onModelChange: (model: string) => void;
-  models: { label: string, value: string }[];
+  models?: { label: string, value: string }[];
 }
 
-export default function GeminiChat({ isDark, apiKey, accessToken, currentContent, onOpenSettings, onSaveChatToFile, bottomSpacing = 0, model, onModelChange, models }: GeminiChatProps) {
+interface Message {
+  role: 'user' | 'model';
+  content: string;
+}
+
+export default function GeminiChat({ isDark, apiKey, accessToken, currentContent, onOpenSettings, onSaveChatToFile, bottomSpacing = 0, model, onModelChange, models = [] }: GeminiChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -68,8 +68,11 @@ ${currentContent || "(비어 있음)"}
 위 내용을 바탕으로 다음 질문에 답해주세요:
 ${userMsg}`;
 
+      // Unified v1beta for 2026 model compatibility (Gemini 2.5, 3.1, etc.)
+      const apiVer = 'v1beta';
+
       if (accessToken) {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models/${model}:generateContent`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -84,8 +87,7 @@ ${userMsg}`;
         text = data.candidates[0].content.parts[0].text;
       } else {
         const genAI = new GoogleGenerativeAI(apiKey);
-        // Force v1 for better compatibility
-        const modelInstance = genAI.getGenerativeModel({ model: model }, { apiVersion: 'v1' });
+        const modelInstance = genAI.getGenerativeModel({ model: model }, { apiVersion: apiVer });
         const result = await modelInstance.generateContent(systemPrompt);
         const response = await result.response;
         text = response.text();
@@ -114,13 +116,17 @@ ${userMsg}`;
   };
 
   const handleKeyPress = (e: any) => {
+    // For React Native Web multiline TextInput
     const key = e.nativeEvent.key;
     const isModifier = e.nativeEvent.metaKey || e.nativeEvent.ctrlKey;
     
     if (key === 'Enter' && isModifier) {
+      // In web, e.preventDefault is available to stop newline insertion
+      if (e.preventDefault) e.preventDefault();
       handleSend();
     }
   };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingBottom: bottomSpacing }]}>
        <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: isDark ? '#121212' : '#F3F4F6' }]}>
@@ -240,7 +246,6 @@ ${userMsg}`;
        </ScrollView>
 
        <View style={[styles.inputContainer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
-         {/* @ts-ignore - onKeyDown is available on web */}
          <TextInput
            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}
            placeholder={hasAuth ? "메시지를 입력하세요..." : "인증 후 사용 가능합니다."}
@@ -248,7 +253,8 @@ ${userMsg}`;
            value={inputText}
            onChangeText={setInputText}
            editable={hasAuth && !loading}
-            onKeyPress={handleKeyPress}
+           multiline={true}
+           onKeyPress={handleKeyPress}
          />
          <Pressable 
            onPress={handleSend} 
@@ -310,10 +316,13 @@ const styles = StyleSheet.create({
   inputContainer: { padding: 8, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1 },
   input: { 
     flex: 1, 
-    height: 32, 
+    minHeight: 32, 
+    maxHeight: 100,
     borderWidth: 1, 
     borderRadius: 16, 
     paddingHorizontal: 16, 
+    paddingTop: 8,
+    paddingBottom: 8,
     fontSize: 12, 
     marginRight: 8,
   },
