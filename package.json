@@ -12,7 +12,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "electron": "electron electron-main.js",
-    "build:desktop": "npx expo export --platform web && electron-builder"
+    "build:desktop": "npx expo export --platform web && electron-builder",
+    "build:desktop-all": "npx expo export --platform web && electron-builder -mwl"
   },
   "build": {
     "appId": "com.alpha300uk.markdownexplorer",

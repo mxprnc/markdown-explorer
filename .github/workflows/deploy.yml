@@ -26,11 +26,10 @@ jobs:
           name: Release ${{ github.event.inputs.release_tag }}
           draft: true
           body: |
-            ## Comprehensive Multi-Platform Release
+            ## Comprehensive Web & Mobile Release
             This release contains packages for:
-            - Mobile (AOS, IOS via EAS)
+            - Mobile (Android, iOS via EAS Cloud Build)
             - Web (Static Bundle)
-            - Desktop (MacOS, Windows, Linux)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -68,43 +67,3 @@ jobs:
         run: |
           # EAS builds run in the cloud.
           eas build --platform all --profile production --non-interactive --no-wait
-
-  # 3. Build Desktop (MacOS, Windows, Linux)
-  # NOTE: This assumes a desktop packaging setup (e.g., Electron Forge/Builder)
-  build-desktop:
-    needs: create-release
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            platform_flag: "-m"
-          - os: windows-latest
-            platform_flag: "-w"
-          - os: ubuntu-latest
-            platform_flag: "-l"
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-      - run: npm ci
-
-      - name: Package Desktop
-        shell: bash
-        run: |
-          npm run build:desktop -- ${{ matrix.platform_flag }}
-
-      - name: Upload Desktop Artifact
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.event.inputs.release_tag }}
-          files: |
-            dist-desktop/*.dmg
-            dist-desktop/*.exe
-            dist-desktop/*.AppImage
-            dist-desktop/*.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
