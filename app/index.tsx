@@ -61,6 +61,7 @@ export default function App() {
   const [tempModel, setTempModel] = useState('gemini-2.5-pro');
   const [rootPath, setRootPath] = useState('~/Documents/toy-projects');
   const [tempRootPath, setTempRootPath] = useState('~/Documents/toy-projects');
+  const [hasWritePermission, setHasWritePermission] = useState(false);
 
   const availableModels = [
     { label: 'Gemini 3.1 Pro (Reasoning)', value: 'gemini-3.1-pro-preview' },
@@ -141,6 +142,41 @@ export default function App() {
       localStorage.removeItem('google_access_token');
     }
   };
+
+  const checkWritePermission = async (handle = dirHandle) => {
+    if (!handle) return false;
+    try {
+      // @ts-ignore
+      if (typeof handle.queryPermission !== 'function') return true; // Not supported, assume OK or handled elsewhere
+      // @ts-ignore
+      const currentPerm = await handle.queryPermission({ mode: 'readwrite' });
+      setHasWritePermission(currentPerm === 'granted');
+      return currentPerm === 'granted';
+    } catch (e) {
+      console.warn('Failed to check permission', e);
+      return false;
+    }
+  };
+
+  const requestWritePermission = async () => {
+    if (!dirHandle) return false;
+    try {
+      // @ts-ignore
+      const nextPerm = await dirHandle.requestPermission({ mode: 'readwrite' });
+      const granted = nextPerm === 'granted';
+      setHasWritePermission(granted);
+      if (granted && Platform.OS === 'web') window.alert('수정 권한이 승인되었습니다.');
+      return granted;
+    } catch (e) {
+      console.error('Failed to request permission', e);
+      if (Platform.OS === 'web') window.alert('권한 요청 중 오류가 발생했습니다. 브라우저 설정을 확인해주세요.');
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (dirHandle) checkWritePermission();
+  }, [dirHandle]);
 
   const handleSelectFile = async (file: string, targetPane: 1 | 2 = activePane) => {
     const isImage = /\.(png|jpe?g|gif|webp)$/i.test(file);
@@ -698,7 +734,7 @@ export default function App() {
     }
     try {
       // @ts-ignore
-      const handle = await window.showDirectoryPicker();
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
       setDirHandle(handle);
       setSelectedFolder(handle.name);
       
@@ -732,6 +768,7 @@ export default function App() {
       setFileSystemData(topLevelItems);
       setLocalFiles({}); 
       setSelectedDirPath('');
+      checkWritePermission(handle); // Initial check after pick
 
       const firstMd = topLevelItems.find(item => item.kind === 'file' && (item.name.endsWith('.md') || item.name.endsWith('.txt')));
       if (firstMd) {
@@ -758,6 +795,20 @@ export default function App() {
   const handlePasteImage = async (file: File) => {
     if (!dirHandle || !selectedFile) return '';
     try {
+      // Verify/Request readwrite permission
+      // @ts-ignore
+      if (typeof dirHandle.queryPermission === 'function') {
+        // @ts-ignore
+        const currentPerm = await dirHandle.queryPermission({ mode: 'readwrite' });
+        if (currentPerm !== 'granted') {
+          const nextPerm = await dirHandle.requestPermission({ mode: 'readwrite' });
+          if (nextPerm !== 'granted') {
+             return '붙여넣기_실패_권한필요';
+          }
+          setHasWritePermission(true);
+        }
+      }
+
       const extMatch = file.name.match(/\.(png|jpe?g|gif|webp)$/i);
       const ext = extMatch ? extMatch[1] : 'png';
       
@@ -765,15 +816,22 @@ export default function App() {
       const dateStr = format(new Date(), 'yyyy-MM-dd-HHmmssSSS');
       const imgTargetName = `${dateStr}.${ext}`;
       
+      // Get or create 'img' directory
       const imgDirHandle = await dirHandle.getDirectoryHandle('img', { create: true });
-      const currentMdDirHandle = await imgDirHandle.getDirectoryHandle(fileNameWithoutExt, { create: true });
+      
+      // Recursively get or create subdirectories for the markdown file path
+      const pathParts = fileNameWithoutExt.split('/').filter(p => p);
+      let currentMdDirHandle = imgDirHandle;
+      for (const part of pathParts) {
+        currentMdDirHandle = await currentMdDirHandle.getDirectoryHandle(part, { create: true });
+      }
       
       const fileHandle = await currentMdDirHandle.getFileHandle(imgTargetName, { create: true });
       const writable = await fileHandle.createWritable();
       await writable.write(file);
       await writable.close();
       
-      const relativePath = `img/${fileNameWithoutExt}/${imgTargetName}`;
+      const relativePath = `/img/${fileNameWithoutExt}/${imgTargetName}`;
       return relativePath;
     } catch (err) {
       console.error('Failed to save pasted image', err);
@@ -791,15 +849,20 @@ export default function App() {
       
       let fullPath = relativePath;
 
-      // If it's a relative path (doesn't start with /) and we have a current file context
-      if (!relativePath.startsWith('/') && currentFilePath) {
+      // Handle paths starting with / as root-relative
+      if (relativePath.startsWith('/')) {
+        fullPath = relativePath.slice(1);
+      } 
+      // Special case: if it starts with img/, it's almost always intended to be root-relative
+      else if (relativePath.startsWith('img/')) {
+        fullPath = relativePath;
+      }
+      // Otherwise, it's relative to the current file
+      else if (currentFilePath) {
         const fileDir = currentFilePath.split('/').slice(0, -1).join('/');
         if (fileDir) {
           fullPath = `${fileDir}/${relativePath}`;
         }
-      } else if (relativePath.startsWith('/')) {
-        // Absolute path from the project root
-        fullPath = relativePath.slice(1);
       }
 
       // Handle .. and . in the path
@@ -1686,9 +1749,16 @@ export default function App() {
                   </>
                 )}
                 {Platform.OS === 'web' && (
-                  <Pressable onPress={handleOpenDirectory}>
-                    <Text style={{color: colors.primary, fontSize: 12, fontWeight: 'bold'}}>열기</Text>
-                  </Pressable>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    {dirHandle && !hasWritePermission && (
+                      <Pressable onPress={requestWritePermission} style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#F59E0B' }}>
+                        <Text style={{ color: '#D97706', fontSize: 10, fontWeight: 'bold' }}>⚠️ 수정권한 필요</Text>
+                      </Pressable>
+                    )}
+                    <Pressable onPress={handleOpenDirectory}>
+                      <Text style={{color: colors.primary, fontSize: 12, fontWeight: 'bold'}}>열기</Text>
+                    </Pressable>
+                  </View>
                 )}
               </View>
             </View>

@@ -651,11 +651,32 @@ const LiveMarkdownExtension = Extension.create({
       }
     };
 
+    const wrapWithPair = (open: string, close: string) => {
+      const { state, dispatch } = this.editor.view;
+      const { $from, $to, empty } = state.selection;
+
+      if (empty) return false;
+
+      if (dispatch) {
+        const tr = state.tr;
+        tr.insertText(close, $to.pos);
+        tr.insertText(open, $from.pos);
+        tr.setSelection(TextSelection.create(tr.doc, $from.pos + open.length, $to.pos + open.length));
+        dispatch(tr);
+      }
+      return true;
+    };
+
     return {
       'Mod-b': () => toggleMarkdownFormat('**'),
       'Mod-i': () => toggleMarkdownFormat('*'),
       'Mod-e': () => toggleMarkdownFormat('`'),
       'Mod-Shift-s': () => toggleMarkdownFormat('~~'),
+      '\'': () => wrapWithPair('\'', '\''),
+      '"': () => wrapWithPair('"', '"'),
+      '(': () => wrapWithPair('(', ')'),
+      '[': () => wrapWithPair('[', ']'),
+      '{': () => wrapWithPair('{', '}'),
     };
   }
 });
