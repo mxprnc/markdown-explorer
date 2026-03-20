@@ -59,8 +59,8 @@ export default function App() {
   const [tempClientId, setTempClientId] = useState('');
   const [selectedModel, setSelectedModel] = useState('gemini-2.5-pro');
   const [tempModel, setTempModel] = useState('gemini-2.5-pro');
-  const [rootPath, setRootPath] = useState('~/Documents/toy-projects');
-  const [tempRootPath, setTempRootPath] = useState('~/Documents/toy-projects');
+  const [rootPath, setRootPath] = useState('/Users/alpha300uk/Library/Mobile Documents/com~apple~CloudDocs/0.study-or-toy-projects');
+  const [tempRootPath, setTempRootPath] = useState('/Users/alpha300uk/Library/Mobile Documents/com~apple~CloudDocs/0.study-or-toy-projects');
   const [hasWritePermission, setHasWritePermission] = useState(false);
 
   const availableModels = [
@@ -737,6 +737,18 @@ export default function App() {
       const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
       setDirHandle(handle);
       setSelectedFolder(handle.name);
+
+      // 자동 권한 요청 (쓰기 권한)
+      try {
+        // @ts-ignore
+        if (handle.requestPermission) {
+          // @ts-ignore
+          const status = await handle.requestPermission({ mode: 'readwrite' });
+          setHasWritePermission(status === 'granted');
+        }
+      } catch (permErr) {
+        console.warn('Auto-permission request failed', permErr);
+      }
       
       async function scanLevel(currentHandle: any, path = '') {
         const items: any[] = [];
@@ -1715,7 +1727,29 @@ export default function App() {
       <View style={s.header}>
         <View style={s.headerLeft}>
           <Text style={s.logoText}>Mark Explorer</Text>
-          <Text style={s.headerTitle}>{rootPath}/{selectedFolder}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Pressable 
+              onPress={() => {
+                if (Platform.OS === 'web') {
+                  const newPath = window.prompt('베이스 경로(Root Path)를 입력하세요:', rootPath);
+                  if (newPath !== null) {
+                    setRootPath(newPath);
+                    setTempRootPath(newPath);
+                    localStorage.setItem('markdown_explorer_root_path', newPath);
+                  }
+                }
+              }}
+              style={({ hovered }: any) => [
+                { paddingHorizontal: 4, borderRadius: 4 },
+                hovered && { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
+              ]}
+            >
+              <Text style={[s.headerTitle, { opacity: rootPath ? 1 : 0.6 }]}>
+                {rootPath ? `${rootPath}/` : '📁 '}
+              </Text>
+            </Pressable>
+            <Text style={[s.headerTitle, { fontWeight: 'bold' }]}>{selectedFolder || '폴더를 열어주세요'}</Text>
+          </View>
           <Pressable onPress={copyRootAbsolutePath} style={{ padding: 4, marginHorizontal: 4 }}>
             <Ionicons name="copy-outline" size={18} color={colors.primary} />
           </Pressable>
@@ -2271,7 +2305,13 @@ export default function App() {
           bottomSpacing={24}
         />
         
-        <View style={s.footerPath}><Text style={s.footerPathText}>{rootPath}/{selectedFolder}/{selectedFile}</Text></View>
+        <View style={s.footerPath}>
+          <Text style={s.footerPathText}>
+            {rootPath ? `${rootPath}/` : '📁 '}
+            {selectedFolder ? `${selectedFolder}/` : ''}
+            {selectedFile}
+          </Text>
+        </View>
       </View>
       {/* Context Menu Overlay */}
       {contextMenu.visible && (
