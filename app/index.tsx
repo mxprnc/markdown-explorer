@@ -1552,7 +1552,8 @@ export default function App() {
               autoFocus
               value={creationName}
               onChange={(e) => setCreationName(e.target.value)}
-              onKeyDown={(e) => {
+              onKeyDown={(e: any) => {
+                if (e.nativeEvent.isComposing) return;
                 if (e.key === 'Enter') handleConfirmCreation();
                 if (e.key === 'Escape') setCreatingItem(null);
               }}
@@ -2399,7 +2400,8 @@ export default function App() {
                 autoFocus
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => {
+                onKeyDown={(e: any) => {
+                  if (e.nativeEvent.isComposing) return;
                   if (e.key === 'Enter') handleRenameFileSystem();
                   if (e.key === 'Escape') setRenamingItem(null);
                 }}
