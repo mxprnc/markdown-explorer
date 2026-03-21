@@ -316,11 +316,33 @@ export default function App() {
     }
   };
 
-  const updateFileSystemData = (items: any[], oldPath: string, newPath: string, newNameStr: string): any[] => {
+  const copyDirectoryRecursive = async (srcHandle: any, destHandle: any) => {
+    // @ts-ignore
+    for await (const entry of srcHandle.values()) {
+      if (entry.kind === 'file') {
+        const srcFile = await entry.getFile();
+        const destFileHandle = await destHandle.getFileHandle(entry.name, { create: true });
+        const writable = await destFileHandle.createWritable();
+        await writable.write(srcFile);
+        await writable.close();
+      } else if (entry.kind === 'directory') {
+        const destSubDirHandle = await destHandle.getDirectoryHandle(entry.name, { create: true });
+        await copyDirectoryRecursive(entry, destSubDirHandle);
+      }
+    }
+  };
+
+  const updateFileSystemData = (items: any[], oldPath: string, newPath: string, newNameStr: string, newHandle?: any): any[] => {
     return items.map(item => {
       if (item.path === oldPath) {
         const updatedItem = { ...item, path: newPath, name: newNameStr };
-        if (updatedItem.children) {
+        if (newHandle) updatedItem.handle = newHandle;
+
+        if (updatedItem.kind === 'directory' && newHandle && newHandle !== item.handle) {
+          // Fallback rename (copy+delete) means children handles are invalid
+          updatedItem.isLoaded = false;
+          updatedItem.children = [];
+        } else if (updatedItem.children) {
           const updateChildrenPaths = (children: any[], oldBase: string, newBase: string): any[] => {
             return children.map(child => {
               const childNewPath = newBase + child.path.slice(oldBase.length);
@@ -336,7 +358,7 @@ export default function App() {
         return updatedItem;
       }
       if (item.children && oldPath.startsWith(item.path + '/')) {
-         return { ...item, children: updateFileSystemData(item.children, oldPath, newPath, newNameStr) };
+         return { ...item, children: updateFileSystemData(item.children, oldPath, newPath, newNameStr, newHandle) };
       }
       return item;
     });
@@ -414,12 +436,26 @@ export default function App() {
       }
       
       const entry = renamingItem.handle;
+      let newEntryHandle = entry;
+
       // @ts-ignore
       if (entry.move) {
         // @ts-ignore
         await entry.move(newName);
       } else {
-        throw new Error('이 브라우저는 .move()를 지원하지 않습니다.');
+        // Fallback for browsers that don't support .move() (especially for directories in Chrome)
+        if (renamingItem.kind === 'directory') {
+          newEntryHandle = await parentDir.getDirectoryHandle(newName, { create: true });
+          await copyDirectoryRecursive(entry, newEntryHandle);
+          await parentDir.removeEntry(renamingItem.name, { recursive: true });
+        } else {
+          const file = await entry.getFile();
+          newEntryHandle = await parentDir.getFileHandle(newName, { create: true });
+          const writable = await newEntryHandle.createWritable();
+          await writable.write(file);
+          await writable.close();
+          await parentDir.removeEntry(renamingItem.name);
+        }
       }
 
       const updatePath = (path: string) => {
@@ -430,7 +466,7 @@ export default function App() {
         return path;
       };
 
-      setFileSystemData(prev => updateFileSystemData(prev, oldPath, newPath, newName));
+      setFileSystemData(prev => updateFileSystemData(prev, oldPath, newPath, newName, newEntryHandle));
       
       setLocalFiles(prev => {
         const next: Record<string, string> = {};
@@ -447,6 +483,15 @@ export default function App() {
 
       setOpenedFiles(prev => prev.map(updatePath));
       setOpenedFiles2(prev => prev.map(updatePath));
+
+      setExpandedFolders(prev => {
+        const next: Record<string, boolean> = {};
+        Object.keys(prev).forEach(key => {
+          const newKey = updatePath(key);
+          next[newKey] = prev[key];
+        });
+        return next;
+      });
 
       setRenamingItem(null);
       setNewName('');
