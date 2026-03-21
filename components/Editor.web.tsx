@@ -289,6 +289,16 @@ const CustomHeading = Heading.extend({
   addKeyboardShortcuts() {
     return {
       ...this.parent?.(),
+      Enter: () => {
+        const { selection } = this.editor.state;
+        const { $from, empty } = selection;
+        if (!empty || $from.parent.type.name !== this.name) return false;
+
+        return this.editor.chain()
+          .splitBlock()
+          .setParagraph()
+          .run();
+      },
       Backspace: () => {
         const { selection } = this.editor.state;
         const { $from, empty } = selection;
