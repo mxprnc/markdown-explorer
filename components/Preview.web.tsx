@@ -9,6 +9,8 @@ import remarkGfm from 'remark-gfm';
 // import 'katex/dist/katex.min.css'; // Loaded via CDN in +html.tsx for web
 import mermaid from 'mermaid';
 
+mermaid.initialize({ startOnLoad: false, theme: 'default' });
+
 function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {
   const [svg, setSvg] = useState<string>('');
   const [error, setError] = useState<string>('');
@@ -221,6 +223,12 @@ export default function Preview({ content, isDark, resolveImage }: { content: st
                   PreTag="div"
                   children={codeString}
                   language={match[1]}
+                  lineNumberStyle={{
+                    minWidth: '2.5em',
+                    paddingRight: '1em',
+                    color: isDark ? '#4B5563' : '#9CA3AF',
+                    textAlign: 'right'
+                  }}
                   style={isDark ? oneDark : oneLight}
                   showLineNumbers={true}
                   customStyle={{
@@ -232,12 +240,6 @@ export default function Preview({ content, isDark, resolveImage }: { content: st
                     fontSize: '13px',
                     backgroundColor: isDark ? '#111827' : '#F9FAFB',
                     border: isDark ? '1px solid #374151' : '1px solid #E5E7EB'
-                  }}
-                  lineNumberStyle={{
-                    minWidth: '2.5em',
-                    paddingRight: '1em',
-                    color: isDark ? '#4B5563' : '#9CA3AF',
-                    textAlign: 'right'
                   }}
                 />
               </div>

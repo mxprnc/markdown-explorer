@@ -62,6 +62,22 @@ export default function App() {
   const [rootPath, setRootPath] = useState('/Users/alpha300uk/Library/Mobile Documents/com~apple~CloudDocs/0.study-or-toy-projects');
   const [tempRootPath, setTempRootPath] = useState('/Users/alpha300uk/Library/Mobile Documents/com~apple~CloudDocs/0.study-or-toy-projects');
   const [hasWritePermission, setHasWritePermission] = useState(false);
+  const [deferredContent, setDeferredContent] = useState(editorContent);
+  const [deferredContent2, setDeferredContent2] = useState(editorContent2);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDeferredContent(editorContent);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [editorContent]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDeferredContent2(editorContent2);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [editorContent2]);
 
   const availableModels = [
     { label: 'Gemini 3.1 Pro (Reasoning)', value: 'gemini-3.1-pro-preview' },
@@ -222,6 +238,7 @@ export default function App() {
       setOpenedFiles(prev => !prev.includes(file) ? [...prev, file] : prev);
       setSelectedFile(file);
       setEditorContent(content);
+      setDeferredContent(content);
       setActivePane(1);
     } else {
       if (file === selectedFile2) return;
@@ -231,6 +248,7 @@ export default function App() {
       setOpenedFiles2(prev => !prev.includes(file) ? [...prev, file] : prev);
       setSelectedFile2(file);
       setEditorContent2(content);
+      setDeferredContent2(content);
       setActivePane(2);
     }
   };
@@ -1957,7 +1975,7 @@ export default function App() {
                       <ImageViewer uri={localFiles[selectedFile]} name={selectedFile} />
                     ) : (
                       <Preview 
-                        content={localFiles[selectedFile] || ''} 
+                        content={deferredContent || ''} 
                         isDark={isDark} 
                         resolveImage={(src) => resolveImage(src, selectedFile)}
                       />
@@ -2022,7 +2040,7 @@ export default function App() {
                           <ImageViewer uri={localFiles[selectedFile2]} name={selectedFile2} />
                         ) : (
                           <Preview 
-                            content={localFiles[selectedFile2] || ''} 
+                            content={deferredContent2 || ''} 
                             isDark={isDark} 
                             resolveImage={(src) => resolveImage(src, selectedFile2)}
                           />

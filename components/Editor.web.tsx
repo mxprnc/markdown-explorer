@@ -15,6 +15,8 @@ import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/pris
 import mermaid from 'mermaid';
 // import 'katex/dist/katex.min.css'; // Loaded via CDN in +html.tsx for web
 
+mermaid.initialize({ startOnLoad: false, theme: 'default' });
+
 const ThemeContext = React.createContext({ isDark: false });
 
 function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {
@@ -22,6 +24,7 @@ function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
+    // Only update theme if it changed
     mermaid.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default' });
     const renderChart = async () => {
       try {
@@ -75,10 +78,8 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
       const pos = getPos();
       const isInside = $from.pos >= pos && $from.pos <= pos + node.nodeSize;
 
-      if (isInside) {
-        if (!isEditing) setIsEditing(true);
-      } else {
-        if (isEditing) setIsEditing(false);
+      if (isInside !== isEditing) {
+        setIsEditing(isInside);
       }
     };
 
@@ -183,6 +184,12 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
               PreTag="div"
               children={rawCodeContent || ' '}
               language={language}
+              lineNumberStyle={{
+                minWidth: '2.5em',
+                paddingRight: '1em',
+                color: isDark ? '#4B5563' : '#9CA3AF',
+                textAlign: 'right'
+              }}
               style={isDark ? oneDark : oneLight}
               showLineNumbers={true}
               customStyle={{
@@ -192,12 +199,6 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
                 fontSize: 13,
                 backgroundColor: 'transparent'
               }}
-              lineNumberStyle={{
-                minWidth: '2.5em',
-                paddingRight: '1em',
-                color: isDark ? '#4B5563' : '#9CA3AF',
-                textAlign: 'right'
-              }}
             />
           </div>
         )}
@@ -206,9 +207,11 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
   );
 };
 
+const MemoizedCodeBlockComponent = React.memo(CodeBlockComponent);
+
 const CustomCodeBlock = CodeBlock.extend({
   addNodeView() {
-    return ReactNodeViewRenderer(CodeBlockComponent);
+    return ReactNodeViewRenderer(MemoizedCodeBlockComponent);
   },
 });
 
@@ -231,15 +234,15 @@ const HeadingComponent = ({ node, updateAttributes, editor, getPos }: any) => {
 
       const isInside = $from.pos >= pos && $to.pos <= pos + node.nodeSize;
 
-      if (isInside) {
-        if (!isEditing) setIsEditing(true);
-      } else {
-        if (isEditing) setIsEditing(false);
+      if (isInside !== isEditing) {
+        setIsEditing(isInside);
       }
     };
 
     editor.on('selectionUpdate', handleSelectionUpdate);
-    return () => editor.off('selectionUpdate', handleSelectionUpdate);
+    return () => {
+      editor.off('selectionUpdate', handleSelectionUpdate);
+    };
   }, [editor, getPos, isEditing, node.nodeSize]);
 
   const level = node.attrs.level;
@@ -285,6 +288,8 @@ const HeadingComponent = ({ node, updateAttributes, editor, getPos }: any) => {
   );
 };
 
+const MemoizedHeadingComponent = React.memo(HeadingComponent);
+
 const CustomHeading = Heading.extend({
   addKeyboardShortcuts() {
     return {
@@ -329,7 +334,7 @@ const CustomHeading = Heading.extend({
     };
   },
   addNodeView() {
-    return ReactNodeViewRenderer(HeadingComponent);
+    return ReactNodeViewRenderer(MemoizedHeadingComponent);
   },
 });
 
@@ -349,15 +354,15 @@ const BlockquoteComponent = ({ node, editor, getPos }: any) => {
       const pos = getPos();
       const isInside = $from.pos >= pos && $to.pos <= pos + node.nodeSize;
 
-      if (isInside) {
-        if (!isEditing) setIsEditing(true);
-      } else {
-        if (isEditing) setIsEditing(false);
+      if (isInside !== isEditing) {
+        setIsEditing(isInside);
       }
     };
 
     editor.on('selectionUpdate', handleSelectionUpdate);
-    return () => editor.off('selectionUpdate', handleSelectionUpdate);
+    return () => {
+      editor.off('selectionUpdate', handleSelectionUpdate);
+    };
   }, [editor, getPos, isEditing, node.nodeSize]);
 
   return (
@@ -384,9 +389,11 @@ const BlockquoteComponent = ({ node, editor, getPos }: any) => {
   );
 };
 
+const MemoizedBlockquoteComponent = React.memo(BlockquoteComponent);
+
 const CustomBlockquote = Blockquote.extend({
   addNodeView() {
-    return ReactNodeViewRenderer(BlockquoteComponent);
+    return ReactNodeViewRenderer(MemoizedBlockquoteComponent);
   },
 });
 
