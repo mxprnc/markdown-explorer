@@ -791,13 +791,24 @@ export default function App() {
   ).current;
 
   const handleOpenDirectory = async () => {
+    console.log('handleOpenDirectory called');
     if (Platform.OS !== 'web') {
-      Alert.alert('알림', '로컬 폴더 열기는 데스크탑 웹 브라우저 (Chrome, Edge 등) 환경에서 지원됩니다.');
+      window.alert('로컬 폴더 열기는 데스크탑 웹 브라우저 환경에서 지원됩니다.');
       return;
     }
+
+    // @ts-ignore
+    if (typeof window.showDirectoryPicker !== 'function') {
+      console.error('showDirectoryPicker not supported');
+      window.alert('사용 중인 브라우저에서 로컬 폴더 접근 기능을 지원하지 않습니다. Chrome 혹은 Edge를 사용해 주세요.');
+      return;
+    }
+
     try {
+      console.log('Opening directory picker...');
       // @ts-ignore
       const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      console.log('Directory handle obtained:', handle.name);
       setDirHandle(handle);
       setSelectedFolder(handle.name);
 
@@ -862,8 +873,10 @@ export default function App() {
       setSelectedFile2('');
       setEditorContent2('');
       setOpenedFiles2([]);
-    } catch (e) {
-      console.log('User cancelled or error', e);
+    } catch (e: any) {
+      if (e.name === 'AbortError') return; // User cancelled, ignore
+      console.error('Directory pick failed', e);
+      Alert.alert('오류', '폴더를 선택하는 중 오류가 발생했습니다: ' + e.message);
     }
   };
 
@@ -915,7 +928,7 @@ export default function App() {
     }
   };
 
-  const resolveImage = async (relativePath: string, currentFilePath?: string) => {
+  const resolveImage = React.useCallback(async (relativePath: string, currentFilePath?: string) => {
     if (!dirHandle) return relativePath;
     try {
       if (relativePath.startsWith('http') || relativePath.startsWith('data:') || relativePath.startsWith('blob:')) {
@@ -965,7 +978,7 @@ export default function App() {
       console.warn('Failed to resolve image', relativePath, err);
       return relativePath;
     }
-  };
+  }, [dirHandle]);
 
   const handleRenameImage = async (oldRelativePath: string, newFileName: string) => {
     if (!dirHandle || !selectedFile) return '';
@@ -1836,7 +1849,7 @@ export default function App() {
             <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
               <Text style={s.paneTitle}>Explorer</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                {selectedFolder && (
+                {selectedFolder ? (
                   <>
                     <Pressable onPress={() => { setCreatingItem({ parentPath: '', kind: 'file' }); setCreationName(''); }}>
                       <Ionicons name="document-outline" size={18} color={colors.primary} />
@@ -1845,14 +1858,14 @@ export default function App() {
                       <Ionicons name="folder-outline" size={18} color={colors.primary} />
                     </Pressable>
                   </>
-                )}
+                ) : null}
                 {Platform.OS === 'web' && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    {dirHandle && !hasWritePermission && (
+                    {dirHandle && !hasWritePermission ? (
                       <Pressable onPress={requestWritePermission} style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#F59E0B' }}>
                         <Text style={{ color: '#D97706', fontSize: 10, fontWeight: 'bold' }}>⚠️ 수정권한 필요</Text>
                       </Pressable>
-                    )}
+                    ) : null}
                     <Pressable onPress={handleOpenDirectory}>
                       <Text style={{color: colors.primary, fontSize: 12, fontWeight: 'bold'}}>열기</Text>
                     </Pressable>

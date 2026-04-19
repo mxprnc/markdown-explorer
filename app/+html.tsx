@@ -22,7 +22,6 @@ export default function Root({ children }: PropsWithChildren) {
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"
-          integrity="sha384-shhWZGRYvspvY3D+yVfO7p0d68RCN7G/W8WfI+86f78Y7A5w/G9iV0YV8pI1G1G1"
           crossOrigin="anonymous"
         />
 
