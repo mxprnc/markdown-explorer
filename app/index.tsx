@@ -59,8 +59,8 @@ export default function App() {
   const [tempClientId, setTempClientId] = useState('');
   const [selectedModel, setSelectedModel] = useState('gemini-2.5-pro');
   const [tempModel, setTempModel] = useState('gemini-2.5-pro');
-  const [rootPath, setRootPath] = useState('/Users/alpha300uk/Library/Mobile Documents/com~apple~CloudDocs/0.study-or-toy-projects');
-  const [tempRootPath, setTempRootPath] = useState('/Users/alpha300uk/Library/Mobile Documents/com~apple~CloudDocs/0.study-or-toy-projects');
+  const [rootPath, setRootPath] = useState('');
+  const [tempRootPath, setTempRootPath] = useState('');
   const [hasWritePermission, setHasWritePermission] = useState(false);
   const [deferredContent, setDeferredContent] = useState(editorContent);
   const [deferredContent2, setDeferredContent2] = useState(editorContent2);
