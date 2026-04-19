@@ -25,6 +25,7 @@
   5. **Naming Convention**: React 컴포넌트 및 파일명 `PascalCase` 통일.
   6. **Separation of Concerns**: UI, 로직(Utils), 상태(Hooks)의 분리.
   7. **Granularity**: 작고 명확한 책임을 가진 함수 설계.
+  8. **Testing Strategy**: 피라미드 구조 및 사용자 중심 테스트.
 
 ---
 
