@@ -1023,7 +1023,7 @@ export default function App() {
     }
   };
 
-  const getAbsolutePath = () => `${rootPath}/${selectedFolder}/${selectedFile}`;
+
   const getRelativePath = () => `./${selectedFolder}/${selectedFile}`;
 
   const handleSaveToDisk = async (content: string, overrideFile?: string) => {
@@ -1080,12 +1080,7 @@ export default function App() {
     }
   };
 
-  const copyAbsolutePath = async () => {
-    const p = getAbsolutePath();
-    await Clipboard.setStringAsync(p);
-    if (Platform.OS === 'web') window.alert(`절대 경로가 복사되었습니다:\n${p}`);
-    else Alert.alert('복사됨', `절대 경로가 복사되었습니다:\n${p}`);
-  };
+
 
   const copyRelativePath = async () => {
     const p = getRelativePath();
@@ -1094,11 +1089,7 @@ export default function App() {
     else Alert.alert('복사됨', `상대 경로가 복사되었습니다:\n${p}`);
   };
 
-  const copyRootAbsolutePath = async () => {
-    const p = `${rootPath}/${selectedFolder}`;
-    await Clipboard.setStringAsync(p);
-    if (Platform.OS === 'web') window.alert(`루트 폴더 절대 경로가 복사되었습니다:\n${p}`);
-  };
+
 
   const copyRootRelativePath = async () => {
     const p = `./`;
@@ -1470,23 +1461,7 @@ export default function App() {
                   >
                     <Text style={{ color: colors.primary, fontSize: 12, fontWeight: 'bold' }}>@</Text>
                   </Pressable>
-                  <Pressable 
-                    onPress={async (e) => {
-                      e.stopPropagation();
-                      const p = `${rootPath}/${selectedFolder}/${item.path}`;
-                      await Clipboard.setStringAsync(p);
-                      if (Platform.OS === 'web') window.alert(`절대 경로가 복사되었습니다:\n${p}`);
-                    }}
-                    style={{ padding: 2 }}
-                  >
-                    <Ionicons name="copy-outline" size={12} color={colors.primary} />
-                  </Pressable>
-                  <Pressable onPress={(e) => { e.stopPropagation(); setCreatingItem({ parentPath: item.path, kind: 'file' }); setCreationName(''); }}>
-                    <Ionicons name="document-outline" size={14} color={colors.primary} />
-                  </Pressable>
-                  <Pressable onPress={(e) => { e.stopPropagation(); setCreatingItem({ parentPath: item.path, kind: 'directory' }); setCreationName(''); }}>
-                    <Ionicons name="folder-outline" size={14} color={colors.primary} />
-                  </Pressable>
+
                   <Pressable 
                     onPress={(e) => { 
                       e.stopPropagation(); 
@@ -1496,15 +1471,6 @@ export default function App() {
                     style={{ padding: 2 }}
                   >
                     <Ionicons name="pencil-outline" size={14} color={colors.primary} />
-                  </Pressable>
-                  <Pressable 
-                    onPress={(e) => { 
-                      e.stopPropagation(); 
-                      handleDeleteFileSystem(item); 
-                    }}
-                    style={{ padding: 2 }}
-                  >
-                    <Ionicons name="trash-outline" size={14} color="#EF4444" />
                   </Pressable>
                 </View>
               )}
@@ -1543,17 +1509,7 @@ export default function App() {
               >
                 <Text style={{ color: colors.primary, fontSize: 12, fontWeight: 'bold' }}>@</Text>
               </Pressable>
-              <Pressable 
-                onPress={async (e) => {
-                  e.stopPropagation();
-                  const p = `${rootPath}/${selectedFolder}/${item.path}`;
-                  await Clipboard.setStringAsync(p);
-                  if (Platform.OS === 'web') window.alert(`절대 경로가 복사되었습니다:\n${p}`);
-                }}
-                style={{ padding: 2 }}
-              >
-                <Ionicons name="copy-outline" size={12} color={colors.primary} />
-              </Pressable>
+
               <Pressable 
                 onPress={(e) => { 
                   e.stopPropagation(); 
@@ -1563,15 +1519,6 @@ export default function App() {
                 style={{ padding: 2 }}
               >
                 <Ionicons name="pencil-outline" size={14} color={colors.primary} />
-              </Pressable>
-              <Pressable 
-                onPress={(e) => { 
-                  e.stopPropagation(); 
-                  handleDeleteFileSystem(item); 
-                }}
-                style={{ padding: 2 }}
-              >
-                <Ionicons name="trash-outline" size={14} color="#EF4444" />
               </Pressable>
             </View>
           )}
@@ -1826,9 +1773,7 @@ export default function App() {
             </Pressable>
             <Text style={[s.headerTitle, { fontWeight: 'bold' }]}>{selectedFolder || '폴더를 열어주세요'}</Text>
           </View>
-          <Pressable onPress={copyRootAbsolutePath} style={{ padding: 4, marginHorizontal: 4 }}>
-            <Ionicons name="copy-outline" size={18} color={colors.primary} />
-          </Pressable>
+
           <Pressable onPress={toggleTheme}>
             <Text style={s.themeBtnText}>
               {currentScheme === 'dark' ? '모드: Dark' : '모드: Light'}
@@ -2458,21 +2403,7 @@ export default function App() {
               <Text style={{ color: colors.text, fontSize: 13, marginRight: 10, width: 16, textAlign: 'center', fontWeight: 'bold' }}>@</Text>
               <Text style={{ color: colors.text, fontSize: 13 }}>상대 경로 복사</Text>
             </Pressable>
-            <Pressable 
-              onPress={async () => {
-                setContextMenu({ ...contextMenu, visible: false });
-                const p = `${rootPath}/${selectedFolder}/${contextMenu.item?.path}`;
-                await Clipboard.setStringAsync(p);
-                if (Platform.OS === 'web') window.alert(`절대 경로가 복사되었습니다:\n${p}`);
-              }}
-              style={({ hovered }: any) => [
-                { paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },
-                hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
-              ]}
-            >
-              <Ionicons name="copy-outline" size={16} color={colors.text} style={{ marginRight: 10 }} />
-              <Text style={{ color: colors.text, fontSize: 13 }}>절대 경로 복사</Text>
-            </Pressable>
+
             <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
             <Pressable 
               onPress={() => {
