@@ -26,6 +26,10 @@
   6. **Separation of Concerns**: UI, 로직(Utils), 상태(Hooks)의 분리.
   7. **Granularity**: 작고 명확한 책임을 가진 함수 설계.
   8. **Testing Strategy**: 피라미드 구조 및 사용자 중심 테스트.
+  9. **Constants & Configuration**: 매직 넘버 제거 및 상수화.
+  10. **Styling & Design System**: StyleSheet 활용 및 디자인 토큰화.
+  11. **JSX & Semantic DOM**: 시맨틱 태그 및 효율적인 리스트 렌더링.
+  12. **Async & Error Handling**: 비동기 예외 처리 및 병렬 실행 최적화.
 
 ---
 

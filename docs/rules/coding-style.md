@@ -317,3 +317,181 @@ test('열기 버튼 클릭 시 상세 내용이 화면에 나타난다', async (
   expect(detailText).toBeInTheDocument();
 });
 ```
+
+## 9. Constants & Configuration (상수 및 설정 관리)
+
+코드 내에 의미를 알 수 없는 숫자나 문자열(Magic Number/String)을 직접 사용하지 말고, 명확한 이름의 상수로 관리해야 합니다.
+
+### 지침
+- **Naming (SCREAMING_SNAKE_CASE)**: 전역적으로 사용되는 상수는 대문자와 언더바를 사용하여 일반 변수와 구분합니다.
+- **Location**:
+  - 컴포넌트 전용 상수는 파일 내 컴포넌트 함수 바깥(최상단)에 정의합니다.
+  - 공용 상수는 `src/constants/` 디렉터리에 도메인별로 분류합니다.
+- **Immutability**: TypeScript 사용 시 객체나 배열 상수는 `as const`를 사용하여 불변성을 보장합니다.
+
+### 예제
+
+#### ❌ Bad: 마법의 숫자와 문자열을 직접 사용한 경우
+```tsx
+const UserList = () => {
+  useEffect(() => {
+    if (status === 'ACTIVE') { // 마법의 문자열
+      doSomething();
+    }
+  }, []);
+
+  return <div style={{ padding: 24 }}>...</div>; // 마법의 숫자
+};
+```
+
+#### ✅ Good: 상수를 정의하여 사용한 경우
+```tsx
+// 파일 최상단 또는 별도 constants 파일
+const PADDING_SIZE = 24;
+const USER_STATUS = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+} as const;
+
+const UserList = () => {
+  useEffect(() => {
+    if (status === USER_STATUS.ACTIVE) {
+      doSomething();
+    }
+  }, []);
+
+  return <div style={{ padding: PADDING_SIZE }}>...</div>;
+};
+```
+
+## 10. Styling & Design System (스타일 및 디자인 시스템)
+
+UI 스타일은 일관된 디자인 시스템 하에 관리되어야 하며, 컴포넌트 로직과 명확히 분리되어야 합니다.
+
+### 지침
+- **StyleSheet 사용 (관심사 분리)**: 인라인 스타일을 지양하고, `StyleSheet.create` 등을 활용하여 스타일 코드를 파일 하단이나 별도 파일로 분리합니다.
+- **Design Tokens (테마화)**: 색상(Colors), 간격(Spacing), 폰트 크기 등을 직접 입력하지 말고, 사전에 정의된 테마 객체나 상수를 사용합니다.
+- **배열 기반 조건부 스타일**: 상태에 따른 스타일 변경은 배열 구문을 활용하여 가독성을 높입니다.
+  - 예: `style={[styles.base, isActive && styles.active]}`
+
+### 예제
+
+#### ❌ Bad: 인라인 스타일과 하드코딩된 색상 사용
+```tsx
+// 가독성이 떨어지고 테마 변경이 어려움
+const MyButton = ({ active }) => (
+  <Pressable 
+    style={{ 
+      backgroundColor: active ? '#3b82f6' : '#e5e7eb', 
+      padding: 12, 
+      borderRadius: 8 
+    }}
+  >
+    <Text>Click Me</Text>
+  </Pressable>
+);
+```
+
+#### ✅ Good: StyleSheet와 테마 상수를 활용한 경우
+```tsx
+const MyButton = ({ active }) => (
+  <Pressable style={[styles.button, active ? styles.active : styles.inactive]}>
+    <Text style={styles.text}>Click Me</Text>
+  </Pressable>
+);
+
+const styles = StyleSheet.create({
+  button: {
+    padding: SPACING.md,
+    borderRadius: RADIUS.sm,
+  },
+  active: {
+    backgroundColor: COLORS.primary,
+  },
+  inactive: {
+    backgroundColor: COLORS.gray200,
+  },
+  text: {
+    color: COLORS.text,
+  }
+});
+```
+
+## 11. JSX & Semantic DOM (JSX 및 시맨틱 DOM)
+
+선언적인 JSX 작성과 시맨틱한 DOM 구조를 통해 코드의 의도를 명확히 하고 접근성을 높여야 합니다.
+
+### 지침
+- **Semantic Tags**: 웹 환경에서 단순 `div` 대신 `header`, `main`, `nav`, `section` 등 의미에 맞는 태그를 사용하여 구조를 잡습니다.
+- **Fragments**: 불필요한 래퍼(Wrapper) `div` 생성을 피하기 위해 `<>...</>` (Fragment)를 활용합니다.
+- **List Keys**: 리스트 렌더링 시 `index` 대신 데이터의 **고유한 고정 ID**를 `key`로 사용합니다.
+- **Refs for DOM**: DOM 요소에 직접 접근이 필요한 경우 `document` API 대신 `useRef`를 사용합니다.
+
+### 예제
+
+#### ❌ Bad: 의미 없는 태그 남발 및 index를 key로 사용
+```tsx
+const List = ({ items }) => (
+  <div> {/* 의미 없는 div */}
+    {items.map((item, index) => (
+      <div key={index}> {/* index를 key로 사용 */}
+        {item.text}
+      </div>
+    ))}
+  </div>
+);
+```
+
+#### ✅ Good: 시맨틱 태그와 고유 ID를 활용한 경우
+```tsx
+const List = ({ items }) => (
+  <nav> {/* 내비게이션임을 명시 */}
+    <ul>
+      {items.map((item) => (
+        <li key={item.id}> {/* 고유 ID를 key로 사용 */}
+          {item.text}
+        </li>
+      ))}
+    </ul>
+  </nav>
+);
+```
+
+## 12. Async & Error Handling (비동기 및 에러 처리)
+
+모든 비동기 작업은 예외 상황을 고려해야 하며, 효율적인 실행 구조를 가져야 합니다.
+
+### 지침
+- **try/catch 활용**: 모든 `async/await` 로직은 에러 발생 가능성을 염두에 두고 `try/catch` 블록으로 예외를 처리합니다.
+- **Promise.all 활용**: 서로 의존성이 없는 독립적인 비동기 작업들은 병렬로 실행하여 성능을 최적화합니다.
+- **상태 기반 피드백**: 비동기 작업의 진행 상태(Loading, Error)를 명확히 관리하여 사용자에게 시각적 피드백을 제공합니다.
+
+### 예제
+
+#### ❌ Bad: 에러 처리 부재 및 비효율적인 순차 실행
+```javascript
+const loadData = async () => {
+  // 에러 발생 시 앱이 크래시될 수 있음
+  const user = await fetchUser(); 
+  const posts = await fetchPosts(); // user와 상관없는데 굳이 기다렸다가 실행 (느림)
+  
+  setData({ user, posts });
+};
+```
+
+#### ✅ Good: 예외 처리와 병렬 실행 적용
+```javascript
+const loadData = async () => {
+  setLoading(true);
+  try {
+    // 병렬 실행으로 속도 개선
+    const [user, posts] = await Promise.all([fetchUser(), fetchPosts()]);
+    setData({ user, posts });
+  } catch (error) {
+    console.error('데이터 로드 실패:', error);
+    setError('데이터를 불러오는 중 오류가 발생했습니다.');
+  } finally {
+    setLoading(false);
+  }
+};
+```
