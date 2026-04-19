@@ -283,3 +283,37 @@ const transformToPayload = (data) => { /* ... */ };
 const sendSaveRequest = async (payload) => { /* ... */ };
 const showSuccessMessage = () => { /* ... */ };
 ```
+
+## 8. Testing Strategy (테스트 전략)
+
+프로젝트의 안정성을 위해 모든 코드는 테스트 가능해야 하며, 각 계층에 맞는 적절한 테스트 전략을 사용합니다.
+
+### 지침
+- **Testing Pyramid 준수**: 많은 수의 단위 테스트(Unit), 중간 수준의 컴포넌트 테스트, 소수의 통합/E2E 테스트 구조를 지향합니다.
+- **사용자 중심 테스트**: 컴포넌트 테스트 시 내부 구현(state, private method)이 아닌, 사용자에게 보이는 텍스트나 버튼 클릭 등의 상호작용을 검증합니다.
+- **시각적 고립**: 컴포넌트 개발 시 Storybook 등을 활용하여 다양한 상태(Loading, Error, Empty 등)를 독립적으로 검증합니다.
+
+### 예제
+
+#### ❌ Bad: 구현 세부 사항을 테스트하는 경우
+```javascript
+// 컴포넌트 내부의 state가 바뀌었는지는 사용자가 알 수 없는 영역임
+test('버튼 클릭 시 state가 true가 된다', () => {
+  const wrapper = render(<MyComponent />);
+  expect(wrapper.state('isOpen')).toBe(true); 
+});
+```
+
+#### ✅ Good: 사용자 경험을 테스트하는 경우 (React Testing Library 스타일)
+```javascript
+// 사용자가 화면에서 실제로 겪는 변화를 검증
+test('열기 버튼 클릭 시 상세 내용이 화면에 나타난다', async () => {
+  render(<MyComponent />);
+  
+  const button = screen.getByRole('button', { name: /열기/i });
+  fireEvent.click(button);
+  
+  const detailText = await screen.findByText(/상세 정보 내용/i);
+  expect(detailText).toBeInTheDocument();
+});
+```
