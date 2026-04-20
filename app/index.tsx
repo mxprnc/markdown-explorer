@@ -27,23 +27,13 @@ import { AVAILABLE_MODELS } from '@/constants/Models';
 
 WebBrowser.maybeCompleteAuthSession();
 
-export default function App() {
-  // Custom Hooks
-  const {
-    geminiApiKey,
-    googleClientId,
-    googleAccessToken,
-    showGeminiSettings, setShowGeminiSettings,
-    tempApiKey, setTempApiKey,
-    tempClientId, setTempClientId,
-    selectedModel, setSelectedModel,
-    tempModel, setTempModel,
-    rootPath, setRootPath,
-    tempRootPath, setTempRootPath,
-    promptAsync,
-    saveSettings: saveGeminiKey, // matching old name for now
-    logout: handleLogout, // matching old name for now
-  } = useGemini();
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+
+function MainScreen() {
+  const { themeMode, isDark, toggleTheme, colors, fontFamilyUI, fontFamilyCode } = useTheme();
+  const gemini = useSettings();
 
   const {
     leftPaneWidth,
@@ -88,9 +78,6 @@ export default function App() {
   } = useFileSystem();
 
   const [editorContent, setEditorContent] = useState('# Markdown Explorer Project\n\n* 실제 작동하는 CodeMirror 기반 에디터입니다.\n* 여기서 타이핑하면 아래 Live Preview 에 반영됩니다.\n\n해봤는데 잘 동작하나요? 😊');
-  const systemScheme = useColorScheme();
-  const [themeMode, setThemeMode] = useState<'system' | 'light' | 'dark'>('system');
-
   const [activeTab, setActiveTab] = useState<'files' | 'editor'>('files');
   
   // Drag & Drop State
@@ -115,8 +102,6 @@ export default function App() {
   const [deferredContent, setDeferredContent] = useState(editorContent);
   const [deferredContent2, setDeferredContent2] = useState(editorContent2);
 
-
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setDeferredContent(editorContent);
@@ -130,10 +115,6 @@ export default function App() {
     }, 300);
     return () => clearTimeout(timer);
   }, [editorContent2]);
-
-
-
-
 
   const handleSelectFile = async (file: string, targetPane: 1 | 2 = activePane) => {
     const isImage = /\.(png|jpe?g|gif|webp)$/i.test(file);
@@ -290,153 +271,9 @@ export default function App() {
     return success;
   };
 
-  const toggleTheme = () => setThemeMode(prev => prev === 'dark' ? 'light' : 'dark');
-
-  const currentScheme = themeMode === 'system' ? systemScheme : themeMode;
-  const isDark = currentScheme === 'dark';
-
-  const colors = {
-    background: isDark ? '#121212' : '#FFFFFF',
-    text: isDark ? '#F3F4F6' : '#121212',
-    border: isDark ? '#374151' : '#E5E7EB',
-    surface: isDark ? '#1E1E1E' : '#F9FAFB',
-    primary: '#3B82F6',
-    textMuted: isDark ? '#9CA3AF' : '#6B7280',
-  };
-
-  const fontFamilyUI = Platform.select({ web: 'Inter, sans-serif', default: 'System' });
-  const fontFamilyCode = Platform.select({ web: 'JetBrains Mono, Fira Code, monospace', default: 'System' });
-
   const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background, flexDirection: 'column' },
-    
-    // Header
-    header: {
-      height: 48,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      justifyContent: 'space-between',
-    },
-    headerLeft: { flexDirection: 'row', alignItems: 'center' },
-    logoText: { color: colors.text, fontWeight: 'bold', fontSize: 16, marginRight: 24, fontFamily: fontFamilyUI },
-    headerTitle: { color: colors.textMuted, fontSize: 14, marginRight: 8, fontFamily: fontFamilyUI },
-    actionIcon: { color: colors.primary, fontSize: 16, marginHorizontal: 4, padding: 4, fontFamily: fontFamilyUI },
-    themeBtnText: { color: colors.text, fontSize: 13, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, marginLeft: 16, overflow: 'hidden' },
-
-    // Main Body
     body: { flex: 1, flexDirection: 'row' },
-    
-    // Sidebars
-    paneLeft: {
-      width: 250,
-      borderRightWidth: 1,
-      borderRightColor: colors.border,
-      backgroundColor: colors.surface,
-    },
-    paneMiddle: {
-      borderRightWidth: 1,
-      borderRightColor: colors.border,
-    },
-    paneRight: {
-      flex: 1,
-      backgroundColor: colors.surface,
-    },
-    paneTOC: {
-      width: 220,
-      borderLeftWidth: 1,
-      borderLeftColor: colors.border,
-      backgroundColor: colors.surface,
-    },
-
-    paneHeader: {
-      padding: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      backgroundColor: colors.background,
-    },
-    paneTitle: { fontSize: 12, fontWeight: 'bold', color: colors.textMuted, textTransform: 'uppercase', fontFamily: fontFamilyUI },
-
-    listItem: {
-      padding: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    listItemText: { color: colors.text, fontSize: 14, fontFamily: fontFamilyUI },
-    listItemSelected: { backgroundColor: isDark ? '#2D3748' : '#EFF6FF', borderLeftWidth: 3, borderLeftColor: colors.primary },
-
-    // Footer
-    footer: {
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      backgroundColor: colors.surface,
-      padding: 0,
-      position: 'relative',
-    },
-    terminalText: {
-      color: '#A7F3D0',
-      fontFamily: fontFamilyCode,
-      fontSize: 12,
-    },
-    tabBar: {
-      flexDirection: 'row',
-      backgroundColor: colors.surface,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      height: 38,
-      alignItems: 'center',
-    },
-    tabItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 12,
-      height: '100%',
-      borderRightWidth: 1,
-      borderRightColor: colors.border,
-      backgroundColor: colors.surface,
-      borderTopWidth: 2,
-      borderTopColor: 'transparent',
-      userSelect: 'none',
-    } as any,
-    tabItemActive: {
-      backgroundColor: colors.background,
-      borderTopColor: colors.primary,
-    },
-    tabText: {
-      fontSize: 12,
-      color: colors.textMuted,
-      marginRight: 6,
-      fontFamily: fontFamilyUI,
-      userSelect: 'none',
-    } as any,
-    tabTextActive: {
-      color: colors.text,
-      fontWeight: 'bold',
-    },
-    tabCloseBtn: {
-      padding: 4,
-      borderRadius: 4,
-    },
-    tabCloseText: {
-      fontSize: 10,
-      color: colors.textMuted,
-      fontWeight: 'bold',
-      userSelect: 'none',
-    } as any,
-    footerPath: {
-      position: 'absolute',
-      bottom: 0, left: 0, right: 0,
-      height: 24,
-      backgroundColor: colors.primary,
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 12,
-    },
-    footerPathText: { color: '#FFF', fontSize: 11, fontWeight: 'bold', fontFamily: fontFamilyCode },
   });
 
   const handleTOCClick = (text: string, index: number) => {
@@ -446,7 +283,6 @@ export default function App() {
       if (!pane) return;
 
       const headers = pane.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      
       const getHeaderText = (h: Element) => {
         const contentNode = h.querySelector('.heading-content');
         if (contentNode) return contentNode.textContent?.trim() || "";
@@ -454,12 +290,9 @@ export default function App() {
       };
 
       let targetHeader: HTMLElement | null = null;
-      
-      // Try index match first
       if (headers[index] && getHeaderText(headers[index]) === text) {
         targetHeader = headers[index] as HTMLElement;
       } else {
-        // Fallback: search by text content
         for (let i = 0; i < headers.length; i++) {
           if (getHeaderText(headers[i]) === text) {
              targetHeader = headers[i] as HTMLElement;
@@ -470,8 +303,6 @@ export default function App() {
 
       if (targetHeader) {
         targetHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        
-        // Offset correction for header
         setTimeout(() => {
            let scroller: HTMLElement | null = null;
            let p = targetHeader!.parentElement;
@@ -483,9 +314,7 @@ export default function App() {
              }
              p = p.parentElement;
            }
-           if (scroller) {
-             scroller.scrollBy(0, -20);
-           }
+           if (scroller) scroller.scrollBy(0, -20);
         }, 500);
       }
     }
@@ -510,7 +339,6 @@ export default function App() {
         continue;
       }
       if (inCodeBlock) continue;
-      
       const match = line.match(/^(#{1,6})\s+(.*)$/);
       if (match) {
         toc.push({
@@ -524,118 +352,95 @@ export default function App() {
   }, [editorContent, editorContent2, activePane, activeTab, selectedFile, selectedFile2, localFiles]);
 
   return (
-    <View nativeID="main-container" style={s.container}>
-      {/* HEADER */}
-      <Header 
-        rootPath={rootPath}
-        selectedFolder={selectedFolder}
-        themeMode={themeMode}
-        systemScheme={systemScheme}
-        onThemeToggle={toggleTheme}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onRootPathClick={() => {
-          if (Platform.OS === 'web') {
-            const newPath = window.prompt('베이스 경로(Root Path)를 입력하세요:', rootPath);
-            if (newPath !== null) {
-              setRootPath(newPath);
-              setTempRootPath(newPath);
-              localStorage.setItem('markdown_explorer_root_path', newPath);
-            }
-          }
-        }}
-        colors={colors}
-      />
-
-      {/* BODY */}
-      <View style={s.body}>
-        <FileExplorer 
-          leftPaneWidth={leftPaneWidth}
-          leftPaneResponder={leftPaneResponder}
-          fileSystemData={fileSystemData}
-          selectedFile={selectedFile}
-          selectedFile2={selectedFile2}
-          expandedFolders={expandedFolders}
-          hoveredItemPath={hoveredItemPath}
-          onSelect={handleSelectFile}
-          onToggle={toggleFolder}
-          onMouseEnter={setHoveredItemPath}
-          onMouseLeave={() => setHoveredItemPath(null)}
-          onOpenDirectory={handleOpenDirectory}
-          contextMenu={contextMenu}
-          setContextMenu={setContextMenu}
-          onDelete={handleDeleteFileSystem}
-          onRenameRequest={(item) => { setRenamingItem(item); setNewName(item.name); }}
-          onCreateRequest={(parentPath, kind) => setCreatingItem({ parentPath, kind })}
-          creatingItem={creatingItem}
-          creationName={creationName}
-          setCreationName={setCreationName}
-          onConfirmCreation={handleConfirmCreation}
-          onCancelCreation={() => setCreatingItem(null)}
-          isDark={isDark}
-          colors={colors}
-          setDraggingTab={setDraggingTab}
-        />
-
-        {/* Resizing Area between Explorer and Main */}
-        <View 
-          {...leftPaneResponder.panHandlers} 
-          style={{ width: 14, marginLeft: -7, marginRight: -7, cursor: 'col-resize', zIndex: 10 } as any}
-        />
-
-        <EditorWorkspace 
+    <ErrorBoundary>
+      <View nativeID="main-container" style={s.container}>
+        {/* HEADER */}
+        <Header 
+          selectedFolder={selectedFolder}
           activeTab={activeTab}
-          isSplitMode={isSplitMode}
-          middlePaneWidth={middlePaneWidth}
-          activePane={activePane}
-          setActivePane={setActivePane}
-          openedFiles={openedFiles}
-          openedFiles2={openedFiles2}
-          selectedFile={selectedFile}
-          selectedFile2={selectedFile2}
-          editorContent={editorContent}
-          editorContent2={editorContent2}
-          setEditorContent={setEditorContent}
-          setEditorContent2={setEditorContent2}
-          localFiles={localFiles}
-          onSelectFile={handleSelectFile}
-          onCloseTab={closeTab}
-          onSaveFile={handleSaveToDisk}
-          resolveImage={resolveImage}
-          onPasteImage={handlePasteImage}
-          onRenameImage={handleRenameImage}
-          draggingTab={draggingTab}
-          setDraggingTab={setDraggingTab}
-          middlePaneResponder={middlePaneResponder}
-          isDark={isDark}
-          colors={colors}
-          fontFamilyCode={fontFamilyCode}
-          deferredContent={deferredContent}
-          deferredContent2={deferredContent2}
+          setActiveTab={setActiveTab}
         />
 
-        {/* TOC Pane */}
-        {(activePane === 1 ? selectedFile : selectedFile2) && !/\.(png|jpe?g|gif|webp)$/i.test(activePane === 1 ? selectedFile : selectedFile2) && (
-          <TOCPane 
-            content={activePane === 1 ? deferredContent : deferredContent2} 
-            width={tocPaneWidth} onTOCClick={handleTOCClick} isDark={isDark} colors={colors} responder={tocPaneResponder}
+        {/* BODY */}
+        <View style={s.body}>
+          <FileExplorer 
+            leftPaneWidth={leftPaneWidth}
+            leftPaneResponder={leftPaneResponder}
+            fileSystemData={fileSystemData}
+            selectedFile={selectedFile}
+            selectedFile2={selectedFile2}
+            expandedFolders={expandedFolders}
+            hoveredItemPath={hoveredItemPath}
+            onSelect={handleSelectFile}
+            onToggle={toggleFolder}
+            onMouseEnter={setHoveredItemPath}
+            onMouseLeave={() => setHoveredItemPath(null)}
+            onOpenDirectory={handleOpenDirectory}
+            contextMenu={contextMenu}
+            setContextMenu={setContextMenu}
+            onDelete={handleDeleteFileSystem}
+            onRenameRequest={(item) => { setRenamingItem(item); setNewName(item.name); }}
+            onCreateRequest={(parentPath, kind) => setCreatingItem({ parentPath, kind })}
+            creatingItem={creatingItem}
+            creationName={creationName}
+            setCreationName={setCreationName}
+            onConfirmCreation={handleConfirmCreation}
+            onCancelCreation={() => setCreatingItem(null)}
+            setDraggingTab={setDraggingTab}
           />
-        )}
-      </View>
 
-      {/* FOOTER */}
-      <Footer 
-        height={footerHeight} responder={footerResponder} colors={colors}
-        geminiProps={{
-          isDark, apiKey: geminiApiKey, accessToken: googleAccessToken,
-          currentContent: activePane === 1 ? editorContent : editorContent2,
-          selectedFile: activePane === 1 ? selectedFile : selectedFile2,
-          onOpenSettings: () => setShowGeminiSettings(true),
-          onSaveChatToFile: handleSaveChatToFile,
-          model: selectedModel,
-          onModelChange: setSelectedModel,
-          models: AVAILABLE_MODELS,
-          fileList: (() => {
+          {/* Resizing Area */}
+          <View 
+            {...leftPaneResponder.panHandlers} 
+            style={{ width: 14, marginLeft: -7, marginRight: -7, cursor: 'col-resize', zIndex: 10 } as any}
+          />
+
+          <EditorWorkspace 
+            activeTab={activeTab}
+            isSplitMode={isSplitMode}
+            middlePaneWidth={middlePaneWidth}
+            activePane={activePane}
+            setActivePane={setActivePane}
+            openedFiles={openedFiles}
+            openedFiles2={openedFiles2}
+            selectedFile={selectedFile}
+            selectedFile2={selectedFile2}
+            editorContent={editorContent}
+            editorContent2={editorContent2}
+            setEditorContent={setEditorContent}
+            setEditorContent2={setEditorContent2}
+            localFiles={localFiles}
+            onSelectFile={handleSelectFile}
+            onCloseTab={closeTab}
+            onSaveFile={handleSaveToDisk}
+            resolveImage={resolveImage}
+            onPasteImage={handlePasteImage}
+            onRenameImage={handleRenameImage}
+            draggingTab={draggingTab}
+            setDraggingTab={setDraggingTab}
+            middlePaneResponder={middlePaneResponder}
+            fontFamilyCode={fontFamilyCode}
+            deferredContent={deferredContent}
+            deferredContent2={deferredContent2}
+          />
+
+          {/* TOC Pane */}
+          {(activePane === 1 ? selectedFile : selectedFile2) && !/\.(png|jpe?g|gif|webp)$/i.test(activePane === 1 ? selectedFile : selectedFile2) && (
+            <TOCPane 
+               content={activePane === 1 ? deferredContent : deferredContent2} 
+               width={tocPaneWidth} onTOCClick={handleTOCClick} responder={tocPaneResponder}
+            />
+          )}
+        </View>
+
+        {/* FOOTER */}
+        <Footer 
+          height={footerHeight} 
+          responder={footerResponder}
+          selectedFile={activePane === 1 ? selectedFile : selectedFile2}
+          editorContent={activePane === 1 ? editorContent : editorContent2}
+          onSaveChatToFile={handleSaveChatToFile}
+          fileList={(() => {
             const list: string[] = [];
             const collect = (items: any[]) => {
               for (const it of items) {
@@ -645,28 +450,31 @@ export default function App() {
             };
             collect(fileSystemData);
             return list;
-          })(),
-          bottomSpacing: 24
-        }}
-      />
+          })()}
+        />
 
-      {/* MODALS */}
-      <GeminiSettingsModal 
-        visible={showGeminiSettings} onClose={() => setShowGeminiSettings(false)}
-        tempApiKey={tempApiKey} setTempApiKey={setTempApiKey}
-        tempClientId={tempClientId} setTempClientId={setTempClientId}
-        tempModel={tempModel} setTempModel={setTempModel}
-        tempRootPath={tempRootPath} setTempRootPath={setTempRootPath}
-        onSave={saveGeminiKey} onLogin={promptAsync as any} onLogout={handleLogout}
-        hasToken={!!googleAccessToken} isDark={isDark} colors={colors}
-      />
+        {/* MODALS */}
+        <GeminiSettingsModal 
+          visible={gemini.showGeminiSettings} onClose={() => gemini.setShowGeminiSettings(false)}
+        />
 
-      <RenameModal 
-        visible={!!renamingItem} name={newName} onChangeName={setNewName}
-        onConfirm={handleRenameFileSystem} onCancel={() => setRenamingItem(null)}
-        isDark={isDark} colors={colors}
-      />
-    </View>
+        <RenameModal 
+          visible={!!renamingItem} name={newName} onChangeName={setNewName}
+          onConfirm={handleRenameFileSystem} onCancel={() => setRenamingItem(null)}
+        />
+      </View>
+    </ErrorBoundary>
   );
 }
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <SettingsProvider>
+        <MainScreen />
+      </SettingsProvider>
+    </ThemeProvider>
+  );
+}
+
 

@@ -1,39 +1,35 @@
-import React from 'react';
-import { View, Text, Modal, Pressable, TextInput, StyleSheet, ScrollView, Platform } from 'react-native';
+import React, { memo } from 'react';
+import { View, Text, Modal, Pressable, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AVAILABLE_MODELS } from '@/constants/Models';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useSettings } from '@/contexts/SettingsContext';
+import { Button } from '@/components/ui/Button';
 
 interface GeminiSettingsModalProps {
   visible: boolean;
   onClose: () => void;
-  tempApiKey: string;
-  setTempApiKey: (val: string) => void;
-  tempClientId: string;
-  setTempClientId: (val: string) => void;
-  tempModel: string;
-  setTempModel: (val: string) => void;
-  tempRootPath: string;
-  setTempRootPath: (val: string) => void;
-  onSave: () => void;
-  onLogin: () => void;
-  onLogout: () => void;
-  hasToken: boolean;
-  isDark: boolean;
-  colors: any;
 }
 
-export function GeminiSettingsModal({
-  visible, onClose, tempApiKey, setTempApiKey, tempClientId, setTempClientId,
-  tempModel, setTempModel, tempRootPath, setTempRootPath, onSave, onLogin, onLogout,
-  hasToken, isDark, colors
-}: GeminiSettingsModalProps) {
+export const GeminiSettingsModal = memo(({ visible, onClose }: GeminiSettingsModalProps) => {
+  const { colors, isDark, fontFamilyUI } = useTheme();
+  const {
+    tempApiKey, setTempApiKey,
+    tempClientId, setTempClientId,
+    tempModel, setTempModel,
+    tempRootPath, setTempRootPath,
+    saveSettings, logout, promptAsync,
+    googleAccessToken
+  } = useSettings();
+  
+  const hasToken = !!googleAccessToken;
   
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={[styles.modal, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Settings / Gemini AI</Text>
+            <Text style={[styles.modalTitle, { color: colors.text, fontFamily: fontFamilyUI }]}>Settings / Gemini AI</Text>
             <Pressable onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={24} color={colors.textMuted} />
             </Pressable>
@@ -41,25 +37,25 @@ export function GeminiSettingsModal({
           
           <ScrollView style={styles.modalBody}>
              <View style={styles.section}>
-                <Text style={[styles.label, { color: colors.text }]}>1. API Key (Direct API)</Text>
+                <Text style={[styles.label, { color: colors.text, fontFamily: fontFamilyUI }]}>1. API Key (Direct API)</Text>
                 <TextInput 
-                   style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+                   style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface, fontFamily: fontFamilyUI }]}
                    placeholder="Enter your Gemini API Key..."
                    placeholderTextColor={colors.textMuted}
                    value={tempApiKey}
                    onChangeText={setTempApiKey}
                    secureTextEntry
                 />
-                <Text style={[styles.helpText, { color: colors.textMuted }]}>
+                <Text style={[styles.helpText, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>
                   개인 API 키를 사용하거나, Google 로그인을 통해 OAuth 토큰을 사용할 수 있습니다.
                 </Text>
              </View>
 
              <View style={styles.section}>
-                <Text style={[styles.label, { color: colors.text }]}>2. Google OAuth (Google Drive/YouTube)</Text>
-                <Text style={[styles.subLabel, { color: colors.textMuted }]}>Web Client ID:</Text>
+                <Text style={[styles.label, { color: colors.text, fontFamily: fontFamilyUI }]}>2. Google OAuth (Google Drive/YouTube)</Text>
+                <Text style={[styles.subLabel, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>Web Client ID:</Text>
                 <TextInput 
-                   style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+                   style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface, fontFamily: fontFamilyUI }]}
                    placeholder="Enter Google Web Client ID..."
                    placeholderTextColor={colors.textMuted}
                    value={tempClientId}
@@ -70,22 +66,24 @@ export function GeminiSettingsModal({
                    {hasToken ? (
                      <View style={styles.statusRow}>
                         <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                        <Text style={styles.statusText}>Connected</Text>
-                        <Pressable onPress={onLogout} style={styles.logoutBtn}>
-                          <Text style={styles.logoutText}>Logout</Text>
+                        <Text style={[styles.statusText, { fontFamily: fontFamilyUI, color: '#059669', fontWeight: 'bold', marginLeft: 8, flex: 1 }]}>Connected</Text>
+                        <Pressable onPress={logout} style={styles.logoutBtn}>
+                          <Text style={[styles.logoutText, { fontFamily: fontFamilyUI, color: '#EF4444', fontWeight: 'bold' }]}>Logout</Text>
                         </Pressable>
                      </View>
                    ) : (
-                     <Pressable onPress={onLogin} style={[styles.loginBtn, { backgroundColor: colors.primary }]}>
-                        <Ionicons name="logo-google" size={16} color="#FFF" style={{ marginRight: 8 }} />
-                        <Text style={styles.loginBtnText}>Login with Google</Text>
-                     </Pressable>
+                     <Button 
+                       label="Login with Google"
+                       onPress={() => promptAsync()}
+                       variant="primary"
+                       style={{ width: '100%' }}
+                     />
                    )}
                 </View>
              </View>
 
              <View style={styles.section}>
-                <Text style={[styles.label, { color: colors.text }]}>3. Default AI Model</Text>
+                <Text style={[styles.label, { color: colors.text, fontFamily: fontFamilyUI }]}>3. Default AI Model</Text>
                 <View style={styles.modelList}>
                    {AVAILABLE_MODELS.map(m => (
                      <Pressable 
@@ -97,7 +95,13 @@ export function GeminiSettingsModal({
                          tempModel === m.value && { borderColor: colors.primary, backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)' }
                        ]}
                      >
-                       <Text style={[styles.modelLabel, { color: colors.text }, tempModel === m.value && { color: colors.primary, fontWeight: 'bold' }]}>{m.label}</Text>
+                       <Text style={[
+                         styles.modelLabel, 
+                         { color: colors.text, fontFamily: fontFamilyUI }, 
+                         tempModel === m.value && { color: colors.primary, fontWeight: 'bold' }
+                       ]}>
+                         {m.label}
+                       </Text>
                        {tempModel === m.value && <Ionicons name="checkmark-sharp" size={16} color={colors.primary} />}
                      </Pressable>
                    ))}
@@ -105,9 +109,9 @@ export function GeminiSettingsModal({
              </View>
 
              <View style={styles.section}>
-                <Text style={[styles.label, { color: colors.text }]}>4. Root Path (for relative links)</Text>
+                <Text style={[styles.label, { color: colors.text, fontFamily: fontFamilyUI }]}>4. Root Path (for relative links)</Text>
                 <TextInput 
-                   style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+                   style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface, fontFamily: fontFamilyUI }]}
                    placeholder="e.g. /Users/name/docs"
                    placeholderTextColor={colors.textMuted}
                    value={tempRootPath}
@@ -117,18 +121,22 @@ export function GeminiSettingsModal({
           </ScrollView>
 
           <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
-             <Pressable onPress={onClose} style={styles.cancelBtn}>
-                <Text style={[styles.cancelBtnText, { color: colors.textMuted }]}>Cancel</Text>
-             </Pressable>
-             <Pressable onPress={onSave} style={[styles.saveBtn, { backgroundColor: colors.primary }]}>
-                <Text style={styles.saveBtnText}>Save Changes</Text>
-             </Pressable>
+             <Button 
+               label="Cancel"
+               onPress={onClose}
+               variant="secondary"
+             />
+             <Button 
+               label="Save Changes"
+               onPress={saveSettings}
+               variant="primary"
+             />
           </View>
         </View>
       </View>
     </Modal>
   );
-}
+});
 
 const styles = StyleSheet.create({
   overlay: {
@@ -189,18 +197,6 @@ const styles = StyleSheet.create({
   authRow: {
     marginTop: 12,
   },
-  loginBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
-    borderRadius: 6,
-  },
-  loginBtnText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -209,20 +205,14 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   statusText: {
-    color: '#059669',
     fontSize: 14,
-    fontWeight: 'bold',
-    marginLeft: 8,
-    flex: 1,
   },
   logoutBtn: {
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   logoutText: {
-    color: '#EF4444',
     fontSize: 12,
-    fontWeight: 'bold',
   },
   modelList: {
     gap: 8,
@@ -244,23 +234,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 12,
-  },
-  cancelBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  cancelBtnText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  saveBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-  },
-  saveBtnText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
 });

@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ImageViewerProps {
   uri: string;
   name: string;
-  isDark: boolean;
-  colors: any;
-  fontFamilyCode: string;
 }
 
-export function ImageViewer({ uri, name, isDark, colors, fontFamilyCode }: ImageViewerProps) {
+export function ImageViewer({ uri, name }: ImageViewerProps) {
+  const { colors, isDark, fontFamilyCode, fontFamilyUI } = useTheme();
   const [zoom, setZoom] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -47,7 +46,7 @@ export function ImageViewer({ uri, name, isDark, colors, fontFamilyCode }: Image
         <Pressable onPress={() => setZoom(prev => Math.max(0.1, prev - 0.2))} style={styles.toolBtn}>
           <Ionicons name="remove-circle-outline" size={24} color={colors.primary} />
         </Pressable>
-        <Text style={[styles.zoomText, { color: colors.text }]}>
+        <Text style={[styles.zoomText, { color: colors.text, fontFamily: fontFamilyUI }]}>
           {Math.round(zoom * 100)}%
         </Text>
         <Pressable onPress={() => setZoom(prev => Math.min(10, prev + 0.5))} style={styles.toolBtn}>
@@ -56,7 +55,7 @@ export function ImageViewer({ uri, name, isDark, colors, fontFamilyCode }: Image
         <Pressable onPress={handleReset} style={[styles.toolBtn, { marginLeft: 8 }]}>
           <Ionicons name="refresh-outline" size={20} color={colors.textMuted} />
         </Pressable>
-        <Text style={[styles.hint, { color: colors.textMuted }]}>
+        <Text style={[styles.hint, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>
           {Platform.OS === 'web' ? '(마우스 드래그로 이동 가능)' : ''}
         </Text>
       </View>

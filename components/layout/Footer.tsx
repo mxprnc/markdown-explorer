@@ -2,15 +2,19 @@ import React, { memo } from 'react';
 import { View, StyleSheet, Platform, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import GeminiChat from '@/components/GeminiChat';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface FooterProps {
   height: number;
   responder: any;
-  geminiProps: any;
-  colors: any;
+  selectedFile: string;
+  editorContent: string;
+  onSaveChatToFile: (filename: string, content: string) => Promise<boolean>;
+  fileList: string[];
 }
 
-export const Footer = memo(({ height, responder, geminiProps, colors }: FooterProps) => {
+export const Footer = memo(({ height, responder, selectedFile, editorContent, onSaveChatToFile, fileList }: FooterProps) => {
+  const { colors, fontFamilyCode } = useTheme();
   return (
     <View 
       nativeID="gemini-footer" 
@@ -26,13 +30,17 @@ export const Footer = memo(({ height, responder, geminiProps, colors }: FooterPr
         />
       )}
       
-      <GeminiChat {...geminiProps} />
+      <GeminiChat 
+        currentContent={editorContent} 
+        onSaveChatToFile={onSaveChatToFile}
+        fileList={fileList}
+      />
 
       {/* Path Display Bar */}
       <View style={[styles.footerPath, { backgroundColor: colors.primary }]}>
         <Ionicons name="link-outline" size={12} color="#FFF" style={{ marginRight: 6 }} />
         <Text style={styles.footerPathText}>
-          {geminiProps.selectedFile || 'No file selected'}
+          {selectedFile || 'No file selected'}
         </Text>
         <View style={{ marginLeft: 'auto', flexDirection: 'row', gap: 12 }}>
           <Text style={styles.footerPathText}>UTF-8</Text>
@@ -71,7 +79,7 @@ const styles = StyleSheet.create({
   footerPathText: { 
     color: '#FFF', 
     fontSize: 11, 
-    fontWeight: 'bold', 
-    fontFamily: Platform.select({ web: 'JetBrains Mono, monospace', default: 'System' }) 
+    fontWeight: 'bold',
+    fontFamily: fontFamilyCode,
   },
 });

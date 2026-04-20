@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Platform } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface TabBarProps {
   paneId: 1 | 2;
@@ -9,13 +10,12 @@ interface TabBarProps {
   onSelect: (file: string, paneId: 1 | 2) => void;
   onClose: (file: string, paneId: 1 | 2) => void;
   onSetDraggingTab: (val: any) => void;
-  isDark: boolean;
-  colors: any;
 }
 
 export const TabBar = memo(({
-  paneId, tabs, selectedFile, activePane, onSelect, onClose, onSetDraggingTab, isDark, colors
+  paneId, tabs, selectedFile, activePane, onSelect, onClose, onSetDraggingTab
 }: TabBarProps) => {
+  const { colors, fontFamilyUI } = useTheme();
   
   if (tabs.length === 0) {
     return (
@@ -40,7 +40,7 @@ export const TabBar = memo(({
               style={[styles.tabItem, { backgroundColor: colors.surface, borderRightColor: colors.border }, isActive && [styles.tabItemActive, { borderTopColor: colors.primary, backgroundColor: colors.background }]]}
               onPress={() => onSelect(file, paneId)} 
             >
-              <Text selectable={false} style={[styles.tabText, { color: colors.textMuted }, isActive && [styles.tabTextActive, { color: colors.text }]]}>{file}</Text>
+              <Text selectable={false} style={[styles.tabText, { color: colors.textMuted, fontFamily: fontFamilyUI }, isActive && [styles.tabTextActive, { color: colors.text }]]}>{file}</Text>
               <Pressable 
                 onPress={(e) => { 
                   if (Platform.OS === 'web') e.preventDefault();

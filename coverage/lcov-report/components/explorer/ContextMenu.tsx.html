@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/16</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>0/12</span>
             </div>
         
             
@@ -184,7 +184,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -266,8 +266,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/contexts/ThemeContext';
 &nbsp;
 interface ContextMenuProps {
   x: number;
@@ -279,13 +280,12 @@ interface ContextMenuProps {
   onDelete: (item: any) =&gt; void;
   onCreateFile: (parentPath: string) =&gt; void;
   onCreateFolder: (parentPath: string) =&gt; void;
-  isDark: boolean;
-  colors: any;
 }
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >ContextMenu(</span>{ 
-  x, y, visible, item, onClose, onRename, onDelete, onCreateFile, onCreateFolder, isDark, colors 
+  x, y, visible, item, onClose, onRename, onDelete, onCreateFile, onCreateFolder
 }: ContextMenuProps) {
+  const { colors, isDark, fontFamilyUI } = <span class="cstat-no" title="statement not covered" >useTheme();</span>
 <span class="cstat-no" title="statement not covered" >  if (!visible || !item) <span class="cstat-no" title="statement not covered" >return null;</span></span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
@@ -304,14 +304,14 @@ export function <span class="fstat-no" title="function not covered" >ContextMenu
               style={<span class="fstat-no" title="function not covered" >({</span> hovered }: any) =&gt; <span class="cstat-no" title="statement not covered" >[styles.menuItem, hovered &amp;&amp; { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}</span>
             &gt;
               &lt;Ionicons name="document-outline" size={14} color={colors.text} style={styles.menuIcon} /&gt;
-              &lt;Text style={[styles.menuText, { color: colors.text }]}&gt;New File&lt;/Text&gt;
+              &lt;Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}&gt;New File&lt;/Text&gt;
             &lt;/Pressable&gt;
             &lt;Pressable 
               onPress={<span class="fstat-no" title="function not covered" >()</span> =&gt; { <span class="cstat-no" title="statement not covered" >onCreateFolder(item.path); <span class="cstat-no" title="statement not covered" ></span>onClose(); </span>}}
               style={<span class="fstat-no" title="function not covered" >({</span> hovered }: any) =&gt; <span class="cstat-no" title="statement not covered" >[styles.menuItem, hovered &amp;&amp; { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}</span>
             &gt;
               &lt;Ionicons name="folder-outline" size={14} color={colors.text} style={styles.menuIcon} /&gt;
-              &lt;Text style={[styles.menuText, { color: colors.text }]}&gt;New Folder&lt;/Text&gt;
+              &lt;Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}&gt;New Folder&lt;/Text&gt;
             &lt;/Pressable&gt;
             &lt;View style={[styles.separator, { backgroundColor: colors.border }]} /&gt;
           &lt;/&gt;
@@ -321,14 +321,14 @@ export function <span class="fstat-no" title="function not covered" >ContextMenu
           style={<span class="fstat-no" title="function not covered" >({</span> hovered }: any) =&gt; <span class="cstat-no" title="statement not covered" >[styles.menuItem, hovered &amp;&amp; { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}</span>
         &gt;
           &lt;Ionicons name="pencil-outline" size={14} color={colors.text} style={styles.menuIcon} /&gt;
-          &lt;Text style={[styles.menuText, { color: colors.text }]}&gt;Rename&lt;/Text&gt;
+          &lt;Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}&gt;Rename&lt;/Text&gt;
         &lt;/Pressable&gt;
         &lt;Pressable 
           onPress={<span class="fstat-no" title="function not covered" >()</span> =&gt; { <span class="cstat-no" title="statement not covered" >onDelete(item); <span class="cstat-no" title="statement not covered" ></span>onClose(); </span>}}
           style={<span class="fstat-no" title="function not covered" >({</span> hovered }: any) =&gt; <span class="cstat-no" title="statement not covered" >[styles.menuItem, hovered &amp;&amp; { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}</span>
         &gt;
           &lt;Ionicons name="trash-outline" size={14} color="#EF4444" style={styles.menuIcon} /&gt;
-          &lt;Text style={[styles.menuText, { color: '#EF4444' }]}&gt;Delete&lt;/Text&gt;
+          &lt;Text style={[styles.menuText, { color: '#EF4444', fontFamily: fontFamilyUI }]}&gt;Delete&lt;/Text&gt;
         &lt;/Pressable&gt;
       &lt;/View&gt;
     &lt;/Pressable&gt;
@@ -373,7 +373,7 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-20T00:30:13.270Z
+                at 2026-04-20T00:59:14.592Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

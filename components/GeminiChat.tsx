@@ -3,18 +3,14 @@ import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, ActivityIndic
 import { Ionicons } from '@expo/vector-icons';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as Clipboard from 'expo-clipboard';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useSettings } from '@/contexts/SettingsContext';
+import { AVAILABLE_MODELS } from '@/constants/Models';
 
 interface GeminiChatProps {
-  isDark: boolean;
-  apiKey: string;
-  accessToken: string | null;
   currentContent: string;
-  onOpenSettings: () => void;
   onSaveChatToFile?: (filename: string, content: string) => Promise<boolean>;
   bottomSpacing?: number;
-  model: string;
-  onModelChange: (model: string) => void;
-  models?: { label: string, value: string }[];
   fileList?: string[];
 }
 
@@ -23,7 +19,19 @@ interface Message {
   content: string;
 }
 
-export default function GeminiChat({ isDark, apiKey, accessToken, currentContent, onOpenSettings, onSaveChatToFile, bottomSpacing = 0, model, onModelChange, models = [], fileList = [] }: GeminiChatProps) {
+export default function GeminiChat({ currentContent, onSaveChatToFile, bottomSpacing = 0, fileList = [] }: GeminiChatProps) {
+  const { colors, isDark, fontFamilyCode } = useTheme();
+  const { 
+    geminiApiKey: apiKey, 
+    googleAccessToken: accessToken, 
+    selectedModel: model, 
+    setSelectedModel: onModelChange,
+    setShowGeminiSettings
+  } = useSettings();
+  
+  const models = AVAILABLE_MODELS;
+  const onOpenSettings = () => setShowGeminiSettings(true);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,17 +40,6 @@ export default function GeminiChat({ isDark, apiKey, accessToken, currentContent
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
-
-  const colors = {
-    background: isDark ? '#1E1E1E' : '#F9FAFB',
-    text: isDark ? '#F3F4F6' : '#121212',
-    border: isDark ? '#374151' : '#E5E7EB',
-    primary: '#3B82F6',
-    textMuted: isDark ? '#9CA3AF' : '#6B7280',
-    userBubble: isDark ? '#2D3748' : '#EFF6FF',
-    modelBubble: isDark ? '#1A202C' : '#FFFFFF',
-    surface: isDark ? '#121212' : '#FFFFFF',
-  };
 
   const hasAuth = !!(apiKey || accessToken);
 

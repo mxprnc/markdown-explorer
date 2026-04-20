@@ -4,6 +4,7 @@ import Editor from '@/components/Editor';
 import Preview from '@/components/Preview';
 import { TabBar } from '@/components/layout/TabBar';
 import { ImageViewer } from '@/components/preview/ImageViewer';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface EditorWorkspaceProps {
   activeTab: 'files' | 'editor';
@@ -29,8 +30,6 @@ interface EditorWorkspaceProps {
   draggingTab: any;
   setDraggingTab: (val: any) => void;
   middlePaneResponder: any;
-  isDark: boolean;
-  colors: any;
   fontFamilyCode: string;
   deferredContent: string;
   deferredContent2: string;
@@ -42,9 +41,10 @@ export function EditorWorkspace({
   editorContent, editorContent2, setEditorContent, setEditorContent2,
   localFiles, onSelectFile, onCloseTab, onSaveFile, resolveImage,
   onPasteImage, onRenameImage, draggingTab, setDraggingTab,
-  middlePaneResponder, isDark, colors, fontFamilyCode,
+  middlePaneResponder, fontFamilyCode,
   deferredContent, deferredContent2
 }: EditorWorkspaceProps) {
+  const { colors, isDark } = useTheme();
 
   const renderContent = (paneId: 1 | 2) => {
     const selFile = paneId === 1 ? selectedFile : selectedFile2;
@@ -60,14 +60,13 @@ export function EditorWorkspace({
     }
 
     if (/\.(png|jpe?g|gif|webp)$/i.test(selFile)) {
-      return <ImageViewer uri={localFiles[selFile]} name={selFile} isDark={isDark} colors={colors} fontFamilyCode={fontFamilyCode} />;
+      return <ImageViewer uri={localFiles[selFile]} name={selFile} fontFamilyCode={fontFamilyCode} />;
     }
 
     if (activeTab === 'files') {
       return (
         <Preview 
           content={content} 
-          isDark={isDark} 
           resolveImage={(src) => resolveImage(src, selFile)} 
         />
       );
@@ -78,7 +77,6 @@ export function EditorWorkspace({
         key={`${paneId}-${selFile}`}
         value={content} 
         onChange={setContent} 
-        isDark={isDark} 
         resolveImage={(src) => resolveImage(src, selFile)} 
         onPasteImage={onPasteImage} 
         onRenameImage={onRenameImage}
@@ -107,8 +105,6 @@ export function EditorWorkspace({
           onSelect={onSelectFile}
           onClose={onCloseTab}
           onSetDraggingTab={setDraggingTab}
-          isDark={isDark}
-          colors={colors}
         />
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={{ flex: 1 }}>
           {renderContent(paneId)}

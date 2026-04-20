@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ContextMenuProps {
   x: number;
@@ -12,13 +13,12 @@ interface ContextMenuProps {
   onDelete: (item: any) => void;
   onCreateFile: (parentPath: string) => void;
   onCreateFolder: (parentPath: string) => void;
-  isDark: boolean;
-  colors: any;
 }
 
 export function ContextMenu({ 
-  x, y, visible, item, onClose, onRename, onDelete, onCreateFile, onCreateFolder, isDark, colors 
+  x, y, visible, item, onClose, onRename, onDelete, onCreateFile, onCreateFolder
 }: ContextMenuProps) {
+  const { colors, isDark, fontFamilyUI } = useTheme();
   if (!visible || !item) return null;
 
   return (
@@ -37,14 +37,14 @@ export function ContextMenu({
               style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
             >
               <Ionicons name="document-outline" size={14} color={colors.text} style={styles.menuIcon} />
-              <Text style={[styles.menuText, { color: colors.text }]}>New File</Text>
+              <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>New File</Text>
             </Pressable>
             <Pressable 
               onPress={() => { onCreateFolder(item.path); onClose(); }}
               style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
             >
               <Ionicons name="folder-outline" size={14} color={colors.text} style={styles.menuIcon} />
-              <Text style={[styles.menuText, { color: colors.text }]}>New Folder</Text>
+              <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>New Folder</Text>
             </Pressable>
             <View style={[styles.separator, { backgroundColor: colors.border }]} />
           </>
@@ -54,14 +54,14 @@ export function ContextMenu({
           style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
         >
           <Ionicons name="pencil-outline" size={14} color={colors.text} style={styles.menuIcon} />
-          <Text style={[styles.menuText, { color: colors.text }]}>Rename</Text>
+          <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Rename</Text>
         </Pressable>
         <Pressable 
           onPress={() => { onDelete(item); onClose(); }}
           style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
         >
           <Ionicons name="trash-outline" size={14} color="#EF4444" style={styles.menuIcon} />
-          <Text style={[styles.menuText, { color: '#EF4444' }]}>Delete</Text>
+          <Text style={[styles.menuText, { color: '#EF4444', fontFamily: fontFamilyUI }]}>Delete</Text>
         </Pressable>
       </View>
     </Pressable>

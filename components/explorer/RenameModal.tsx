@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Button } from '@/components/ui/Button';
 
 interface RenameModalProps {
   visible: boolean;
@@ -7,18 +9,17 @@ interface RenameModalProps {
   onChangeName: (name: string) => void;
   onConfirm: () => void;
   onCancel: () => void;
-  isDark: boolean;
-  colors: any;
 }
 
-export function RenameModal({ visible, name, onChangeName, onConfirm, onCancel, isDark, colors }: RenameModalProps) {
+export function RenameModal({ visible, name, onChangeName, onConfirm, onCancel }: RenameModalProps) {
+  const { colors, isDark, fontFamilyUI } = useTheme();
   if (!visible) return null;
 
   return (
     <View style={styles.overlay}>
       <View style={[styles.modal, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Rename</Text>
-        <Text style={[styles.label, { color: colors.textMuted }]}>Enter new name:</Text>
+        <Text style={[styles.title, { color: colors.text, fontFamily: fontFamilyUI }]}>Rename</Text>
+        <Text style={[styles.label, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>Enter new name:</Text>
         <div style={{ marginBottom: 24 }}>
           <input 
             autoFocus
@@ -37,17 +38,22 @@ export function RenameModal({ visible, name, onChangeName, onConfirm, onCancel, 
               backgroundColor: isDark ? '#1a1a1a' : '#fff',
               color: isDark ? '#fff' : '#000',
               fontSize: '14px',
-              outline: 'none'
+              outline: 'none',
+              fontFamily: fontFamilyUI
             }}
           />
         </div>
         <View style={styles.footer}>
-          <Pressable onPress={onCancel} style={styles.cancelBtn}>
-            <Text style={[styles.cancelText, { color: colors.textMuted }]}>Cancel</Text>
-          </Pressable>
-          <Pressable onPress={onConfirm} style={[styles.confirmBtn, { backgroundColor: colors.primary }]}>
-            <Text style={styles.confirmText}>Confirm</Text>
-          </Pressable>
+          <Button 
+            label="Cancel"
+            onPress={onCancel}
+            variant="secondary"
+          />
+          <Button 
+            label="Confirm"
+            onPress={onConfirm}
+            variant="primary"
+          />
         </View>
       </View>
     </View>

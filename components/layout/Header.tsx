@@ -1,25 +1,18 @@
 import React, { memo } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { truncatePath } from '@/utils/FileSystemUtils';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface HeaderProps {
-  rootPath: string;
   selectedFolder: string;
-  themeMode: string;
-  systemScheme: string | null | undefined;
-  onThemeToggle: () => void;
   activeTab: 'files' | 'editor';
   setActiveTab: (tab: 'files' | 'editor') => void;
-  onRootPathClick: () => void;
-  colors: any;
 }
 
 export const Header = memo(({ 
-  rootPath, selectedFolder, themeMode, systemScheme, 
-  onThemeToggle, activeTab, setActiveTab, onRootPathClick, colors 
+  selectedFolder, activeTab, setActiveTab
 }: HeaderProps) => {
-  const fontFamilyUI = Platform.select({ web: 'Inter, sans-serif', default: 'System' });
+  const { colors, themeMode, toggleTheme, fontFamilyUI } = useTheme();
 
   return (
     <View 
@@ -50,7 +43,7 @@ export const Header = memo(({
           <Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>에디터</Text>
         </Pressable>
 
-        <Pressable onPress={onThemeToggle} style={[styles.themeBtn, { borderColor: colors.border }]}>
+        <Pressable onPress={toggleTheme} style={[styles.themeBtn, { borderColor: colors.border }]}>
           <Ionicons 
             name={themeMode === 'light' ? 'moon-outline' : 'sunny-outline'} 
             size={18} 

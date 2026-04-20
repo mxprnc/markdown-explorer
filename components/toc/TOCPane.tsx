@@ -1,5 +1,6 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Platform } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface TOCItem {
   id: string;
@@ -11,12 +12,11 @@ interface TOCPaneProps {
   content: string;
   width: number;
   onTOCClick: (text: string, index: number) => void;
-  isDark: boolean;
-  colors: any;
   responder: any;
 }
 
-export const TOCPane = memo(({ content, width, onTOCClick, isDark, colors, responder }: TOCPaneProps) => {
+export const TOCPane = memo(({ content, width, onTOCClick, responder }: TOCPaneProps) => {
+  const { colors, isDark, fontFamilyUI } = useTheme();
   const tocList = useMemo(() => {
     const lines = content.split('\n');
     const toc: TOCItem[] = [];
@@ -76,7 +76,7 @@ export const TOCPane = memo(({ content, width, onTOCClick, isDark, colors, respo
                     color: item.level === 1 ? colors.text : colors.textMuted, 
                     fontSize: item.level <= 2 ? 13 : 12,
                     fontWeight: item.level <= 2 ? 'bold' : 'normal',
-                    fontFamily: 'Inter, sans-serif'
+                    fontFamily: fontFamilyUI
                   }}>
                   {item.text}
                 </Text>

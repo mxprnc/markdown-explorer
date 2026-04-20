@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { FileItem } from './FileItem';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface FileTreeProps {
   items: any[];
@@ -21,8 +22,6 @@ interface FileTreeProps {
   setCreationName: (val: string) => void;
   onConfirmCreation: () => void;
   onCancelCreation: () => void;
-  isDark: boolean;
-  colors: any;
   setDraggingTab: (val: any) => void;
 }
 
@@ -31,8 +30,9 @@ export function FileTree({
   selectedFile, selectedFile2, expandedFolders, hoveredItemPath,
   onSelect, onToggle, onContextMenu, onMouseEnter, onMouseLeave, onRenameRequest,
   creatingItem, creationName, setCreationName, onConfirmCreation, onCancelCreation,
-  isDark, colors, setDraggingTab
+  setDraggingTab
 }: FileTreeProps) {
+  const { colors, isDark } = useTheme();
   
   const renderList = () => {
     const list = items.map((item) => {
@@ -53,8 +53,6 @@ export function FileTree({
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
             onRenameRequest={onRenameRequest}
-            isDark={isDark}
-            colors={colors}
             setDraggingTab={setDraggingTab}
           />
           {isExpanded && item.children && (
@@ -77,8 +75,6 @@ export function FileTree({
               setCreationName={setCreationName}
               onConfirmCreation={onConfirmCreation}
               onCancelCreation={onCancelCreation}
-              isDark={isDark}
-              colors={colors}
               setDraggingTab={setDraggingTab}
             />
           )}

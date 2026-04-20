@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface FileItemProps {
   item: any;
@@ -15,16 +16,15 @@ interface FileItemProps {
   onMouseEnter: (path: string) => void;
   onMouseLeave: () => void;
   onRenameRequest: (item: any) => void;
-  isDark: boolean;
-  colors: any;
   setDraggingTab: (val: any) => void;
 }
 
 export function FileItem({
   item, depth, isSelected, isExpanded, hoveredItemPath,
   onSelect, onToggle, onContextMenu, onMouseEnter, onMouseLeave, onRenameRequest,
-  isDark, colors, setDraggingTab
+  setDraggingTab
 }: FileItemProps) {
+  const { colors, isDark, fontFamilyUI } = useTheme();
   const isImage = /\.(png|jpe?g|gif|webp)$/i.test(item.name);
   const isDoc = /\.(md|txt)$/i.test(item.name);
   const isHovered = hoveredItemPath === item.path;
@@ -55,7 +55,7 @@ export function FileItem({
         numberOfLines={1} 
         style={[
           styles.itemText,
-          { color: isDoc || item.kind === 'directory' ? colors.text : colors.textMuted },
+          { color: isDoc || item.kind === 'directory' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI },
           item.kind === 'directory' && { fontWeight: '500' },
           isSelected && { fontWeight: 'bold', color: colors.primary }
         ]}

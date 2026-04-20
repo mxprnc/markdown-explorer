@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>0/12</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>0/8</span>
             </div>
         
             
@@ -164,7 +164,13 @@
 <a name='L99'></a><a href='#L99'>99</a>
 <a name='L100'></a><a href='#L100'>100</a>
 <a name='L101'></a><a href='#L101'>101</a>
-<a name='L102'></a><a href='#L102'>102</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -178,6 +184,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -194,6 +201,11 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -266,7 +278,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Button } from '@/components/ui/Button';
 &nbsp;
 interface RenameModalProps {
   visible: boolean;
@@ -274,18 +288,17 @@ interface RenameModalProps {
   onChangeName: (name: string) =&gt; void;
   onConfirm: () =&gt; void;
   onCancel: () =&gt; void;
-  isDark: boolean;
-  colors: any;
 }
 &nbsp;
-export function <span class="fstat-no" title="function not covered" >RenameModal(</span>{ visible, name, onChangeName, onConfirm, onCancel, isDark, colors }: RenameModalProps) {
+export function <span class="fstat-no" title="function not covered" >RenameModal(</span>{ visible, name, onChangeName, onConfirm, onCancel }: RenameModalProps) {
+  const { colors, isDark, fontFamilyUI } = <span class="cstat-no" title="statement not covered" >useTheme();</span>
 <span class="cstat-no" title="statement not covered" >  if (!visible) <span class="cstat-no" title="statement not covered" >return null;</span></span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
     &lt;View style={styles.overlay}&gt;
       &lt;View style={[styles.modal, { backgroundColor: colors.surface, borderColor: colors.border }]}&gt;
-        &lt;Text style={[styles.title, { color: colors.text }]}&gt;Rename&lt;/Text&gt;
-        &lt;Text style={[styles.label, { color: colors.textMuted }]}&gt;Enter new name:&lt;/Text&gt;
+        &lt;Text style={[styles.title, { color: colors.text, fontFamily: fontFamilyUI }]}&gt;Rename&lt;/Text&gt;
+        &lt;Text style={[styles.label, { color: colors.textMuted, fontFamily: fontFamilyUI }]}&gt;Enter new name:&lt;/Text&gt;
         &lt;div style={{ marginBottom: 24 }}&gt;
           &lt;input 
             autoFocus
@@ -304,17 +317,22 @@ export function <span class="fstat-no" title="function not covered" >RenameModal
               backgroundColor: isDark ? '#1a1a1a' : '#fff',
               color: isDark ? '#fff' : '#000',
               fontSize: '14px',
-              outline: 'none'
+              outline: 'none',
+              fontFamily: fontFamilyUI
             }}
           /&gt;
         &lt;/div&gt;
         &lt;View style={styles.footer}&gt;
-          &lt;Pressable onPress={onCancel} style={styles.cancelBtn}&gt;
-            &lt;Text style={[styles.cancelText, { color: colors.textMuted }]}&gt;Cancel&lt;/Text&gt;
-          &lt;/Pressable&gt;
-          &lt;Pressable onPress={onConfirm} style={[styles.confirmBtn, { backgroundColor: colors.primary }]}&gt;
-            &lt;Text style={styles.confirmText}&gt;Confirm&lt;/Text&gt;
-          &lt;/Pressable&gt;
+          &lt;Button 
+            label="Cancel"
+            onPress={onCancel}
+            variant="secondary"
+          /&gt;
+          &lt;Button 
+            label="Confirm"
+            onPress={onConfirm}
+            variant="primary"
+          /&gt;
         &lt;/View&gt;
       &lt;/View&gt;
     &lt;/View&gt;
@@ -373,7 +391,7 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-20T00:30:13.270Z
+                at 2026-04-20T00:59:14.592Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

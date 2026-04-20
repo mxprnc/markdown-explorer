@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, Pressable, Platform } from 'react-n
 import { Ionicons } from '@expo/vector-icons';
 import { FileTree } from './FileTree';
 import { ContextMenu } from './ContextMenu';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface FileExplorerProps {
   leftPaneWidth: number;
@@ -27,8 +28,6 @@ interface FileExplorerProps {
   setCreationName: (val: string) => void;
   onConfirmCreation: () => void;
   onCancelCreation: () => void;
-  isDark: boolean;
-  colors: any;
   setDraggingTab: (val: any) => void;
 }
 
@@ -38,8 +37,9 @@ export function FileExplorer({
   onSelect, onToggle, onMouseEnter, onMouseLeave, onOpenDirectory,
   contextMenu, setContextMenu, onDelete, onRenameRequest, onCreateRequest,
   creatingItem, creationName, setCreationName, onConfirmCreation, onCancelCreation,
-  isDark, colors, setDraggingTab
+  setDraggingTab
 }: FileExplorerProps) {
+  const { colors, isDark, fontFamilyUI } = useTheme();
   
   return (
     <View nativeID="explorer-pane" id="explorer-pane" style={[styles.paneLeft, { width: leftPaneWidth, backgroundColor: colors.surface, borderRightColor: colors.border }]}>
@@ -80,8 +80,6 @@ export function FileExplorer({
             setCreationName={setCreationName}
             onConfirmCreation={onConfirmCreation}
             onCancelCreation={onCancelCreation}
-            isDark={isDark}
-            colors={colors}
             setDraggingTab={setDraggingTab}
           />
         )}
@@ -102,8 +100,6 @@ export function FileExplorer({
         onDelete={onDelete}
         onCreateFile={(path) => onCreateRequest(path, 'file')}
         onCreateFolder={(path) => onCreateRequest(path, 'directory')}
-        isDark={isDark}
-        colors={colors}
       />
     </View>
   );
