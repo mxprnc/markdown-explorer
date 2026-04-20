@@ -30,9 +30,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">56.25% </span>
+                <span class="strong">54.16% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>9/16</span>
+                <span class='fraction'>13/24</span>
             </div>
         
             
@@ -161,7 +161,34 @@
 <a name='L96'></a><a href='#L96'>96</a>
 <a name='L97'></a><a href='#L97'>97</a>
 <a name='L98'></a><a href='#L98'>98</a>
-<a name='L99'></a><a href='#L99'>99</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -175,9 +202,9 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -218,7 +245,30 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -268,10 +318,12 @@ interface HeaderProps {
   selectedFolder: string;
   activeTab: 'files' | 'editor';
   setActiveTab: (tab: 'files' | 'editor') =&gt; void;
+  isSplitMode: boolean;
+  onSplitToggle: () =&gt; void;
 }
 &nbsp;
 export const Header = memo(({ 
-  selectedFolder, activeTab, setActiveTab
+  selectedFolder, activeTab, setActiveTab, isSplitMode, onSplitToggle
 }: HeaderProps) =&gt; {
   const { colors, themeMode, toggleTheme, fontFamilyUI } = useTheme();
 &nbsp;
@@ -302,6 +354,20 @@ export const Header = memo(({
           style={[styles.tabBtn, activeTab === 'editor' &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >{ backgroundColor: colors.surface, borderColor: colors.primary }]</span>}&gt;
           &lt;Ionicons name="code-working-outline" size={18} color={activeTab === 'editor' ? <span class="branch-0 cbranch-no" title="branch not covered" >colors.primary </span>: colors.textMuted} /&gt;
           &lt;Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? <span class="branch-0 cbranch-no" title="branch not covered" >colors.text </span>: colors.textMuted, fontFamily: fontFamilyUI }]}&gt;에디터&lt;/Text&gt;
+        &lt;/Pressable&gt;
+&nbsp;
+        &lt;View style={{ width: 1, height: 20, backgroundColor: colors.border, marginHorizontal: 8 }} /&gt;
+&nbsp;
+        &lt;Pressable 
+          onPress={onSplitToggle}
+          style={[styles.tabBtn, isSplitMode &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >{ backgroundColor: colors.surface, borderColor: colors.primary }]</span>}
+        &gt;
+          &lt;Ionicons 
+            name={isSplitMode ? <span class="branch-0 cbranch-no" title="branch not covered" >"copy" </span>: "copy-outline"} 
+            size={18} 
+            color={isSplitMode ? <span class="branch-0 cbranch-no" title="branch not covered" >colors.primary </span>: colors.textMuted} 
+          /&gt;
+          &lt;Text style={[styles.tabBtnText, { color: isSplitMode ? <span class="branch-0 cbranch-no" title="branch not covered" >colors.text </span>: colors.textMuted, fontFamily: fontFamilyUI }]}&gt;Split View&lt;/Text&gt;
         &lt;/Pressable&gt;
 &nbsp;
         &lt;Pressable onPress={toggleTheme} style={[styles.themeBtn, { borderColor: colors.border }]}&gt;
@@ -344,6 +410,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 6,
   },
+  actionBtn: {
+    padding: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    marginHorizontal: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    cursor: 'pointer',
+  } as any,
   themeBtn: {
     marginLeft: 16,
     justifyContent: 'center',
@@ -364,7 +439,7 @@ const styles = StyleSheet.create({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-20T04:56:57.932Z
+                at 2026-04-20T07:34:29.644Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
