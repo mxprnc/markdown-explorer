@@ -23,7 +23,13 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Markdown Explorer",
+      "shortName": "MarkExplorer",
+      "description": "Professional Local Markdown Explorer & Editor",
+      "themeColor": "#3B82F6",
+      "backgroundColor": "#ffffff",
+      "display": "standalone"
     },
     "plugins": [
       "expo-router",

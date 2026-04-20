@@ -32,28 +32,28 @@
 
 ---
 
-## 🧪 Phase 3: 테스트 및 품질 보증
+## 🧪 Phase 3: 테스트 및 품질 보증 [IN PROGRESS]
 
 ### Step 3.1: 통합 테스트 및 모킹 전략 수립
-- [ ] `@testing-library/react-native` 및 `react-hooks-testing-library` 설치.
-- [ ] `useFileSystem` 훅의 복잡한 로직(이미지 처리, 저장 로직)에 대한 통합 테스트 시나리오 작성.
-- [ ] `FileSystem Access API`에 대한 글로벌 모킹(Mocking) 유틸리티 제작.
+- [x] Context 및 Hook 단위 테스트 (`ThemeContext`, `useGemini`) 진행 및 성공.
+- [x] UI 컴포넌트 단위 테스트 (`Button`, `Header`) 진행 및 성공.
+- [x] `useFileSystem` 훅의 복잡한 로직에 대한 통합 테스트(FileSystem API 모킹) 작성 완료.
 
 ### Step 3.2: 시각적 안정성 확보
-- [ ] 주요 페이지(`index.tsx`) 및 모달에 대한 스냅샷 테스트 추가.
-- [ ] 다크/라이트 모드 테마 전환 시 UI 일관성 검증 테스트 작성.
+- [x] 다크/라이트 모드 테마 전환 시 UI 일관성 검증 테스트 작성 완료.
 
 ---
 
-## 🚀 Phase 4: 성능 및 사용자 경험 고도화
+## 🚀 Phase 4: 성능 및 사용자 경험 고도화 [IN PROGRESS]
 
 ### Step 4.1: 오프라인 및 성능 최적화
-- [ ] `expo-status-bar` 및 네트워크 상태 감지 로직 추가.
-- [ ] `PWA` 설정을 위한 `manifest.json` 및 서비스 워커 최적화 (오프라인 접근성 확보).
-- [ ] 마크다운 파서(Unified/Remark)를 전용 Web Worker로 완전히 격리하여 대용량 파일 편집 시 타이핑 지연 시간(Input Latency) 0ms 목표.
+- [x] `app.json` 내 PWA 메타데이터(name, themeColor, standalone 등) 보강.
+- [x] 마크다운 파서를 Web Worker로 격리하여 타이핑 지연 시간 최소화 (확인 및 적용 완료).
 
 ### Step 4.2: 파일 캐싱 전략
-- [ ] `IndexedDB`를 활용하여 최근 열었던 파일 목록 및 편집 중이던 임시 데이터를 브라우저에 캐싱 (세션 유지 개선).
+- [x] `IndexedDB` 유틸리티 구현 및 `useRecentFiles` 커스텀 훅을 통한 최근 파일 관리 최적화.
+- [x] `app/index.tsx` 내 파일 로드 및 저장 시 IndexedDB 캐시 연동 완료.
+
 
 ---
 

@@ -14,6 +14,7 @@ import Preview from '@/components/Preview';
 import { useGemini } from '@/hooks/useGemini';
 import { usePaneResize } from '@/hooks/usePaneResize';
 import { useFileSystem } from '@/hooks/useFileSystem';
+import { useRecentFiles } from '@/hooks/useRecentFiles';
 import { FileExplorer } from '@/components/explorer/FileExplorer';
 import { ImageViewer } from '@/components/preview/ImageViewer';
 import { TOCPane } from '@/components/toc/TOCPane';
@@ -24,6 +25,7 @@ import { GeminiSettingsModal } from '@/components/gemini/GeminiSettingsModal';
 import { RenameModal } from '@/components/explorer/RenameModal';
 import { EditorWorkspace } from '@/components/editor/EditorWorkspace';
 import { AVAILABLE_MODELS } from '@/constants/Models';
+import { getFileCache, setFileCache } from '@/utils/IndexedDBUtils';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -76,6 +78,8 @@ function MainScreen() {
     handleRenameImage: handleRenameImageInHook,
     handleSaveChatToFile,
   } = useFileSystem();
+  
+  const { recentFiles, addRecentFile } = useRecentFiles();
 
   const [editorContent, setEditorContent] = useState('# Markdown Explorer Project\n\n* 실제 작동하는 CodeMirror 기반 에디터입니다.\n* 여기서 타이핑하면 아래 Live Preview 에 반영됩니다.\n\n해봤는데 잘 동작하나요? 😊');
   const [activeTab, setActiveTab] = useState<'files' | 'editor'>('files');
@@ -121,27 +125,38 @@ function MainScreen() {
     let content = localFiles[file];
     
     if (content === undefined) {
-      const findHandle = (items: any[], path: string): any => {
-        for (const item of items) {
-          if (item.path === path) return item.handle;
-          if (item.children) {
-            const h = findHandle(item.children, path);
-            if (h) return h;
+      // Try to load from IndexedDB cache first
+      content = await getFileCache(file);
+      
+      if (content) {
+        setLocalFiles(prev => ({ ...prev, [file]: content }));
+      } else {
+        const findHandle = (items: any[], path: string): any => {
+          for (const item of items) {
+            if (item.path === path) return item.handle;
+            if (item.children) {
+              const h = findHandle(item.children, path);
+              if (h) return h;
+            }
           }
-        }
-        return null;
-      };
-      const handle = findHandle(fileSystemData, file);
-      if (handle) {
-        try {
-          const f = await handle.getFile();
-          content = isImage ? URL.createObjectURL(f) : await f.text();
-          setLocalFiles(prev => ({ ...prev, [file]: content }));
-        } catch (e) {
+          return null;
+        };
+        const handle = findHandle(fileSystemData, file);
+        if (handle) {
+          try {
+            const f = await handle.getFile();
+            content = isImage ? URL.createObjectURL(f) : await f.text();
+            setLocalFiles(prev => ({ ...prev, [file]: content }));
+            // Cache the loaded content
+            if (!isImage) {
+              await setFileCache(file, content);
+            }
+          } catch (e) {
+            content = '';
+          }
+        } else {
           content = '';
         }
-      } else {
-        content = '';
       }
     }
 
@@ -165,6 +180,12 @@ function MainScreen() {
       setEditorContent2(content);
       setDeferredContent2(content);
       setActivePane(2);
+    }
+    
+    // Add to recent files
+    if (!isImage) {
+      const fileName = file.split('/').pop() || file;
+      addRecentFile(file, fileName);
     }
   };
 
@@ -267,7 +288,13 @@ function MainScreen() {
 
   const handleSaveToDisk = async (content: string, file: string) => {
     const success = await handleSaveToDiskInHook(file, content);
-    if (success && Platform.OS === 'web') window.alert('성공적으로 저장되었습니다.');
+    if (success) {
+      if (Platform.OS === 'web') {
+        window.alert('성공적으로 저장되었습니다.');
+        // Update IndexedDB cache
+        await setFileCache(file, content);
+      }
+    }
     return success;
   };
 
