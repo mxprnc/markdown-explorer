@@ -16,6 +16,8 @@ interface EditorWorkspaceProps {
   openedFiles2: string[];
   selectedFile: string;
   selectedFile2: string;
+  previewFile1?: string | null;
+  previewFile2?: string | null;
   editorContent: string;
   editorContent2: string;
   setEditorContent: (val: string) => void;
@@ -23,6 +25,7 @@ interface EditorWorkspaceProps {
   localFiles: Record<string, string>;
   onSelectFile: (file: string, pane: 1 | 2) => void;
   onCloseTab: (file: string, pane: 1 | 2) => void;
+  onPinTab: (file: string, pane: 1 | 2) => void;
   onSaveFile: (content: string, file: string) => void;
   resolveImage: (src: string, file: string) => Promise<string>;
   onPasteImage: (file: File) => Promise<string>;
@@ -37,18 +40,22 @@ interface EditorWorkspaceProps {
   previewRef2: React.RefObject<any>;
   editorRef1: React.RefObject<any>;
   editorRef2: React.RefObject<any>;
+  onTabContextMenu?: (e: any, file: string, paneId: 1 | 2) => void;
+  isDark: boolean;
 }
 
 export function EditorWorkspace({
   activeTab, isSplitMode, middlePaneWidth, activePane, setActivePane,
   openedFiles, openedFiles2, selectedFile, selectedFile2,
   editorContent, editorContent2, setEditorContent, setEditorContent2,
-  localFiles, onSelectFile, onCloseTab, onSaveFile, resolveImage,
+  localFiles, onSelectFile, onCloseTab, onPinTab, onSaveFile, resolveImage,
   onPasteImage, onRenameImage, draggingTab, setDraggingTab,
   middlePaneResponder, fontFamilyCode,
-  previewRef1, previewRef2, editorRef1, editorRef2
+  previewFile1, previewFile2,
+  previewRef1, previewRef2, editorRef1, editorRef2,
+  onTabContextMenu, isDark
 }: EditorWorkspaceProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const renderContent = (paneId: 1 | 2) => {
     const selFile = paneId === 1 ? selectedFile : selectedFile2;
@@ -98,6 +105,13 @@ export function EditorWorkspace({
     const paneWidth = isMain && isSplitMode ? middlePaneWidth : undefined;
     const flex = isMain && !isSplitMode ? 1 : (isMain ? undefined : 1);
 
+    const paneOpenedFiles = [...(paneId === 1 ? openedFiles : openedFiles2)];
+    const panePreviewFile = paneId === 1 ? previewFile1 : previewFile2;
+    
+    if (panePreviewFile && !paneOpenedFiles.includes(panePreviewFile)) {
+      paneOpenedFiles.push(panePreviewFile);
+    }
+
     return (
       <View 
         id={`pane-${paneId}`}
@@ -106,12 +120,14 @@ export function EditorWorkspace({
         {...({ onClick: () => setActivePane(paneId) } as any)}
       >
         <TabBar 
+          files={paneOpenedFiles} 
+          previewFile={paneId === 1 ? previewFile1 : previewFile2}
+          selectedFile={paneId === 1 ? selectedFile : selectedFile2}
+          onSelect={(f) => onSelectFile(f, paneId)}
+          onClose={(f) => onCloseTab(f, paneId)}
+          onPin={(f) => onPinTab(f, paneId)}
+          onContextMenu={onTabContextMenu}
           paneId={paneId}
-          tabs={isMain ? openedFiles : openedFiles2}
-          selectedFile={isMain ? selectedFile : selectedFile2}
-          activePane={activePane}
-          onSelect={onSelectFile}
-          onClose={onCloseTab}
           onSetDraggingTab={setDraggingTab}
         />
         <View style={{ flex: 1, minHeight: 0, height: '100%' }}>

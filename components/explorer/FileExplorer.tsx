@@ -53,7 +53,11 @@ export function FileExplorer({
         {fileSystemData.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>No folder opened.</Text>
-            <Pressable onPress={onOpenDirectory} style={[styles.openBtn, { backgroundColor: colors.primary }]}>
+            <Pressable 
+              accessibilityRole="button"
+              onPress={onOpenDirectory} 
+              style={[styles.openBtn, { backgroundColor: colors.primary, cursor: 'pointer' } as any]}
+            >
               <Text style={styles.openBtnText}>Open Folder</Text>
             </Pressable>
           </View>
@@ -124,7 +128,8 @@ const styles = StyleSheet.create({
   },
   headerBtn: {
     padding: 4,
-  },
+    cursor: 'pointer',
+  } as any,
   scroll: {
     flex: 1,
   },
@@ -141,7 +146,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
-  },
+    cursor: 'pointer',
+  } as any,
   openBtnText: {
     color: '#FFF',
     fontSize: 13,

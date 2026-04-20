@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">69.56% </span>
+                <span class="strong">63.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>16/23</span>
+                <span class='fraction'>19/30</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">56.25% </span>
+                <span class="strong">55% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>18/32</span>
+                <span class='fraction'>22/40</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">37.5% </span>
+                <span class="strong">27.27% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/8</span>
+                <span class='fraction'>3/11</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">69.56% </span>
+                <span class="strong">63.33% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>16/23</span>
+                <span class='fraction'>19/30</span>
             </div>
         
             
@@ -205,7 +205,30 @@
 <a name='L140'></a><a href='#L140'>140</a>
 <a name='L141'></a><a href='#L141'>141</a>
 <a name='L142'></a><a href='#L142'>142</a>
-<a name='L143'></a><a href='#L143'>143</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -306,6 +329,13 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -316,7 +346,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -365,6 +397,8 @@ interface EditorWorkspaceProps {
   openedFiles2: string[];
   selectedFile: string;
   selectedFile2: string;
+  previewFile1?: string | null;
+  previewFile2?: string | null;
   editorContent: string;
   editorContent2: string;
   setEditorContent: (val: string) =&gt; void;
@@ -372,6 +406,7 @@ interface EditorWorkspaceProps {
   localFiles: Record&lt;string, string&gt;;
   onSelectFile: (file: string, pane: 1 | 2) =&gt; void;
   onCloseTab: (file: string, pane: 1 | 2) =&gt; void;
+  onPinTab: (file: string, pane: 1 | 2) =&gt; void;
   onSaveFile: (content: string, file: string) =&gt; void;
   resolveImage: (src: string, file: string) =&gt; Promise&lt;string&gt;;
   onPasteImage: (file: File) =&gt; Promise&lt;string&gt;;
@@ -386,18 +421,22 @@ interface EditorWorkspaceProps {
   previewRef2: React.RefObject&lt;any&gt;;
   editorRef1: React.RefObject&lt;any&gt;;
   editorRef2: React.RefObject&lt;any&gt;;
+  onTabContextMenu?: (e: any, file: string, paneId: 1 | 2) =&gt; void;
+  isDark: boolean;
 }
 &nbsp;
 export function EditorWorkspace({
   activeTab, isSplitMode, middlePaneWidth, activePane, setActivePane,
   openedFiles, openedFiles2, selectedFile, selectedFile2,
   editorContent, editorContent2, setEditorContent, setEditorContent2,
-  localFiles, onSelectFile, onCloseTab, onSaveFile, resolveImage,
+  localFiles, onSelectFile, onCloseTab, onPinTab, onSaveFile, resolveImage,
   onPasteImage, onRenameImage, draggingTab, setDraggingTab,
   middlePaneResponder, fontFamilyCode,
-  previewRef1, previewRef2, editorRef1, editorRef2
+  previewFile1, previewFile2,
+  previewRef1, previewRef2, editorRef1, editorRef2,
+  onTabContextMenu, isDark
 }: EditorWorkspaceProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 &nbsp;
   const renderContent = (paneId: 1 | 2) =&gt; {
     const selFile = paneId === 1 ? selectedFile : <span class="branch-1 cbranch-no" title="branch not covered" >selectedFile2;</span>
@@ -447,6 +486,13 @@ export function EditorWorkspace({
     const paneWidth = isMain &amp;&amp; isSplitMode ? <span class="branch-0 cbranch-no" title="branch not covered" >middlePaneWidth </span>: undefined;
     const flex = isMain &amp;&amp; !isSplitMode ? 1 : (<span class="branch-1 cbranch-no" title="branch not covered" >isMain ? undefined : 1)</span>;
 &nbsp;
+    const paneOpenedFiles = [...(paneId === 1 ? openedFiles : <span class="branch-1 cbranch-no" title="branch not covered" >openedFiles2)</span>];
+    const panePreviewFile = paneId === 1 ? previewFile1 : <span class="branch-1 cbranch-no" title="branch not covered" >previewFile2;</span>
+    
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (panePreviewFile &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >!paneOpenedFiles.includes(panePreviewFile))</span> {
+<span class="cstat-no" title="statement not covered" >      paneOpenedFiles.push(panePreviewFile);</span>
+    }
+&nbsp;
     return (
       &lt;View 
         id={`pane-${paneId}`}
@@ -455,12 +501,14 @@ export function EditorWorkspace({
         {...({ onClick: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setActivePane(paneId) </span>} as any)}
       &gt;
         &lt;TabBar 
+          files={paneOpenedFiles} 
+          previewFile={paneId === 1 ? previewFile1 : <span class="branch-1 cbranch-no" title="branch not covered" >previewFile2}</span>
+          selectedFile={paneId === 1 ? selectedFile : <span class="branch-1 cbranch-no" title="branch not covered" >selectedFile2}</span>
+          onSelect={<span class="fstat-no" title="function not covered" >(f</span>) =&gt; <span class="cstat-no" title="statement not covered" >onSelectFile(f, paneId)}</span>
+          onClose={<span class="fstat-no" title="function not covered" >(f</span>) =&gt; <span class="cstat-no" title="statement not covered" >onCloseTab(f, paneId)}</span>
+          onPin={<span class="fstat-no" title="function not covered" >(f</span>) =&gt; <span class="cstat-no" title="statement not covered" >onPinTab(f, paneId)}</span>
+          onContextMenu={onTabContextMenu}
           paneId={paneId}
-          tabs={isMain ? openedFiles : <span class="branch-1 cbranch-no" title="branch not covered" >openedFiles2}</span>
-          selectedFile={isMain ? selectedFile : <span class="branch-1 cbranch-no" title="branch not covered" >selectedFile2}</span>
-          activePane={activePane}
-          onSelect={onSelectFile}
-          onClose={onCloseTab}
           onSetDraggingTab={setDraggingTab}
         /&gt;
         &lt;View style={{ flex: 1, minHeight: 0, height: '100%' }}&gt;
@@ -496,7 +544,7 @@ export function EditorWorkspace({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-20T03:24:47.775Z
+                at 2026-04-20T04:56:57.932Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

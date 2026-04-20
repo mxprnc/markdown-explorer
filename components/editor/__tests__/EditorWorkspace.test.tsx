@@ -47,6 +47,10 @@ describe('EditorWorkspace', () => {
     deferredContent2: '',
     previewRef1: { current: null },
     previewRef2: { current: null },
+    editorRef1: { current: null },
+    editorRef2: { current: null },
+    onPinTab: jest.fn(),
+    isDark: false,
   };
 
   it('renders correctly with flex: 1 for layout', () => {

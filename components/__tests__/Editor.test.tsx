@@ -25,35 +25,66 @@ jest.mock('@tiptap/react', () => ({
   NodeViewContent: ({ children }: any) => <div>{children}</div>,
 }));
 
-jest.mock('@tiptap/core', () => ({
-  Extension: { create: jest.fn(() => ({})) },
-  Node: { create: jest.fn(() => ({})) },
-  getMarkRange: jest.fn(),
-}));
+jest.mock('@tiptap/core', () => {
+  const mockNode = { 
+    configure: jest.fn(() => ({})),
+    extend: jest.fn(() => ({ configure: jest.fn(() => ({})) }))
+  };
+  return {
+    Extension: { create: jest.fn(() => mockNode) },
+    Node: { create: jest.fn(() => mockNode) },
+    getMarkRange: jest.fn(),
+  };
+});
 
 jest.mock('@tiptap/starter-kit', () => ({
   __esModule: true,
   default: { configure: jest.fn(() => ({})) },
 }));
-jest.mock('@tiptap/extension-code-block', () => ({ 
-  __esModule: true,
-  default: { configure: jest.fn(() => ({})) },
-  CodeBlock: { configure: jest.fn(() => ({})) } 
-}));
-jest.mock('@tiptap/extension-heading', () => ({ 
-  __esModule: true,
-  default: { configure: jest.fn(() => ({})) },
-  Heading: { extend: jest.fn(() => ({ configure: jest.fn(() => ({})) })) } 
-}));
-jest.mock('@tiptap/extension-blockquote', () => ({ 
-  __esModule: true,
-  default: { configure: jest.fn(() => ({})) },
-  Blockquote: { extend: jest.fn(() => ({ configure: jest.fn(() => ({})) })) } 
-}));
-jest.mock('@tiptap/extension-image', () => ({ 
-  __esModule: true,
-  default: { configure: jest.fn(() => ({})) } 
-}));
+jest.mock('@tiptap/extension-code-block', () => {
+  const mockNode = { 
+    configure: jest.fn(() => ({})),
+    extend: jest.fn(() => ({ configure: jest.fn(() => ({})) }))
+  };
+  return {
+    __esModule: true,
+    default: mockNode,
+    CodeBlock: mockNode
+  };
+});
+jest.mock('@tiptap/extension-heading', () => {
+  const mockNode = { 
+    configure: jest.fn(() => ({})),
+    extend: jest.fn(() => ({ configure: jest.fn(() => ({})) }))
+  };
+  return {
+    __esModule: true,
+    default: mockNode,
+    Heading: mockNode
+  };
+});
+jest.mock('@tiptap/extension-blockquote', () => {
+  const mockNode = { 
+    configure: jest.fn(() => ({})),
+    extend: jest.fn(() => ({ configure: jest.fn(() => ({})) }))
+  };
+  return {
+    __esModule: true,
+    default: mockNode,
+    Blockquote: mockNode
+  };
+});
+jest.mock('@tiptap/extension-image', () => {
+  const mockNode = { 
+    configure: jest.fn(() => ({})),
+    extend: jest.fn(() => ({ configure: jest.fn(() => ({})) }))
+  };
+  return {
+    __esModule: true,
+    default: mockNode,
+    Image: mockNode
+  };
+});
 
 jest.mock('tiptap-markdown', () => ({ Markdown: { configure: jest.fn(() => ({})) } }));
 jest.mock('@aarkue/tiptap-math-extension', () => ({ MathExtension: { configure: jest.fn(() => ({})) } }));

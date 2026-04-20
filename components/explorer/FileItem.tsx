@@ -10,7 +10,7 @@ interface FileItemProps {
   isSelected: boolean;
   isExpanded: boolean;
   hoveredItemPath: string | null;
-  onSelect: (path: string) => void;
+  onSelect: (path: string, isPreview?: boolean) => void;
   onToggle: (path: string) => void;
   onContextMenu: (e: any, item: any) => void;
   onMouseEnter: (path: string) => void;
@@ -26,8 +26,39 @@ export function FileItem({
 }: FileItemProps) {
   const { colors, isDark, fontFamilyUI } = useTheme();
   const isImage = /\.(png|jpe?g|gif|webp)$/i.test(item.name);
+  const isDarkTheme = isDark;
   const isDoc = /\.(md|txt)$/i.test(item.name);
   const isHovered = hoveredItemPath === item.path;
+
+  const lastClickTime = React.useRef<number>(0);
+  const clickTimer = React.useRef<any>(null);
+
+  const handlePress = () => {
+    if (item.kind === 'directory') {
+      onToggle(item.path);
+      return;
+    }
+
+    const now = Date.now();
+    const DOUBLE_CLICK_DELAY = 300;
+
+    if (now - lastClickTime.current < DOUBLE_CLICK_DELAY) {
+      // Double Click
+      if (clickTimer.current) {
+        clearTimeout(clickTimer.current);
+        clickTimer.current = null;
+      }
+      onSelect(item.path, false); // Permanent
+      lastClickTime.current = 0;
+    } else {
+      // Single Click (Potential)
+      lastClickTime.current = now;
+      clickTimer.current = setTimeout(() => {
+        onSelect(item.path, true); // Preview
+        clickTimer.current = null;
+      }, DOUBLE_CLICK_DELAY);
+    }
+  };
 
   const handleCopyPath = async (e: any) => {
     e.stopPropagation();
@@ -80,7 +111,7 @@ export function FileItem({
   );
 
   const wrapperProps = {
-    onPress: () => item.kind === 'directory' ? onToggle(item.path) : onSelect(item.path),
+    onPress: handlePress,
     onContextMenu: (e: any) => onContextMenu(e, item),
     onMouseEnter: () => onMouseEnter(item.path),
     onMouseLeave: onMouseLeave,
@@ -98,9 +129,8 @@ export function FileItem({
           }
         }}
         onDragEnd={() => setDraggingTab(null)}
-        style={{ cursor: item.kind === 'file' ? 'grab' : 'default' } as any}
       >
-        <Pressable {...wrapperProps}>
+        <Pressable {...wrapperProps} style={{ cursor: 'pointer' } as any}>
           {fileContent}
         </Pressable>
       </div>
@@ -134,5 +164,6 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     padding: 2,
-  }
+    cursor: 'pointer',
+  } as any
 });

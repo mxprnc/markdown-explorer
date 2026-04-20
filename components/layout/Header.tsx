@@ -76,7 +76,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
     marginHorizontal: 4,
-  },
+    cursor: 'pointer',
+  } as any,
   tabBtnText: {
     fontSize: 13,
     fontWeight: '600',
@@ -88,7 +89,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
-  },
+    cursor: 'pointer',
+  } as any,
   actionIcon: {
     color: '#3B82F6',
     fontSize: 16,

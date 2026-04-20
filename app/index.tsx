@@ -27,6 +27,7 @@ import { RenameModal } from '@/components/explorer/RenameModal';
 import { EditorWorkspace } from '@/components/editor/EditorWorkspace';
 import { AVAILABLE_MODELS } from '@/constants/Models';
 import { getFileCache, setFileCache } from '@/utils/IndexedDBUtils';
+import { handleTabSelection, pinTab, closeOthers, closeAll } from '@/utils/TabUtils';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -100,9 +101,16 @@ function MainScreen() {
   const [renamingItem, setRenamingItem] = useState<any | null>(null);
   const [newName, setNewName] = useState('');
 
+  // Tab Context Menu
+  const [tabContextMenu, setTabContextMenu] = useState<{ x: number, y: number, visible: boolean, file: string, paneId: 1 | 2 } | null>(null);
+
   // Creation State
   const [creatingItem, setCreatingItem] = useState<{ parentPath: string, kind: 'file' | 'directory' } | null>(null);
   const [creationName, setCreationName] = useState('');
+
+  // Preview File States
+  const [previewFile1, setPreviewFile1] = useState<string | null>(null);
+  const [previewFile2, setPreviewFile2] = useState<string | null>(null);
 
   const deferredContent = React.useDeferredValue(editorContent);
   const deferredContent2 = React.useDeferredValue(editorContent2);
@@ -131,7 +139,7 @@ function MainScreen() {
     }
   }, []);
 
-  const handleSelectFile = async (file: string, targetPane: 1 | 2 = activePane) => {
+  const handleSelectFile = async (file: string, isPreview: boolean = false, targetPane: 1 | 2 = activePane) => {
     const isImage = /\.(png|jpe?g|gif|webp)$/i.test(file);
     let content = localFiles[file];
     
@@ -172,20 +180,26 @@ function MainScreen() {
     }
 
     if (targetPane === 1) {
-      if (file === selectedFile) return;
+      if (file === selectedFile && !isPreview && !previewFile1) return;
       if (selectedFile && !/\.(png|jpe?g|gif|webp)$/i.test(selectedFile)) {
           setLocalFiles(prev => ({ ...prev, [selectedFile]: editorContent }));
       }
-      setOpenedFiles(prev => !prev.includes(file) ? [...prev, file] : prev);
+      
+      const { newOpenedFiles, newPreviewFile } = handleTabSelection(openedFiles, previewFile1, file, !isPreview);
+      setOpenedFiles(newOpenedFiles);
+      setPreviewFile1(newPreviewFile);
       setSelectedFile(file);
       setEditorContent(content);
       setActivePane(1);
     } else {
-      if (file === selectedFile2) return;
+      if (file === selectedFile2 && !isPreview && !previewFile2) return;
       if (selectedFile2 && !/\.(png|jpe?g|gif|webp)$/i.test(selectedFile2)) {
           setLocalFiles(prev => ({ ...prev, [selectedFile2]: editorContent2 }));
       }
-      setOpenedFiles2(prev => !prev.includes(file) ? [...prev, file] : prev);
+
+      const { newOpenedFiles, newPreviewFile } = handleTabSelection(openedFiles2, previewFile2, file, !isPreview);
+      setOpenedFiles2(newOpenedFiles);
+      setPreviewFile2(newPreviewFile);
       setSelectedFile2(file);
       setEditorContent2(content);
       setActivePane(2);
@@ -198,15 +212,35 @@ function MainScreen() {
     }
   };
 
+  const pinTabHandler = (file: string, targetPane: 1 | 2) => {
+    if (targetPane === 1) {
+      if (previewFile1 === file) {
+        const { newOpenedFiles, newPreviewFile } = pinTab(openedFiles, file);
+        setOpenedFiles(newOpenedFiles);
+        setPreviewFile1(newPreviewFile);
+      }
+    } else {
+      if (previewFile2 === file) {
+        const { newOpenedFiles, newPreviewFile } = pinTab(openedFiles2, file);
+        setOpenedFiles2(newOpenedFiles);
+        setPreviewFile2(newPreviewFile);
+      }
+    }
+  };
+
   const closeTab = (fileToClose: string, targetPane: 1 | 2) => {
     if (targetPane === 1) {
       setOpenedFiles(prev => {
         const newTabs = prev.filter(f => f !== fileToClose);
+        if (previewFile1 === fileToClose) setPreviewFile1(null);
         if (selectedFile === fileToClose) {
           if (newTabs.length > 0) {
             const newSelected = newTabs[newTabs.length - 1];
             setSelectedFile(newSelected);
             setEditorContent(localFiles[newSelected] || '');
+          } else if (previewFile1 && previewFile1 !== fileToClose) {
+             setSelectedFile(previewFile1);
+             setEditorContent(localFiles[previewFile1] || '');
           } else {
             setSelectedFile('');
             setEditorContent('');
@@ -217,11 +251,15 @@ function MainScreen() {
     } else {
       setOpenedFiles2(prev => {
         const newTabs = prev.filter(f => f !== fileToClose);
+        if (previewFile2 === fileToClose) setPreviewFile2(null);
         if (selectedFile2 === fileToClose) {
           if (newTabs.length > 0) {
             const newSelected = newTabs[newTabs.length - 1];
             setSelectedFile2(newSelected);
             setEditorContent2(localFiles[newSelected] || '');
+          } else if (previewFile2 && previewFile2 !== fileToClose) {
+            setSelectedFile2(previewFile2);
+            setEditorContent2(localFiles[previewFile2] || '');
           } else {
             setSelectedFile2('');
             setEditorContent2('');
@@ -252,6 +290,62 @@ function MainScreen() {
     }
     setCreatingItem(null);
     setCreationName('');
+  };
+
+  const handleTabContextMenu = (e: any, file: string, paneId: 1 | 2) => {
+    if (Platform.OS === 'web') e.preventDefault();
+    const x = e.clientX || (e.nativeEvent && e.nativeEvent.pageX) || e.pageX;
+    const y = e.clientY || (e.nativeEvent && e.nativeEvent.pageY) || e.pageY;
+    
+    setTabContextMenu({
+      x,
+      y,
+      visible: true,
+      file,
+      paneId
+    });
+  };
+
+  const handleTabAction = async (action: string) => {
+    if (!tabContextMenu) return;
+    const { file, paneId } = tabContextMenu;
+    const isPane1 = paneId === 1;
+    const currentOpened = isPane1 ? openedFiles : openedFiles2;
+    const currentPreview = isPane1 ? previewFile1 : previewFile2;
+    const setOpened = isPane1 ? setOpenedFiles : setOpenedFiles2;
+    const setPreview = isPane1 ? setPreviewFile1 : setPreviewFile2;
+
+    switch (action) {
+      case 'close':
+        closeTab(file, paneId);
+        break;
+      case 'closeOthers':
+        setOpened(closeOthers(currentOpened, file));
+        if (currentPreview !== file) setPreview(null);
+        break;
+      case 'closeAll':
+        setOpened(closeAll());
+        setPreview(null);
+        setSelectedFile(isPane1 ? '' : selectedFile);
+        setSelectedFile2(isPane1 ? selectedFile2 : '');
+        break;
+      case 'pin':
+        if (currentPreview === file) {
+          const { newOpenedFiles, newPreviewFile } = pinTab(currentOpened, file);
+          setOpened(newOpenedFiles);
+          setPreview(newPreviewFile);
+        }
+        break;
+      case 'copyPath':
+        await Clipboard.setStringAsync(file);
+        if (Platform.OS === 'web') window.alert('Relative path copied');
+        break;
+      case 'reveal':
+        if (Platform.OS === 'web') window.alert('Reveal in Finder is only supported in Desktop app.');
+        // If Electron, we would use shell.showItemInFolder(file)
+        break;
+    }
+    setTabContextMenu(null);
   };
 
   const handleOpenDirectory = async () => {
@@ -330,7 +424,14 @@ function MainScreen() {
 
   return (
     <ErrorBoundary>
-      <View nativeID="main-container" style={s.container}>
+      <Pressable 
+        nativeID="main-container" 
+        style={s.container}
+        onPress={() => {
+          setContextMenu(prev => ({ ...prev, visible: false }));
+          setTabContextMenu(null);
+        }}
+      >
         {/* HEADER */}
         <Header 
           selectedFolder={selectedFolder}
@@ -380,15 +481,32 @@ function MainScreen() {
             setActivePane={setActivePane}
             openedFiles={openedFiles}
             openedFiles2={openedFiles2}
+            previewFile1={previewFile1}
+            previewFile2={previewFile2}
             selectedFile={selectedFile}
             selectedFile2={selectedFile2}
             editorContent={editorContent}
             editorContent2={editorContent2}
-            setEditorContent={setEditorContent}
-            setEditorContent2={setEditorContent2}
+            setEditorContent={(val) => {
+               setEditorContent(val);
+               if (previewFile1 === selectedFile) {
+                  const { newOpenedFiles, newPreviewFile } = pinTab(openedFiles, previewFile1);
+                  setOpenedFiles(newOpenedFiles);
+                  setPreviewFile1(newPreviewFile);
+               }
+            }}
+            setEditorContent2={(val) => {
+               setEditorContent2(val);
+               if (previewFile2 === selectedFile2) {
+                  const { newOpenedFiles, newPreviewFile } = pinTab(openedFiles2, previewFile2);
+                  setOpenedFiles2(newOpenedFiles);
+                  setPreviewFile2(newPreviewFile);
+               }
+            }}
             localFiles={localFiles}
             onSelectFile={handleSelectFile}
             onCloseTab={closeTab}
+            onPinTab={pinTabHandler}
             onSaveFile={handleSaveToDisk}
             resolveImage={resolveImage}
             onPasteImage={handlePasteImage}
@@ -401,7 +519,39 @@ function MainScreen() {
             previewRef2={previewRef2}
             editorRef1={editorRef1}
             editorRef2={editorRef2}
+            isDark={isDark}
+            onTabContextMenu={handleTabContextMenu}
           />
+
+          {tabContextMenu && (
+            <View 
+              style={[
+                styles.contextMenu, 
+                { top: tabContextMenu.y, left: tabContextMenu.x, backgroundColor: colors.surface, borderColor: colors.border, zIndex: 1000 }
+              ]}
+            >
+              <Pressable style={styles.menuItem} onPress={() => handleTabAction('close')}>
+                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Close</Text>
+              </Pressable>
+              <Pressable style={styles.menuItem} onPress={() => handleTabAction('pin')}>
+                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Pin</Text>
+              </Pressable>
+              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+              <Pressable style={styles.menuItem} onPress={() => handleTabAction('closeOthers')}>
+                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Close Others</Text>
+              </Pressable>
+              <Pressable style={styles.menuItem} onPress={() => handleTabAction('closeAll')}>
+                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Close All</Text>
+              </Pressable>
+              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+              <Pressable style={styles.menuItem} onPress={() => handleTabAction('copyPath')}>
+                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Copy Relative Path</Text>
+              </Pressable>
+              <Pressable style={styles.menuItem} onPress={() => handleTabAction('reveal')}>
+                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Reveal in Finder</Text>
+              </Pressable>
+            </View>
+          )}
 
           {/* TOC Pane */}
           {(activePane === 1 ? selectedFile : selectedFile2) && !/\.(png|jpe?g|gif|webp)$/i.test(activePane === 1 ? selectedFile : selectedFile2) && (
@@ -441,7 +591,7 @@ function MainScreen() {
           visible={!!renamingItem} name={newName} onChangeName={setNewName}
           onConfirm={handleRenameFileSystem} onCancel={() => setRenamingItem(null)}
         />
-      </View>
+      </Pressable>
     </ErrorBoundary>
   );
 }
@@ -455,5 +605,27 @@ export default function App() {
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  contextMenu: {
+    position: 'fixed',
+    width: 180,
+    borderRadius: 8,
+    paddingVertical: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    borderWidth: 1,
+  } as any,
+  menuItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  menuText: {
+    fontSize: 13,
+  },
+});
 
 

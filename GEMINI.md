@@ -8,6 +8,7 @@
 **상태**: 📝 기획 중
 - **관련 문서**: [where-we-go-v1.md](docs/goals/where-we-go-v1.md)
 - **컴포넌트 명세**: [overview.md](docs/development/specification/components/overview.md)
+- **제품 명세 (Tabs)**: [editor-tab-system.md](docs/product/editor-tab-system.md)
 - **핵심 목표**: 사용자 친화적인 로컬 마크다운 탐색 및 편집 환경 제공.
 
 ## 🎨 디자인 시스템 및 UX 스타일
