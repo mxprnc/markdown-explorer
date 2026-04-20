@@ -11,6 +11,9 @@
 - **제품 명세 (Tabs)**: [editor-tab-system.md](docs/product/editor-tab-system.md)
 - **제품 명세 (Explorer)**: [file-explorer-interaction.md](docs/product/file-explorer-interaction.md)
 - **제품 명세 (Split View)**: [split-view.md](docs/product/split-view.md)
+- **제품 명세 (Plugin)**: [plugin-system.md](docs/product/plugin-system.md)
+- **제품 명세 (Template)**: [template-system.md](docs/product/template-system.md)
+- **제품 명세 (AI & MCP)**: [ai-integration.md](docs/product/ai-integration.md)
 - **핵심 목표**: 사용자 친화적인 로컬 마크다운 탐색 및 편집 환경 제공.
 
 ## 🎨 디자인 시스템 및 UX 스타일
