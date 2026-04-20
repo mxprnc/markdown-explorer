@@ -214,6 +214,121 @@ function MainScreen() {
     }
   };
 
+  const handleDropTab = (fileFromDrop: string, _sourcePane: 1 | 2, targetPane: 1 | 2, targetIndex: number) => {
+    const draggedFile = draggingTab ? draggingTab.file : fileFromDrop;
+    const sourcePane = (draggingTab ? draggingTab.sourcePane : _sourcePane) || _sourcePane;
+    
+    if (!draggedFile) {
+      setDraggingTab(null);
+      return;
+    }
+    const actualFile = draggedFile.trim();
+    
+    if (sourcePane === targetPane) {
+      // Reorder in same pane
+      if (targetPane === 1) {
+        setOpenedFiles(prev => {
+          const filtered = prev.filter(f => f.trim() !== actualFile);
+          const result = [...filtered];
+          const insertAt = targetIndex >= result.length ? result.length : targetIndex;
+          result.splice(insertAt, 0, actualFile);
+          return result;
+        });
+        if (previewFile1 === actualFile) pinTabHandler(actualFile, 1);
+      } else {
+        setOpenedFiles2(prev => {
+          const filtered = prev.filter(f => f.trim() !== actualFile);
+          const result = [...filtered];
+          const insertAt = targetIndex >= result.length ? result.length : targetIndex;
+          result.splice(insertAt, 0, actualFile);
+          return result;
+        });
+        if (previewFile2 === actualFile) pinTabHandler(actualFile, 2);
+      }
+    } else {
+      // Move between panes
+      if (sourcePane === 1 && targetPane === 2) {
+        // Move 1 -> 2
+        setOpenedFiles(prev => prev.filter(f => f.trim() !== actualFile));
+        setOpenedFiles2(prev => {
+          const filtered = prev.filter(f => f.trim() !== actualFile);
+          const result = [...filtered];
+          const insertAt = Math.min(targetIndex, result.length);
+          result.splice(insertAt, 0, actualFile);
+          return result;
+        });
+        
+        // Use a small timeout to ensure openedFiles2 is updated before selection if needed,
+        // but handleSelectFile already handles adding to openedFiles if missing.
+        handleSelectFile(actualFile, false, 2);
+        
+        // Update selected file in source if it was moved
+        if (selectedFile === actualFile) {
+          setOpenedFiles(prev => {
+            if (prev.length > 0) {
+              const next = prev[prev.length - 1];
+              setSelectedFile(next);
+              setEditorContent(localFiles[next] || '');
+            } else {
+              setSelectedFile('');
+              setEditorContent('');
+            }
+            return prev;
+          });
+        }
+      } else if (sourcePane === 2 && targetPane === 1) {
+        // Move 2 -> 1
+        setOpenedFiles2(prev => prev.filter(f => f.trim() !== actualFile));
+        setOpenedFiles(prev => {
+          const filtered = prev.filter(f => f.trim() !== actualFile);
+          const result = [...filtered];
+          const insertAt = Math.min(targetIndex, result.length);
+          result.splice(insertAt, 0, actualFile);
+          return result;
+        });
+        
+        handleSelectFile(actualFile, false, 1);
+        
+        if (selectedFile2 === actualFile) {
+          setOpenedFiles2(prev => {
+            if (prev.length > 0) {
+              const next = prev[prev.length - 1];
+              setSelectedFile2(next);
+              setEditorContent2(localFiles[next] || '');
+            } else {
+              setSelectedFile2('');
+              setEditorContent2('');
+            }
+            return prev;
+          });
+        }
+      } else if (sourcePane === 0) {
+        // From Explorer
+        if (targetPane === 1) {
+          setOpenedFiles(prev => {
+            const filtered = prev.filter(f => f.trim() !== actualFile);
+            const result = [...filtered];
+            const insertAt = Math.min(targetIndex, result.length);
+            result.splice(insertAt, 0, actualFile);
+            return result;
+          });
+          handleSelectFile(actualFile, false, 1);
+        } else {
+          setOpenedFiles2(prev => {
+            const filtered = prev.filter(f => f.trim() !== actualFile);
+            const result = [...filtered];
+            const insertAt = Math.min(targetIndex, result.length);
+            result.splice(insertAt, 0, actualFile);
+            return result;
+          });
+          handleSelectFile(actualFile, false, 2);
+        }
+      }
+    }
+    
+    setDraggingTab(null);
+  };
+
   const pinTabHandler = (file: string, targetPane: 1 | 2) => {
     if (targetPane === 1) {
       if (previewFile1 === file) {
@@ -448,6 +563,8 @@ function MainScreen() {
           selectedFolder={selectedFolder}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
+          isSplitMode={isSplitMode}
+          onSplitToggle={() => setIsSplitMode(!isSplitMode)}
         />
 
         {/* BODY */}
@@ -532,6 +649,7 @@ function MainScreen() {
             editorRef2={editorRef2}
             isDark={isDark}
             onTabContextMenu={handleTabContextMenu}
+            onDropTab={handleDropTab}
           />
 
           {tabContextMenu && (

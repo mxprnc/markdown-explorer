@@ -7,10 +7,12 @@ interface HeaderProps {
   selectedFolder: string;
   activeTab: 'files' | 'editor';
   setActiveTab: (tab: 'files' | 'editor') => void;
+  isSplitMode: boolean;
+  onSplitToggle: () => void;
 }
 
 export const Header = memo(({ 
-  selectedFolder, activeTab, setActiveTab
+  selectedFolder, activeTab, setActiveTab, isSplitMode, onSplitToggle
 }: HeaderProps) => {
   const { colors, themeMode, toggleTheme, fontFamilyUI } = useTheme();
 
@@ -41,6 +43,20 @@ export const Header = memo(({
           style={[styles.tabBtn, activeTab === 'editor' && { backgroundColor: colors.surface, borderColor: colors.primary }]}>
           <Ionicons name="code-working-outline" size={18} color={activeTab === 'editor' ? colors.primary : colors.textMuted} />
           <Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>에디터</Text>
+        </Pressable>
+
+        <View style={{ width: 1, height: 20, backgroundColor: colors.border, marginHorizontal: 8 }} />
+
+        <Pressable 
+          onPress={onSplitToggle}
+          style={[styles.tabBtn, isSplitMode && { backgroundColor: colors.surface, borderColor: colors.primary }]}
+        >
+          <Ionicons 
+            name={isSplitMode ? "copy" : "copy-outline"} 
+            size={18} 
+            color={isSplitMode ? colors.primary : colors.textMuted} 
+          />
+          <Text style={[styles.tabBtnText, { color: isSplitMode ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Split View</Text>
         </Pressable>
 
         <Pressable onPress={toggleTheme} style={[styles.themeBtn, { borderColor: colors.border }]}>
@@ -83,6 +99,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 6,
   },
+  actionBtn: {
+    padding: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    marginHorizontal: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    cursor: 'pointer',
+  } as any,
   themeBtn: {
     marginLeft: 16,
     justifyContent: 'center',

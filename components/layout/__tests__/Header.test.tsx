@@ -38,6 +38,8 @@ describe('Header', () => {
             selectedFolder="test-folder"
             activeTab="files"
             setActiveTab={mockSetActiveTab}
+            isSplitMode={false}
+            onSplitToggle={jest.fn()}
           />
         </ThemeProvider>
       );
@@ -74,6 +76,8 @@ describe('Header', () => {
              selectedFolder="My Project"
              activeTab="files"
              setActiveTab={() => {}}
+             isSplitMode={false}
+             onSplitToggle={() => {}}
            />
          </ThemeProvider>
        );
@@ -82,5 +86,34 @@ describe('Header', () => {
     const texts = testRenderer.root.findAllByType(Text);
     const folderText = texts.find((t: any) => t.props.children === 'My Project');
     expect(folderText).toBeDefined();
+  });
+
+  test('should display Split View button and call onSplitToggle', () => {
+    const mockToggle = jest.fn();
+    let testRenderer: any;
+    TestRenderer.act(() => {
+      testRenderer = TestRenderer.create(
+        <ThemeProvider>
+          <Header 
+            selectedFolder="Test"
+            activeTab="files"
+            setActiveTab={() => {}}
+            isSplitMode={false}
+            onSplitToggle={mockToggle}
+          />
+        </ThemeProvider>
+      );
+    });
+
+    const splitBtn = testRenderer.root.findAllByType(Pressable).find((p: any) => {
+      const text = p.findAllByType(Text).find((t: any) => t.props.children === 'Split View');
+      return !!text;
+    });
+
+    expect(splitBtn).toBeDefined();
+    TestRenderer.act(() => {
+      splitBtn.props.onPress();
+    });
+    expect(mockToggle).toHaveBeenCalled();
   });
 });

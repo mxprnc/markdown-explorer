@@ -12,13 +12,19 @@ interface TabBarProps {
   onPin?: (file: string) => void;
   onContextMenu?: (e: any, file: string, paneId: 1 | 2) => void;
   onSetDraggingTab: (val: any) => void;
+  onDropTab?: (file: string, sourcePane: 1 | 2, targetPane: 1 | 2, targetIndex: number) => void;
+  isDraggingOver?: boolean;
 }
 
 export const TabBar = memo(({
-  paneId, files, previewFile, selectedFile, onSelect, onClose, onPin, onContextMenu, onSetDraggingTab
+  paneId, files, previewFile, selectedFile, onSelect, onClose, onPin, onContextMenu, onSetDraggingTab, onDropTab, isDraggingOver
 }: TabBarProps) => {
   const { colors, fontFamilyUI } = useTheme();
   const lastClickRef = useRef<{ time: number, file: string } | null>(null);
+  const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null);
+
+  const showIndicatorAtEnd = dragOverIndex === files.length || (isDraggingOver && dragOverIndex === null);
+  const showIndicatorAtStart = (files.length === 0 && (dragOverIndex === 0 || isDraggingOver));
   
   const handleTabPress = (file: string) => {
     const now = Date.now();
@@ -33,11 +39,59 @@ export const TabBar = memo(({
       onSelect(file);
     }
   };
+
+  const handleDrop = (e: any, targetIndex: number) => {
+    if (Platform.OS !== 'web') return;
+    setDragOverIndex(null);
+    e.preventDefault();
+    e.stopPropagation(); // Avoid bubbling to Pane container
+    
+    const rawData = e.dataTransfer.getData("text/plain");
+    let file = rawData;
+    let sourcePane = 0;
+    
+    if (rawData.includes(':')) {
+      const parts = rawData.split(':');
+      sourcePane = parseInt(parts[0]);
+      file = parts.slice(1).join(':'); // Handle files with colons in path
+    } else {
+      const sourcePaneStr = e.dataTransfer.getData("application/x-pane-id");
+      sourcePane = sourcePaneStr ? parseInt(sourcePaneStr) : (draggingTab?.sourcePane || 0);
+      file = rawData || draggingTab?.file;
+    }
+    
+    if (onDropTab && file) {
+      onDropTab(file, sourcePane as any, paneId, targetIndex); 
+    }
+  };
   
   if (files.length === 0) {
     return (
-      <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
+      <View 
+        style={[styles.tabBar, { borderBottomColor: colors.border }]}
+        {...({
+          onDragOver: (e: any) => { 
+            e.preventDefault(); 
+            e.stopPropagation();
+            setDragOverIndex(0); 
+          },
+          onDragEnter: (e: any) => {
+            e.preventDefault();
+            e.stopPropagation();
+          },
+          onDragLeave: (e: any) => {
+            e.stopPropagation();
+            setDragOverIndex(null);
+          },
+          onDrop: (e: any) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleDrop(e, 0);
+          }
+        } as any)}
+      >
         <Text style={{ color: colors.textMuted, fontSize: 12, paddingHorizontal: 12 }}>No file opened</Text>
+        {showIndicatorAtStart && <View style={[styles.insertionIndicator, { backgroundColor: colors.primary }]} />}
       </View>
     );
   }
@@ -46,12 +100,18 @@ export const TabBar = memo(({
     <View 
       accessibilityRole="tablist"
       style={[styles.tabBar, { borderBottomColor: colors.border }]}
+      {...({
+        onDragOver: (e: any) => { e.preventDefault(); e.stopPropagation(); setDragOverIndex(files.length); },
+        onDragLeave: () => setDragOverIndex(null),
+        onDrop: (e: any) => handleDrop(e, files.length)
+      } as any)}
     >
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
-        {files.map(file => {
+        {files.map((file, index) => {
           const isActive = file === selectedFile;
           const isPreview = file === previewFile;
           const fileName = file.split('/').pop() || file;
+          const isDraggedOver = dragOverIndex === index;
 
           const tabContent = (
             <Pressable 
@@ -65,6 +125,7 @@ export const TabBar = memo(({
               onPress={() => handleTabPress(file)} 
               onContextMenu={(e) => onContextMenu && onContextMenu(e, file, paneId)}
             >
+              {isDraggedOver && <View style={[styles.insertionIndicator, { backgroundColor: colors.primary }]} />}
               <Text 
                 selectable={false} 
                 style={[
@@ -97,12 +158,25 @@ export const TabBar = memo(({
                 onDragStart={(e: any) => {
                   if (e.dataTransfer) {
                     e.dataTransfer.effectAllowed = "move";
-                    e.dataTransfer.setData("text/plain", file);
+                    const dataStr = `${paneId}:${file}`;
+                    e.dataTransfer.setData("text/plain", dataStr);
+                    // Legacy support for other listeners
+                    e.dataTransfer.setData("application/x-pane-id", paneId.toString());
                   }
                   onSetDraggingTab({ file, sourcePane: paneId });
                 }}
                 onDragEnd={() => {
-                  onSetDraggingTab(null);
+                  setDragOverIndex(null);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDragOverIndex(index);
+                }}
+                onDragLeave={() => setDragOverIndex(null)}
+                onDrop={(e) => {
+                  e.stopPropagation();
+                  handleDrop(e, index);
                 }}
                 style={{ display: 'flex', flexDirection: 'row', userSelect: 'none', WebkitUserSelect: 'none', cursor: 'grab' } as any}
               >
@@ -117,6 +191,7 @@ export const TabBar = memo(({
             </View>
           );
         })}
+        {showIndicatorAtEnd && files.length > 0 && <View style={[styles.insertionIndicator, { backgroundColor: colors.primary, left: undefined, right: 0 }]} />}
       </ScrollView>
     </View>
   );
@@ -156,4 +231,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
+  insertionIndicator: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 2,
+    zIndex: 10,
+  } as any,
 });

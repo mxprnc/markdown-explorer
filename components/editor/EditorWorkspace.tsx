@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Platform } from 'react-native';
+import { View, Text, ScrollView, Platform, StyleSheet } from 'react-native';
 import Editor from '@/components/Editor';
 import Preview from '@/components/Preview';
 import { TabBar } from '@/components/layout/TabBar';
@@ -30,6 +30,7 @@ interface EditorWorkspaceProps {
   resolveImage: (src: string, file: string) => Promise<string>;
   onPasteImage: (file: File) => Promise<string>;
   onRenameImage: (old: string, name: string) => Promise<string>;
+  onDropTab?: (file: string, sourcePane: 1 | 2, targetPane: 1 | 2, targetIndex: number) => void;
   draggingTab: any;
   setDraggingTab: (val: any) => void;
   middlePaneResponder: any;
@@ -53,9 +54,32 @@ export function EditorWorkspace({
   middlePaneResponder, fontFamilyCode,
   previewFile1, previewFile2,
   previewRef1, previewRef2, editorRef1, editorRef2,
-  onTabContextMenu, isDark
+  onTabContextMenu, isDark, onDropTab
 }: EditorWorkspaceProps) {
-  const { colors } = useTheme();
+  const { colors, fontFamilyUI } = useTheme();
+  const [dragOverPane, setDragOverPane] = React.useState<number | null>(null);
+
+  // Stable handlers using refs to avoid re-render issues during drag
+  const onDropTabRef = React.useRef(onDropTab);
+  React.useEffect(() => { onDropTabRef.current = onDropTab; }, [onDropTab]);
+
+  const handleDragEnter = (e: any, paneId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    setDragOverPane(paneId);
+  };
+
+  const handleDragLeave = (e: any) => {
+    e.stopPropagation();
+    setDragOverPane(null);
+  };
+
+  const handleDragOver = (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  };
 
   const renderContent = (paneId: 1 | 2) => {
     const selFile = paneId === 1 ? selectedFile : selectedFile2;
@@ -64,8 +88,24 @@ export function EditorWorkspace({
 
     if (!selFile) {
       return (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-          <Text style={{ color: colors.textMuted }}>파일을 선택해주세요.</Text>
+        <View 
+          style={{ 
+            flex: 1, 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: 40, 
+            backgroundColor: dragOverPane === paneId ? (isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)') : 'transparent',
+            borderWidth: dragOverPane === paneId ? 2 : 0,
+            borderColor: colors.primary,
+            borderStyle: 'dashed'
+          }}
+          {...({
+            onDragOver: handleDragOver,
+            onDragEnter: (e: any) => handleDragEnter(e, paneId),
+            onDragLeave: (e: any) => handleDragLeave(e),
+          } as any)}
+        >
+          <Text style={{ color: colors.textMuted, fontSize: 16, fontFamily: fontFamilyUI }}>파일을 선택해주세요.</Text>
         </View>
       );
     }
@@ -114,21 +154,56 @@ export function EditorWorkspace({
 
     return (
       <View 
+        key={`pane-${paneId}`}
         id={`pane-${paneId}`}
-        style={{ flex, width: paneWidth, position: 'relative', minHeight: 0, height: '100%' }}
+        style={[
+          { flex, width: paneWidth, position: 'relative', minHeight: 0, height: '100%' },
+          styles.pane, 
+          { borderRightWidth: isSplitMode && paneId === 1 ? 1 : 0, borderRightColor: colors.border },
+          dragOverPane === paneId && { backgroundColor: colors.surface }
+        ]}
         onTouchStart={() => setActivePane(paneId)}
-        {...({ onClick: () => setActivePane(paneId) } as any)}
+        {...({ 
+          onClick: () => setActivePane(paneId),
+          onDragOver: handleDragOver,
+          onDragEnter: (e: any) => handleDragEnter(e, paneId),
+          onDragLeave: (e: any) => handleDragLeave(e),
+          onDrop: (e: any) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragOverPane(null);
+            const rawData = e.dataTransfer.getData("text/plain");
+            let file = rawData;
+            let sourcePane = 0;
+            
+            if (rawData.includes(':')) {
+              const parts = rawData.split(':');
+              sourcePane = parseInt(parts[0]);
+              file = parts.slice(1).join(':');
+            } else {
+              const sourcePaneStr = e.dataTransfer.getData("application/x-pane-id");
+              sourcePane = sourcePaneStr ? parseInt(sourcePaneStr) : (draggingTab?.sourcePane || 0);
+              file = rawData || draggingTab?.file;
+            }
+            
+            if (onDropTabRef.current && file) {
+              onDropTabRef.current(file, sourcePane as any, paneId as 1 | 2, 999);
+            }
+          }
+        } as any)}
       >
         <TabBar 
           files={paneOpenedFiles} 
           previewFile={paneId === 1 ? previewFile1 : previewFile2}
           selectedFile={paneId === 1 ? selectedFile : selectedFile2}
-          onSelect={(f) => onSelectFile(f, paneId)}
-          onClose={(f) => onCloseTab(f, paneId)}
+          onSelect={(f) => onSelectFile(f, false, paneId as 1 | 2)}
+          onClose={(f) => onCloseTab(f, paneId as 1 | 2)}
           onPin={(f) => onPinTab(f, paneId)}
           onContextMenu={onTabContextMenu}
           paneId={paneId}
           onSetDraggingTab={setDraggingTab}
+          onDropTab={onDropTab}
+          isDraggingOver={dragOverPane === paneId}
         />
         <View style={{ flex: 1, minHeight: 0, height: '100%' }}>
           {renderContent(paneId)}
@@ -156,3 +231,12 @@ export function EditorWorkspace({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  pane: {
+    flex: 1,
+    minHeight: 0,
+    height: '100%',
+    overflow: 'hidden',
+  },
+});

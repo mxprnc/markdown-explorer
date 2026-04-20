@@ -50,6 +50,7 @@ describe('EditorWorkspace', () => {
     editorRef1: { current: null },
     editorRef2: { current: null },
     onPinTab: jest.fn(),
+    onDropTab: jest.fn(),
     isDark: false,
   };
 
@@ -70,7 +71,8 @@ describe('EditorWorkspace', () => {
 
     // The pane view should also have flex: 1
     const pane1 = root.findByProps({ id: 'pane-1' });
-    expect(pane1.props.style).toMatchObject({ flex: 1 });
+    const styles = Array.isArray(pane1.props.style) ? pane1.props.style : [pane1.props.style];
+    expect(styles.some((s: any) => s && s.flex === 1)).toBe(true);
   });
 
   it('renders Preview when activeTab is "files"', () => {
@@ -86,5 +88,21 @@ describe('EditorWorkspace', () => {
     const root = renderer.root;
     const preview = root.findByType('Preview');
     expect(preview).toBeTruthy();
+  });
+
+  it('renders empty message when no file is selected', () => {
+    let renderer: any;
+    TestRenderer.act(() => {
+      renderer = TestRenderer.create(
+        <ThemeProvider>
+          <EditorWorkspace {...defaultProps} selectedFile="" />
+        </ThemeProvider>
+      );
+    });
+
+    const root = renderer.root;
+    const texts = root.findAllByType('Text');
+    const emptyText = texts.find((t: any) => t.props.children === '파일을 선택해주세요.');
+    expect(emptyText).toBeTruthy();
   });
 });
