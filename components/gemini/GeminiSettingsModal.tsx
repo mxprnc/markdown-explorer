@@ -122,14 +122,14 @@ export const GeminiSettingsModal = memo(({ visible, onClose }: GeminiSettingsMod
 
           <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
              <Button 
-               label="Cancel"
-               onPress={onClose}
-               variant="secondary"
+                label="Cancel"
+                onPress={onClose}
+                variant="secondary"
              />
              <Button 
-               label="Save Changes"
-               onPress={saveSettings}
-               variant="primary"
+                label="Save Changes"
+                onPress={saveSettings}
+                variant="primary"
              />
           </View>
         </View>

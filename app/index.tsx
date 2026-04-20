@@ -1,3 +1,4 @@
+// Updated TOC Logic - 2026-04-20
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Platform, Alert, PanResponder } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -103,22 +104,30 @@ function MainScreen() {
   const [creatingItem, setCreatingItem] = useState<{ parentPath: string, kind: 'file' | 'directory' } | null>(null);
   const [creationName, setCreationName] = useState('');
 
-  const [deferredContent, setDeferredContent] = useState(editorContent);
-  const [deferredContent2, setDeferredContent2] = useState(editorContent2);
+  const deferredContent = React.useDeferredValue(editorContent);
+  const deferredContent2 = React.useDeferredValue(editorContent2);
+
+  const previewRef1 = useRef(null);
+  const previewRef2 = useRef(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDeferredContent(editorContent);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [editorContent]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDeferredContent2(editorContent2);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [editorContent2]);
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const id = 'global-web-styles';
+      if (!document.getElementById(id)) {
+        const style = document.createElement('style');
+        style.id = id;
+        style.innerHTML = `
+          html, body, #root {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+  }, []);
 
   const handleSelectFile = async (file: string, targetPane: 1 | 2 = activePane) => {
     const isImage = /\.(png|jpe?g|gif|webp)$/i.test(file);
@@ -168,7 +177,6 @@ function MainScreen() {
       setOpenedFiles(prev => !prev.includes(file) ? [...prev, file] : prev);
       setSelectedFile(file);
       setEditorContent(content);
-      setDeferredContent(content);
       setActivePane(1);
     } else {
       if (file === selectedFile2) return;
@@ -178,7 +186,6 @@ function MainScreen() {
       setOpenedFiles2(prev => !prev.includes(file) ? [...prev, file] : prev);
       setSelectedFile2(file);
       setEditorContent2(content);
-      setDeferredContent2(content);
       setActivePane(2);
     }
     
@@ -299,51 +306,15 @@ function MainScreen() {
   };
 
   const s = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background, flexDirection: 'column' },
-    body: { flex: 1, flexDirection: 'row' },
+    container: { flex: 1, height: Platform.OS === 'web' ? '100vh' : '100%', backgroundColor: colors.background, flexDirection: 'column', overflow: 'hidden' },
+    body: { flex: 1, flexDirection: 'row', minHeight: 0 },
   });
 
   const handleTOCClick = (text: string, index: number) => {
-    if (Platform.OS === 'web') {
-      const paneId = activePane === 1 ? 'pane-1' : 'pane-2';
-      const pane = document.getElementById(paneId);
-      if (!pane) return;
-
-      const headers = pane.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      const getHeaderText = (h: Element) => {
-        const contentNode = h.querySelector('.heading-content');
-        if (contentNode) return contentNode.textContent?.trim() || "";
-        return h.textContent?.trim() || "";
-      };
-
-      let targetHeader: HTMLElement | null = null;
-      if (headers[index] && getHeaderText(headers[index]) === text) {
-        targetHeader = headers[index] as HTMLElement;
-      } else {
-        for (let i = 0; i < headers.length; i++) {
-          if (getHeaderText(headers[i]) === text) {
-             targetHeader = headers[i] as HTMLElement;
-             break;
-          }
-        }
-      }
-
-      if (targetHeader) {
-        targetHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setTimeout(() => {
-           let scroller: HTMLElement | null = null;
-           let p = targetHeader!.parentElement;
-           while (p && p !== pane) {
-             const style = window.getComputedStyle(p);
-             if (/(auto|scroll)/.test(style.overflow + style.overflowY)) {
-               scroller = p;
-               break;
-             }
-             p = p.parentElement;
-           }
-           if (scroller) scroller.scrollBy(0, -20);
-        }, 500);
-      }
+    if (activePane === 1 && previewRef1.current) {
+      (previewRef1.current as any).scrollToHeading(index);
+    } else if (activePane === 2 && previewRef2.current) {
+      (previewRef2.current as any).scrollToHeading(index);
     }
   };
 
@@ -447,8 +418,8 @@ function MainScreen() {
             setDraggingTab={setDraggingTab}
             middlePaneResponder={middlePaneResponder}
             fontFamilyCode={fontFamilyCode}
-            deferredContent={deferredContent}
-            deferredContent2={deferredContent2}
+            previewRef1={previewRef1}
+            previewRef2={previewRef2}
           />
 
           {/* TOC Pane */}

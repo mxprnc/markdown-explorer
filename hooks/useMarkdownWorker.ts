@@ -136,6 +136,7 @@ export function useMarkdownWorker(content: string) {
 
     if (workerRef.current && !workerError) {
       setIsParsing(true);
+      setHast(null); // Clear stale data immediately
       requestIdRef.current += 1;
       workerRef.current.postMessage({
         content,

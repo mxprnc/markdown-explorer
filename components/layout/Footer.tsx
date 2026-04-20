@@ -39,12 +39,12 @@ export const Footer = memo(({ height, responder, selectedFile, editorContent, on
       {/* Path Display Bar */}
       <View style={[styles.footerPath, { backgroundColor: colors.primary }]}>
         <Ionicons name="link-outline" size={12} color="#FFF" style={{ marginRight: 6 }} />
-        <Text style={styles.footerPathText}>
+        <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode }]}>
           {selectedFile || 'No file selected'}
         </Text>
         <View style={{ marginLeft: 'auto', flexDirection: 'row', gap: 12 }}>
-          <Text style={styles.footerPathText}>UTF-8</Text>
-          <Text style={styles.footerPathText}>Markdown</Text>
+          <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode }]}>UTF-8</Text>
+          <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode }]}>Markdown</Text>
         </View>
       </View>
     </View>
@@ -80,6 +80,5 @@ const styles = StyleSheet.create({
     color: '#FFF', 
     fontSize: 11, 
     fontWeight: 'bold',
-    fontFamily: fontFamilyCode,
   },
 });

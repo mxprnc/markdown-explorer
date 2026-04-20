@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -138,8 +138,20 @@ const MarkdownBlock = React.memo(({ node, components, isDark, resolveImage }: an
 /**
  * Preview Component
  */
-const Preview = ({ content, isDark, resolveImage }: { content: string, isDark: boolean, resolveImage?: (src: string) => Promise<string> }) => {
+const Preview = forwardRef(({ content, isDark, resolveImage }: { content: string, isDark: boolean, resolveImage?: (src: string) => Promise<string> }, ref) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const { hast, isParsing, workerError } = useMarkdownWorker(content);
+
+  useImperativeHandle(ref, () => ({
+    scrollToHeading: (index: number) => {
+      if (containerRef.current) {
+        const headings = containerRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        if (headings[index]) {
+          headings[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
+  }));
   const color = isDark ? '#F3F4F6' : '#121212';
 
   // Standard React components for both HAST and ReactMarkdown
@@ -238,7 +250,11 @@ const Preview = ({ content, isDark, resolveImage }: { content: string, isDark: b
   }), [isDark, resolveImage]);
 
   return (
-    <div className="markdown-preview" style={{ padding: '24px', color, fontSize: '14px', lineHeight: '1.6', fontFamily: 'Inter, sans-serif' }}>
+    <div 
+      ref={containerRef}
+      className="markdown-preview" 
+      style={{ height: '100%', maxHeight: '100%', boxSizing: 'border-box', flex: 1, overflowY: 'auto', padding: '24px', paddingBottom: '30vh', color, fontSize: '14px', lineHeight: '1.6', fontFamily: 'Inter, sans-serif', display: 'flex', flexDirection: 'column' }}
+    >
       <style>{`
         .markdown-preview blockquote {
           border-left: 4px solid #3B82F6;
@@ -280,5 +296,5 @@ const Preview = ({ content, isDark, resolveImage }: { content: string, isDark: b
       )}
     </div>
   );
-}
+});
 export default React.memo(Preview);

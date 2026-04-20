@@ -1209,7 +1209,7 @@ export default function Editor({ value, onChange, onSave, onPasteImage, onRename
   const cbCopy = isDark ? '#9CA3AF' : '#6B7280';
 
   return (
-    <div className="tiptap-wrapper" style={{ flex: 1, backgroundColor: bgColor, overflowY: 'auto', color: textColor, '--cb-bg': cbBg, '--cb-bg-header': cbBgHeader, '--cb-border': cbBorder, '--cb-text': cbText, '--cb-copy': cbCopy } as React.CSSProperties}>
+    <div className="tiptap-wrapper" style={{ height: '100%', maxHeight: '100%', boxSizing: 'border-box', flex: 1, backgroundColor: bgColor, overflowY: 'auto', color: textColor, '--cb-bg': cbBg, '--cb-bg-header': cbBgHeader, '--cb-border': cbBorder, '--cb-text': cbText, '--cb-copy': cbCopy } as React.CSSProperties}>
       <style>{`
         .tiptap-wrapper .ProseMirror {
           min-height: 100%;

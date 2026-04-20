@@ -33,6 +33,8 @@ interface EditorWorkspaceProps {
   fontFamilyCode: string;
   deferredContent: string;
   deferredContent2: string;
+  previewRef1: React.RefObject<any>;
+  previewRef2: React.RefObject<any>;
 }
 
 export function EditorWorkspace({
@@ -42,13 +44,13 @@ export function EditorWorkspace({
   localFiles, onSelectFile, onCloseTab, onSaveFile, resolveImage,
   onPasteImage, onRenameImage, draggingTab, setDraggingTab,
   middlePaneResponder, fontFamilyCode,
-  deferredContent, deferredContent2
+  previewRef1, previewRef2
 }: EditorWorkspaceProps) {
   const { colors, isDark } = useTheme();
 
   const renderContent = (paneId: 1 | 2) => {
     const selFile = paneId === 1 ? selectedFile : selectedFile2;
-    const content = paneId === 1 ? (activeTab === 'files' ? deferredContent : editorContent) : (activeTab === 'files' ? deferredContent2 : editorContent2);
+    const content = paneId === 1 ? editorContent : editorContent2;
     const setContent = paneId === 1 ? setEditorContent : setEditorContent2;
 
     if (!selFile) {
@@ -66,6 +68,8 @@ export function EditorWorkspace({
     if (activeTab === 'files') {
       return (
         <Preview 
+          ref={paneId === 1 ? previewRef1 : previewRef2}
+          key={`preview-${paneId}-${selFile}`}
           content={content} 
           resolveImage={(src) => resolveImage(src, selFile)} 
         />
@@ -93,7 +97,7 @@ export function EditorWorkspace({
     return (
       <View 
         id={`pane-${paneId}`}
-        style={{ flex, width: paneWidth, position: 'relative' }}
+        style={{ flex, width: paneWidth, position: 'relative', minHeight: 0, height: '100%' }}
         onTouchStart={() => setActivePane(paneId)}
         {...({ onClick: () => setActivePane(paneId) } as any)}
       >
@@ -106,9 +110,9 @@ export function EditorWorkspace({
           onClose={onCloseTab}
           onSetDraggingTab={setDraggingTab}
         />
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={{ flex: 1 }}>
+        <View style={{ flex: 1, minHeight: 0, height: '100%' }}>
           {renderContent(paneId)}
-        </ScrollView>
+        </View>
       </View>
     );
   };
@@ -116,7 +120,7 @@ export function EditorWorkspace({
   return (
     <View 
       accessibilityRole="main"
-      style={{ flex: 1, flexDirection: 'row' }}>
+      style={{ flex: 1, flexDirection: 'row', minHeight: 0, height: '100%' }}>
       {renderPane(1)}
       {isSplitMode && (
         <>

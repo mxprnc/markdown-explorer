@@ -60,3 +60,5 @@
 ## 📅 일정 알림
 - **Phase 1~2**: 리팩토링의 연장선상에서 즉시 진행 가능.
 - **Phase 3~4**: 앱 기능 안정화 이후 점진적으로 도입.
+- **Build Fix**: ThemeContext 도입 과정에서 발생한 StyleSheet 스코프 이슈 및 구문 오류 해결 완료.
+- **Scroll Fix**: 중첩 ScrollView 제거 및 리프 컴포넌트(Editor, Preview)에 자체 스크롤 적용으로 하단 잘림 현상 해결 완료.

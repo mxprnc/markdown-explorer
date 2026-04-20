@@ -1,8 +1,8 @@
 import React from 'react';
 import TestRenderer from 'react-test-renderer';
 import { useGemini } from '../useGemini';
-import * as Google from 'expo-auth-session/providers/google';
 
+// Mock react-native Platform
 jest.mock('react-native', () => ({
   Platform: {
     OS: 'web',
@@ -10,18 +10,19 @@ jest.mock('react-native', () => ({
   },
 }));
 
+// Mock expo-auth-session
 jest.mock('expo-auth-session/providers/google', () => ({
   useAuthRequest: jest.fn(() => [null, null, jest.fn()]),
 }));
 
-// Mock localStorage for web
+// Mock localStorage
 const mockLocalStorage = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => { store[key] = value.toString(); },
-    removeItem: (key: string) => { delete store[key]; },
-    clear: () => { store = {}; }
+    getItem: jest.fn((key: string) => store[key] || null),
+    setItem: jest.fn((key: string, value: string) => { store[key] = value.toString(); }),
+    removeItem: jest.fn((key: string) => { delete store[key]; }),
+    clear: jest.fn(() => { store = {}; })
   };
 })();
 Object.defineProperty(global, 'localStorage', { value: mockLocalStorage, writable: true });
@@ -40,7 +41,7 @@ describe('useGemini', () => {
     jest.clearAllMocks();
   });
 
-  test('should initialize with default values', () => {
+  it('should initialize with default values', () => {
     let result: any;
     TestRenderer.act(() => {
       TestRenderer.create(<Consumer callback={(g) => (result = g)} />);
@@ -50,23 +51,22 @@ describe('useGemini', () => {
     expect(result.selectedModel).toBe('gemini-2.5-pro');
   });
 
-  test('saveSettings should update state', () => {
+  it('should save settings to localStorage and update state', () => {
     let result: any;
     TestRenderer.act(() => {
       TestRenderer.create(<Consumer callback={(g) => (result = g)} />);
     });
 
     TestRenderer.act(() => {
-      result.setTempApiKey('test-key');
-      result.setTempModel('gemini-3.1-pro-preview');
+      result.setTempApiKey('new-test-key');
+      result.setTempModel('gemini-2.0-flash');
     });
 
-    // Now call saveSettings with the updated state
     TestRenderer.act(() => {
       result.saveSettings();
     });
 
-    expect(result.geminiApiKey).toBe('test-key');
-    expect(mockLocalStorage.getItem('gemini_api_key')).toBe('test-key');
+    expect(result.geminiApiKey).toBe('new-test-key');
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('gemini_api_key', 'new-test-key');
   });
 });
