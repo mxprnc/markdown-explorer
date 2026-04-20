@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import { findBestHeadingMatch } from '@/utils/MarkdownUtils';
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import { Extension, getMarkRange, Node } from '@tiptap/core';
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
@@ -1154,7 +1155,8 @@ const CustomYoutube = Node.create<any>({
   }
 });
 
-export default function Editor({ value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, isDark }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean }) {
+export default forwardRef(function Editor({ value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, isDark }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean }, ref: any) {
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
 
   const SaveShortcut = Extension.create({
     name: 'saveShortcut',
@@ -1199,6 +1201,64 @@ export default function Editor({ value, onChange, onSave, onPasteImage, onRename
     }
   });
 
+  useImperativeHandle(ref, () => ({
+    scrollToHeading: (index: number, text?: string) => {
+      if (!editor) return;
+
+      let targetPos = -1;
+      let currentIndex = 0;
+      
+      // We will collect all headings that match the text
+      const matches: { pos: number, index: number }[] = [];
+
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'heading') {
+          const headingText = node.textContent.trim();
+          
+          if (text && headingText === text.trim()) {
+            matches.push({ pos, index: currentIndex });
+          }
+          
+          if (currentIndex === index) {
+            targetPos = pos;
+          }
+          
+          currentIndex++;
+        }
+        return true;
+      });
+
+      // Find the best match:
+      const bestMatch = findBestHeadingMatch(matches, index);
+      let finalPos = bestMatch ? bestMatch.pos : targetPos;
+
+      if (finalPos !== -1) {
+        editor.commands.setTextSelection(finalPos);
+        
+        setTimeout(() => {
+          const container = wrapperRef.current;
+          if (container) {
+            const coords = editor.view.coordsAtPos(finalPos);
+            if (coords) {
+              const containerRect = container.getBoundingClientRect();
+              const relativeTop = coords.top - containerRect.top;
+              const targetScrollTop = container.scrollTop + relativeTop;
+
+              container.scrollTo({
+                top: Math.max(0, targetScrollTop - 150),
+                behavior: 'smooth'
+              });
+            } else {
+              editor.commands.scrollIntoView();
+            }
+          }
+        }, 100);
+        
+        editor.commands.focus();
+      }
+    }
+  }));
+
   const textColor = isDark ? '#F3F4F6' : '#121212';
   const bgColor = isDark ? '#121212' : '#ffffff';
 
@@ -1209,7 +1269,7 @@ export default function Editor({ value, onChange, onSave, onPasteImage, onRename
   const cbCopy = isDark ? '#9CA3AF' : '#6B7280';
 
   return (
-    <div className="tiptap-wrapper" style={{ height: '100%', maxHeight: '100%', boxSizing: 'border-box', flex: 1, backgroundColor: bgColor, overflowY: 'auto', color: textColor, '--cb-bg': cbBg, '--cb-bg-header': cbBgHeader, '--cb-border': cbBorder, '--cb-text': cbText, '--cb-copy': cbCopy } as React.CSSProperties}>
+    <div ref={wrapperRef} className="tiptap-wrapper" style={{ height: '100%', maxHeight: '100%', boxSizing: 'border-box', flex: 1, backgroundColor: bgColor, overflowY: 'auto', color: textColor, '--cb-bg': cbBg, '--cb-bg-header': cbBgHeader, '--cb-border': cbBorder, '--cb-text': cbText, '--cb-copy': cbCopy } as React.CSSProperties}>
       <style>{`
         .tiptap-wrapper .ProseMirror {
           min-height: 100%;
@@ -1273,4 +1333,4 @@ export default function Editor({ value, onChange, onSave, onPasteImage, onRename
       </ThemeContext.Provider>
     </div>
   );
-}
+});

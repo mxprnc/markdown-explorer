@@ -35,6 +35,8 @@ interface EditorWorkspaceProps {
   deferredContent2: string;
   previewRef1: React.RefObject<any>;
   previewRef2: React.RefObject<any>;
+  editorRef1: React.RefObject<any>;
+  editorRef2: React.RefObject<any>;
 }
 
 export function EditorWorkspace({
@@ -44,7 +46,7 @@ export function EditorWorkspace({
   localFiles, onSelectFile, onCloseTab, onSaveFile, resolveImage,
   onPasteImage, onRenameImage, draggingTab, setDraggingTab,
   middlePaneResponder, fontFamilyCode,
-  previewRef1, previewRef2
+  previewRef1, previewRef2, editorRef1, editorRef2
 }: EditorWorkspaceProps) {
   const { colors, isDark } = useTheme();
 
@@ -78,6 +80,7 @@ export function EditorWorkspace({
 
     return (
       <Editor 
+        ref={paneId === 1 ? editorRef1 : editorRef2}
         key={`${paneId}-${selFile}`}
         value={content} 
         onChange={setContent} 
@@ -85,6 +88,7 @@ export function EditorWorkspace({
         onPasteImage={onPasteImage} 
         onRenameImage={onRenameImage}
         onSave={(val: string) => onSaveFile(val, selFile)}
+        isDark={isDark}
       />
     );
   };

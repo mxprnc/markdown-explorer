@@ -47,4 +47,20 @@ describe('Preview Component (Web)', () => {
 
     expect(renderer.toJSON()).toBeDefined();
   });
+
+  it('should expose scrollToHeading method via ref', () => {
+    const ref = React.createRef<any>();
+    TestRenderer.act(() => {
+      TestRenderer.create(
+        <Preview 
+          ref={ref}
+          content="# Test" 
+          isDark={false} 
+        />
+      );
+    });
+
+    expect(ref.current).toBeDefined();
+    expect(typeof ref.current.scrollToHeading).toBe('function');
+  });
 });

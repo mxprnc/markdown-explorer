@@ -109,6 +109,8 @@ function MainScreen() {
 
   const previewRef1 = useRef(null);
   const previewRef2 = useRef(null);
+  const editorRef1 = useRef(null);
+  const editorRef2 = useRef(null);
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -311,43 +313,20 @@ function MainScreen() {
   });
 
   const handleTOCClick = (text: string, index: number) => {
-    if (activePane === 1 && previewRef1.current) {
-      (previewRef1.current as any).scrollToHeading(index);
-    } else if (activePane === 2 && previewRef2.current) {
-      (previewRef2.current as any).scrollToHeading(index);
+    if (activePane === 1) {
+      if (activeTab === 'files' && previewRef1.current) {
+        (previewRef1.current as any).scrollToHeading(index, text);
+      } else if (activeTab === 'editor' && editorRef1.current) {
+        (editorRef1.current as any).scrollToHeading(index, text);
+      }
+    } else {
+      if (activeTab === 'files' && previewRef2.current) {
+        (previewRef2.current as any).scrollToHeading(index, text);
+      } else if (activeTab === 'editor' && editorRef2.current) {
+        (editorRef2.current as any).scrollToHeading(index, text);
+      }
     }
   };
-
-  const tocList = React.useMemo(() => {
-    let currentContent = '';
-    if (activeTab === 'files') {
-      const selFile = activePane === 1 ? selectedFile : selectedFile2;
-      currentContent = localFiles[selFile] || '';
-    } else {
-      currentContent = activePane === 1 ? editorContent : editorContent2;
-    }
-    const lines = currentContent.split('\n');
-    const toc: { id: string, text: string, level: number }[] = [];
-    let inCodeBlock = false;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (line.startsWith('```')) {
-        inCodeBlock = !inCodeBlock;
-        continue;
-      }
-      if (inCodeBlock) continue;
-      const match = line.match(/^(#{1,6})\s+(.*)$/);
-      if (match) {
-        toc.push({
-          id: `toc-${i}`,
-          level: match[1].length,
-          text: match[2].replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1').replace(/[*_~`]/g, '')
-        });
-      }
-    }
-    return toc;
-  }, [editorContent, editorContent2, activePane, activeTab, selectedFile, selectedFile2, localFiles]);
 
   return (
     <ErrorBoundary>
@@ -420,6 +399,8 @@ function MainScreen() {
             fontFamilyCode={fontFamilyCode}
             previewRef1={previewRef1}
             previewRef2={previewRef2}
+            editorRef1={editorRef1}
+            editorRef2={editorRef2}
           />
 
           {/* TOC Pane */}

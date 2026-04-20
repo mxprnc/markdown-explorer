@@ -8,6 +8,7 @@ import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/pris
 import { useMarkdownWorker } from '../hooks/useMarkdownWorker';
 import mermaid from 'mermaid';
 import equal from 'fast-deep-equal';
+import { findBestHeadingMatch } from '@/utils/MarkdownUtils';
 
 mermaid.initialize({ startOnLoad: false, theme: 'default' });
 
@@ -143,11 +144,33 @@ const Preview = forwardRef(({ content, isDark, resolveImage }: { content: string
   const { hast, isParsing, workerError } = useMarkdownWorker(content);
 
   useImperativeHandle(ref, () => ({
-    scrollToHeading: (index: number) => {
+    scrollToHeading: (index: number, text?: string) => {
       if (containerRef.current) {
-        const headings = containerRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6');
-        if (headings[index]) {
-          headings[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const headings = Array.from(containerRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+        
+        // Find all headings matching the text
+        const matches: { element: HTMLElement, index: number }[] = [];
+        headings.forEach((el, idx) => {
+          if (text && (el as HTMLElement).innerText.trim() === text.trim()) {
+            matches.push({ element: el as HTMLElement, index: idx });
+          }
+        });
+
+        // Use utility to find the best match
+        const bestMatch = findBestHeadingMatch(matches, index);
+        let target: HTMLElement | null = bestMatch ? bestMatch.element : (headings[index] as HTMLElement || null);
+
+        if (target) {
+          const container = containerRef.current;
+          const containerRect = container.getBoundingClientRect();
+          const targetRect = target.getBoundingClientRect();
+          const relativeTop = targetRect.top - containerRect.top;
+          const targetScrollTop = container.scrollTop + relativeTop;
+
+          container.scrollTo({
+            top: Math.max(0, targetScrollTop - 150),
+            behavior: 'smooth'
+          });
         }
       }
     }

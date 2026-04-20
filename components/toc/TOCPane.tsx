@@ -1,6 +1,7 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import { extractTOC } from '@/utils/MarkdownUtils';
 
 interface TOCItem {
   id: string;
@@ -17,30 +18,7 @@ interface TOCPaneProps {
 
 export const TOCPane = memo(({ content, width, onTOCClick, responder }: TOCPaneProps) => {
   const { colors, isDark, fontFamilyUI } = useTheme();
-  const tocList = useMemo(() => {
-    const lines = content.split('\n');
-    const toc: TOCItem[] = [];
-    let inCodeBlock = false;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (line.startsWith('```')) {
-        inCodeBlock = !inCodeBlock;
-        continue;
-      }
-      if (inCodeBlock) continue;
-      
-      const match = line.match(/^(#{1,6})\s+(.*)$/);
-      if (match) {
-        toc.push({
-          id: `toc-${i}`,
-          level: match[1].length,
-          text: match[2].replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1').replace(/[*_~`]/g, '')
-        });
-      }
-    }
-    return toc;
-  }, [content]);
+  const tocList = useMemo(() => extractTOC(content), [content]);
 
   return (
     <View nativeID="toc-pane" id="toc-pane" accessibilityRole="complementary" style={[styles.paneTOC, { width, borderLeftColor: colors.border, backgroundColor: colors.surface }]}>
