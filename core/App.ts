@@ -12,6 +12,10 @@ export interface Vault {
   exists(path: string): Promise<boolean>;
   /** 모든 파일 목록을 가져옵니다. */
   getAllFiles(): string[];
+  /** 특정 폴더 내의 파일 목록을 가져옵니다. */
+  listFiles(path: string): Promise<string[]>;
+  /** 폴더를 생성합니다. */
+  createFolder(path: string): Promise<void>;
 }
 
 /**
