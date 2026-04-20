@@ -7,10 +7,27 @@ npm i
 ```
 <br/>
 
-start
-```bash
 npm run web
 ```
+<br/>
+
+## Unit Testing
+이 프로젝트는 Jest를 사용하여 유틸리티 및 핵심 로직의 안정성을 검증합니다.
+
+### 테스트 실행 방법
+```bash
+# 전체 테스트 실행
+npm test
+
+# 특정 테스트 파일 실행
+npm test utils/__tests__/FileSystemUtils.test.ts
+
+# 테스트 감시 모드 (변경 시 자동 재실행)
+npm test -- --watch
+```
+
+### 테스트 구조
+- `utils/__tests__/`: 유틸리티 함수(FileSystemUtils 등)에 대한 단위 테스트가 포함되어 있습니다.
 <br/>
 
 ## 주의 사항 (Troubleshooting)
