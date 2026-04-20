@@ -9,11 +9,15 @@
 - **전역 상태**: `contexts/` 내의 Theme, Settings 컨텍스트 사용.
 - **파일 시스템**: `useFileSystem.ts` 커스텀 훅을 통해 IndexedDB(브라우저 캐시) 및 Native File System API 연동.
 - **비속기 처리**: `useMarkdownWorker.ts`를 통해 무거운 마크다운 파싱 작업을 Web Worker에서 병렬 처리.
+- **플러그인 시스템**: `PluginManager`를 통해 기능 모듈의 동적 로드 및 생명주기 관리.
+- **AI 도구 연동**: `MCPClient`를 통해 외부 MCP 서버와 연동하여 AI 모델에 도구(Tools) 제공.
 
 ## 🏗 아키텍처 및 코어 엔진
 
 - **메인 에디터 엔진**: **Tiptap (ProseMirror 기반)**
     - 선택 사유 및 상세 동작 방식은 [editor-engine.md](../architecture/editor-engine.md)를 참고하십시오.
+- **플러그인 및 MCP 아키텍처**:
+    - 설계 상세는 [plugin-system.md](../architecture/plugin-system.md)를 참고하십시오.
 
 ## 📁 주요 컴포넌트 구조
 

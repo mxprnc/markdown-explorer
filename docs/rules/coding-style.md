@@ -488,10 +488,24 @@ const loadData = async () => {
     const [user, posts] = await Promise.all([fetchUser(), fetchPosts()]);
     setData({ user, posts });
   } catch (error) {
-    console.error('데이터 로드 실패:', error);
-    setError('데이터를 불러오는 중 오류가 발생했습니다.');
+    handleError(error);
   } finally {
     setLoading(false);
   }
 };
 ```
+
+---
+
+## 13. Plugin & MCP Development
+플러그인 기반 아키텍처와 MCP(Model Context Protocol) 연동을 위한 개발 가이드라인입니다.
+
+### 핵심 원칙
+- **Lifecycle 준수**: 플러그인은 반드시 `onload`에서 초기화하고, `onunload`에서 모든 자원(이벤트 리스너, DOM 요소, 타이머 등)을 완벽히 해제해야 합니다.
+- **Sandboxing**: 코어 로직과 플러그인 로직을 분리하며, 플러그인은 제공된 `App` API를 통해서만 시스템 자원에 접근합니다.
+- **MCP Tooling**: MCP 서버 연동 시 각 도구(Tool)는 독립적이고 명확한 책임을 가지며, 모델이 이해하기 쉬운 `description`과 `schema`를 제공해야 합니다.
+
+### 지침
+- **Cleanup 필수**: `onunload` 시 `window.removeEventListener`나 `app.commands.removeCommand` 등을 호출하여 메모리 누수를 방지합니다.
+- **비동기 안전성**: 플러그인 로딩 및 MCP 통신은 앱의 메인 스레드를 차단하지 않도록 비동기적으로 처리합니다.
+- **에러 격리**: 특정 플러그인의 실패가 전체 앱의 초기화 실패로 이어지지 않도록 `PluginManager` 수준에서 예외 처리를 수행합니다.

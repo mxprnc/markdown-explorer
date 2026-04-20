@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1776670469690" clover="3.2.0">
-  <project timestamp="1776670469690" name="All files">
+<coverage generated="1776690719567" clover="3.2.0">
+  <project timestamp="1776690719567" name="All files">
     <metrics statements="1888" coveredstatements="295" conditionals="1290" coveredconditionals="154" methods="417" coveredmethods="48" elements="3595" coveredelements="497" complexity="0" loc="1888" ncloc="1888" packages="10" files="42" classes="42"/>
     <package name="components">
       <metrics statements="902" coveredstatements="39" conditionals="639" coveredconditionals="20" methods="168" coveredmethods="5"/>
-      <file name="Editor.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Editor.tsx">
+      <file name="Editor.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Editor.tsx">
         <metrics statements="1" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="5" count="0" type="stmt"/>
       </file>
-      <file name="Editor.web.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Editor.web.tsx">
+      <file name="Editor.web.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Editor.web.tsx">
         <metrics statements="664" coveredstatements="28" conditionals="394" coveredconditionals="12" methods="105" coveredmethods="2"/>
         <line num="19" count="1" type="stmt"/>
         <line num="21" count="1" type="stmt"/>
@@ -675,14 +675,14 @@
         <line num="1269" count="1" type="cond" truecount="1" falsecount="1"/>
         <line num="1271" count="1" type="stmt"/>
       </file>
-      <file name="ExternalLink.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ExternalLink.tsx">
+      <file name="ExternalLink.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ExternalLink.tsx">
         <metrics statements="4" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="0"/>
         <line num="8" count="0" type="stmt"/>
         <line num="14" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="16" count="0" type="stmt"/>
         <line num="18" count="0" type="stmt"/>
       </file>
-      <file name="GeminiChat.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/GeminiChat.tsx">
+      <file name="GeminiChat.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/GeminiChat.tsx">
         <metrics statements="82" coveredstatements="0" conditionals="98" coveredconditionals="0" methods="24" coveredmethods="0"/>
         <line num="23" count="0" type="stmt"/>
         <line num="30" count="0" type="stmt"/>
@@ -767,18 +767,18 @@
         <line num="277" count="0" type="stmt"/>
         <line num="323" count="0" type="stmt"/>
       </file>
-      <file name="HapticTab.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/HapticTab.tsx">
+      <file name="HapticTab.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/HapticTab.tsx">
         <metrics statements="4" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="0"/>
         <line num="6" count="0" type="stmt"/>
         <line num="10" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="12" count="0" type="stmt"/>
         <line num="14" count="0" type="stmt"/>
       </file>
-      <file name="HelloWave.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/HelloWave.tsx">
+      <file name="HelloWave.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/HelloWave.tsx">
         <metrics statements="1" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="4" count="0" type="stmt"/>
       </file>
-      <file name="ParallaxScrollView.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ParallaxScrollView.tsx">
+      <file name="ParallaxScrollView.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ParallaxScrollView.tsx">
         <metrics statements="9" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="0"/>
         <line num="14" count="0" type="stmt"/>
         <line num="26" count="0" type="stmt"/>
@@ -790,12 +790,12 @@
         <line num="47" count="0" type="stmt"/>
         <line num="65" count="0" type="stmt"/>
       </file>
-      <file name="Preview.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Preview.tsx">
+      <file name="Preview.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Preview.tsx">
         <metrics statements="2" coveredstatements="0" conditionals="20" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="6" count="0" type="stmt"/>
         <line num="16" count="0" type="stmt"/>
       </file>
-      <file name="Preview.web.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Preview.web.tsx">
+      <file name="Preview.web.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Preview.web.tsx">
         <metrics statements="104" coveredstatements="11" conditionals="100" coveredconditionals="8" methods="21" coveredmethods="3"/>
         <line num="13" count="1" type="stmt"/>
         <line num="18" count="1" type="stmt"/>
@@ -902,12 +902,12 @@
         <line num="275" count="2" type="stmt"/>
         <line num="303" count="0" type="stmt"/>
       </file>
-      <file name="Terminal.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Terminal.tsx">
+      <file name="Terminal.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Terminal.tsx">
         <metrics statements="2" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="5" count="0" type="stmt"/>
         <line num="12" count="0" type="stmt"/>
       </file>
-      <file name="Terminal.web.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Terminal.web.tsx">
+      <file name="Terminal.web.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/Terminal.web.tsx">
         <metrics statements="24" coveredstatements="0" conditionals="8" coveredconditionals="0" methods="6" coveredmethods="0"/>
         <line num="7" count="0" type="stmt"/>
         <line num="9" count="0" type="stmt"/>
@@ -934,13 +934,13 @@
         <line num="48" count="0" type="stmt"/>
         <line num="52" count="0" type="stmt"/>
       </file>
-      <file name="ThemedText.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ThemedText.tsx">
+      <file name="ThemedText.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ThemedText.tsx">
         <metrics statements="3" coveredstatements="0" conditionals="11" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="18" count="0" type="stmt"/>
         <line num="20" count="0" type="stmt"/>
         <line num="36" count="0" type="stmt"/>
       </file>
-      <file name="ThemedView.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ThemedView.tsx">
+      <file name="ThemedView.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ThemedView.tsx">
         <metrics statements="2" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="11" count="0" type="stmt"/>
         <line num="13" count="0" type="stmt"/>
@@ -948,7 +948,7 @@
     </package>
     <package name="components.editor">
       <metrics statements="65" coveredstatements="27" conditionals="68" coveredconditionals="28" methods="20" coveredmethods="4"/>
-      <file name="EditorWorkspace.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/editor/EditorWorkspace.tsx">
+      <file name="EditorWorkspace.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/editor/EditorWorkspace.tsx">
         <metrics statements="65" coveredstatements="27" conditionals="68" coveredconditionals="28" methods="20" coveredmethods="4"/>
         <line num="59" count="3" type="stmt"/>
         <line num="60" count="3" type="stmt"/>
@@ -1019,7 +1019,7 @@
     </package>
     <package name="components.explorer">
       <metrics statements="99" coveredstatements="0" conditionals="112" coveredconditionals="0" methods="37" coveredmethods="0"/>
-      <file name="ContextMenu.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/explorer/ContextMenu.tsx">
+      <file name="ContextMenu.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/explorer/ContextMenu.tsx">
         <metrics statements="23" coveredstatements="0" conditionals="24" coveredconditionals="0" methods="14" coveredmethods="0"/>
         <line num="21" count="0" type="stmt"/>
         <line num="23" count="0" type="stmt"/>
@@ -1045,7 +1045,7 @@
         <line num="77" count="0" type="cond" truecount="0" falsecount="4"/>
         <line num="86" count="0" type="stmt"/>
       </file>
-      <file name="FileExplorer.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/explorer/FileExplorer.tsx">
+      <file name="FileExplorer.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/explorer/FileExplorer.tsx">
         <metrics statements="10" coveredstatements="0" conditionals="6" coveredconditionals="0" methods="5" coveredmethods="0"/>
         <line num="42" count="0" type="stmt"/>
         <line num="44" count="0" type="stmt"/>
@@ -1058,7 +1058,7 @@
         <line num="107" count="0" type="stmt"/>
         <line num="113" count="0" type="stmt"/>
       </file>
-      <file name="FileItem.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/explorer/FileItem.tsx">
+      <file name="FileItem.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/explorer/FileItem.tsx">
         <metrics statements="42" coveredstatements="0" conditionals="45" coveredconditionals="0" methods="9" coveredmethods="0"/>
         <line num="27" count="0" type="stmt"/>
         <line num="28" count="0" type="stmt"/>
@@ -1103,7 +1103,7 @@
         <line num="140" count="0" type="stmt"/>
         <line num="147" count="0" type="stmt"/>
       </file>
-      <file name="FileTree.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/explorer/FileTree.tsx">
+      <file name="FileTree.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/explorer/FileTree.tsx">
         <metrics statements="16" coveredstatements="0" conditionals="25" coveredconditionals="0" methods="6" coveredmethods="0"/>
         <line num="35" count="0" type="stmt"/>
         <line num="37" count="0" type="stmt"/>
@@ -1122,7 +1122,7 @@
         <line num="120" count="0" type="stmt"/>
         <line num="123" count="0" type="stmt"/>
       </file>
-      <file name="RenameModal.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/explorer/RenameModal.tsx">
+      <file name="RenameModal.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/explorer/RenameModal.tsx">
         <metrics statements="8" coveredstatements="0" conditionals="12" coveredconditionals="0" methods="3" coveredmethods="0"/>
         <line num="15" count="0" type="stmt"/>
         <line num="16" count="0" type="cond" truecount="0" falsecount="2"/>
@@ -1136,7 +1136,7 @@
     </package>
     <package name="components.gemini">
       <metrics statements="9" coveredstatements="0" conditionals="10" coveredconditionals="0" methods="4" coveredmethods="0"/>
-      <file name="GeminiSettingsModal.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/gemini/GeminiSettingsModal.tsx">
+      <file name="GeminiSettingsModal.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/gemini/GeminiSettingsModal.tsx">
         <metrics statements="9" coveredstatements="0" conditionals="10" coveredconditionals="0" methods="4" coveredmethods="0"/>
         <line num="14" count="0" type="stmt"/>
         <line num="15" count="0" type="stmt"/>
@@ -1151,14 +1151,14 @@
     </package>
     <package name="components.layout">
       <metrics statements="84" coveredstatements="33" conditionals="80" coveredconditionals="33" methods="23" coveredmethods="7"/>
-      <file name="Footer.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/layout/Footer.tsx">
+      <file name="Footer.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/layout/Footer.tsx">
         <metrics statements="4" coveredstatements="0" conditionals="4" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="16" count="0" type="stmt"/>
         <line num="17" count="0" type="stmt"/>
         <line num="18" count="0" type="stmt"/>
         <line num="54" count="0" type="stmt"/>
       </file>
-      <file name="Header.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/layout/Header.tsx">
+      <file name="Header.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/layout/Header.tsx">
         <metrics statements="6" coveredstatements="5" conditionals="24" coveredconditionals="13" methods="3" coveredmethods="2"/>
         <line num="14" count="1" type="stmt"/>
         <line num="17" count="3" type="stmt"/>
@@ -1167,7 +1167,7 @@
         <line num="42" count="1" type="stmt"/>
         <line num="74" count="1" type="stmt"/>
       </file>
-      <file name="TabBar.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/layout/TabBar.tsx">
+      <file name="TabBar.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/layout/TabBar.tsx">
         <metrics statements="74" coveredstatements="28" conditionals="52" coveredconditionals="20" methods="19" coveredmethods="5"/>
         <line num="19" count="1" type="stmt"/>
         <line num="22" count="4" type="stmt"/>
@@ -1247,7 +1247,7 @@
     </package>
     <package name="components.preview">
       <metrics statements="22" coveredstatements="0" conditionals="16" coveredconditionals="0" methods="9" coveredmethods="0"/>
-      <file name="ImageViewer.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/preview/ImageViewer.tsx">
+      <file name="ImageViewer.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/preview/ImageViewer.tsx">
         <metrics statements="22" coveredstatements="0" conditionals="16" coveredconditionals="0" methods="9" coveredmethods="0"/>
         <line num="12" count="0" type="stmt"/>
         <line num="13" count="0" type="stmt"/>
@@ -1275,7 +1275,7 @@
     </package>
     <package name="components.toc">
       <metrics statements="6" coveredstatements="0" conditionals="12" coveredconditionals="0" methods="4" coveredmethods="0"/>
-      <file name="TOCPane.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/toc/TOCPane.tsx">
+      <file name="TOCPane.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/toc/TOCPane.tsx">
         <metrics statements="6" coveredstatements="0" conditionals="12" coveredconditionals="0" methods="4" coveredmethods="0"/>
         <line num="19" count="0" type="stmt"/>
         <line num="20" count="0" type="stmt"/>
@@ -1287,7 +1287,7 @@
     </package>
     <package name="components.ui">
       <metrics statements="40" coveredstatements="15" conditionals="36" coveredconditionals="10" methods="13" coveredmethods="4"/>
-      <file name="Button.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ui/Button.tsx">
+      <file name="Button.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ui/Button.tsx">
         <metrics statements="21" coveredstatements="15" conditionals="19" coveredconditionals="10" methods="4" coveredmethods="4"/>
         <line num="15" count="1" type="stmt"/>
         <line num="18" count="3" type="stmt"/>
@@ -1311,15 +1311,7 @@
         <line num="45" count="3" type="stmt"/>
         <line num="68" count="1" type="stmt"/>
       </file>
-      <file name="Collapsible.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ui/Collapsible.tsx">
-        <metrics statements="5" coveredstatements="0" conditionals="8" coveredconditionals="0" methods="3" coveredmethods="0"/>
-        <line num="11" count="0" type="stmt"/>
-        <line num="12" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="14" count="0" type="stmt"/>
-        <line num="18" count="0" type="stmt"/>
-        <line num="35" count="0" type="stmt"/>
-      </file>
-      <file name="ErrorBoundary.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ui/ErrorBoundary.tsx">
+      <file name="ErrorBoundary.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ui/ErrorBoundary.tsx">
         <metrics statements="11" coveredstatements="0" conditionals="6" coveredconditionals="0" methods="4" coveredmethods="0"/>
         <line num="15" count="0" type="stmt"/>
         <line num="21" count="0" type="stmt"/>
@@ -1333,22 +1325,30 @@
         <line num="50" count="0" type="stmt"/>
         <line num="54" count="0" type="stmt"/>
       </file>
-      <file name="IconSymbol.ios.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ui/IconSymbol.ios.tsx">
+      <file name="IconSymbol.ios.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ui/IconSymbol.ios.tsx">
         <metrics statements="1" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="17" count="0" type="stmt"/>
       </file>
-      <file name="IconSymbol.tsx" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ui/IconSymbol.tsx">
+      <file name="IconSymbol.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ui/IconSymbol.tsx">
         <metrics statements="2" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="16" count="0" type="stmt"/>
         <line num="40" count="0" type="stmt"/>
       </file>
+      <file name="collapsible.tsx" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/components/ui/collapsible.tsx">
+        <metrics statements="5" coveredstatements="0" conditionals="8" coveredconditionals="0" methods="3" coveredmethods="0"/>
+        <line num="11" count="0" type="stmt"/>
+        <line num="12" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="14" count="0" type="stmt"/>
+        <line num="18" count="0" type="stmt"/>
+        <line num="35" count="0" type="stmt"/>
+      </file>
     </package>
     <package name="hooks">
       <metrics statements="564" coveredstatements="126" conditionals="275" coveredconditionals="35" methods="106" coveredmethods="16"/>
-      <file name="use-color-scheme.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/use-color-scheme.ts">
+      <file name="use-color-scheme.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/use-color-scheme.ts">
         <metrics statements="0" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
       </file>
-      <file name="use-color-scheme.web.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/use-color-scheme.web.ts">
+      <file name="use-color-scheme.web.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/use-color-scheme.web.ts">
         <metrics statements="7" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="0"/>
         <line num="8" count="0" type="stmt"/>
         <line num="10" count="0" type="stmt"/>
@@ -1358,7 +1358,7 @@
         <line num="17" count="0" type="stmt"/>
         <line num="20" count="0" type="stmt"/>
       </file>
-      <file name="use-theme-color.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/use-theme-color.ts">
+      <file name="use-theme-color.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/use-theme-color.ts">
         <metrics statements="5" coveredstatements="0" conditionals="4" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="13" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="14" count="0" type="stmt"/>
@@ -1366,7 +1366,7 @@
         <line num="17" count="0" type="stmt"/>
         <line num="19" count="0" type="stmt"/>
       </file>
-      <file name="useFileSystem.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/useFileSystem.ts">
+      <file name="useFileSystem.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/useFileSystem.ts">
         <metrics statements="306" coveredstatements="65" conditionals="159" coveredconditionals="23" methods="50" coveredmethods="9"/>
         <line num="17" count="8" type="stmt"/>
         <line num="18" count="8" type="stmt"/>
@@ -1675,7 +1675,7 @@
         <line num="505" count="0" type="stmt"/>
         <line num="506" count="0" type="cond" truecount="0" falsecount="4"/>
       </file>
-      <file name="useGemini.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/useGemini.ts">
+      <file name="useGemini.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/useGemini.ts">
         <metrics statements="46" coveredstatements="38" conditionals="22" coveredconditionals="8" methods="5" coveredmethods="4"/>
         <line num="7" count="4" type="stmt"/>
         <line num="8" count="4" type="stmt"/>
@@ -1724,7 +1724,7 @@
         <line num="73" count="0" type="stmt"/>
         <line num="77" count="4" type="stmt"/>
       </file>
-      <file name="useMarkdownWorker.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/useMarkdownWorker.ts">
+      <file name="useMarkdownWorker.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/useMarkdownWorker.ts">
         <metrics statements="41" coveredstatements="23" conditionals="14" coveredconditionals="4" methods="6" coveredmethods="3"/>
         <line num="10" count="3" type="stmt"/>
         <line num="11" count="3" type="stmt"/>
@@ -1768,7 +1768,7 @@
         <line num="141" count="2" type="stmt"/>
         <line num="152" count="3" type="stmt"/>
       </file>
-      <file name="usePaneResize.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/usePaneResize.ts">
+      <file name="usePaneResize.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/usePaneResize.ts">
         <metrics statements="130" coveredstatements="0" conditionals="72" coveredconditionals="0" methods="33" coveredmethods="0"/>
         <line num="6" count="0" type="stmt"/>
         <line num="7" count="0" type="stmt"/>
@@ -1901,7 +1901,7 @@
         <line num="200" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="204" count="0" type="stmt"/>
       </file>
-      <file name="useRecentFiles.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/useRecentFiles.ts">
+      <file name="useRecentFiles.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/hooks/useRecentFiles.ts">
         <metrics statements="29" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="9" coveredmethods="0"/>
         <line num="4" count="0" type="stmt"/>
         <line num="5" count="0" type="stmt"/>
@@ -1936,7 +1936,7 @@
     </package>
     <package name="utils">
       <metrics statements="97" coveredstatements="55" conditionals="42" coveredconditionals="28" methods="33" coveredmethods="12"/>
-      <file name="FileSystemUtils.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/utils/FileSystemUtils.ts">
+      <file name="FileSystemUtils.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/utils/FileSystemUtils.ts">
         <metrics statements="16" coveredstatements="16" conditionals="8" coveredconditionals="7" methods="5" coveredmethods="5"/>
         <line num="2" count="6" type="stmt"/>
         <line num="3" count="6" type="cond" truecount="3" falsecount="1"/>
@@ -1955,7 +1955,7 @@
         <line num="29" count="8" type="stmt"/>
         <line num="32" count="3" type="stmt"/>
       </file>
-      <file name="IndexedDBUtils.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/utils/IndexedDBUtils.ts">
+      <file name="IndexedDBUtils.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/utils/IndexedDBUtils.ts">
         <metrics statements="42" coveredstatements="0" conditionals="6" coveredconditionals="0" methods="21" coveredmethods="0"/>
         <line num="8" count="0" type="stmt"/>
         <line num="9" count="0" type="stmt"/>
@@ -2000,7 +2000,7 @@
         <line num="76" count="0" type="stmt"/>
         <line num="77" count="0" type="stmt"/>
       </file>
-      <file name="MarkdownUtils.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/utils/MarkdownUtils.ts">
+      <file name="MarkdownUtils.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/utils/MarkdownUtils.ts">
         <metrics statements="28" coveredstatements="28" conditionals="14" coveredconditionals="12" methods="2" coveredmethods="2"/>
         <line num="16" count="4" type="cond" truecount="1" falsecount="1"/>
         <line num="18" count="4" type="stmt"/>
@@ -2031,7 +2031,7 @@
         <line num="78" count="6" type="stmt"/>
         <line num="82" count="3" type="stmt"/>
       </file>
-      <file name="TabUtils.ts" path="/Users/alpha300uk/workspace/alpha300uk/0.toy-project/markdown-explorer/project/markdown-explorer-v1/utils/TabUtils.ts">
+      <file name="TabUtils.ts" path="/Users/alpha300uk/workspace/0.toy-project/markdown-explorer/project/markdown-explorer-v1/utils/TabUtils.ts">
         <metrics statements="11" coveredstatements="11" conditionals="14" coveredconditionals="9" methods="5" coveredmethods="5"/>
         <line num="18" count="1" type="cond" truecount="1" falsecount="1"/>
         <line num="20" count="1" type="cond" truecount="1" falsecount="1"/>
