@@ -11,7 +11,7 @@ interface FileTreeProps {
   selectedFile2: string;
   expandedFolders: Record<string, boolean>;
   hoveredItemPath: string | null;
-  onSelect: (path: string) => void;
+  onSelect: (path: string, isPreview?: boolean) => void;
   onToggle: (path: string) => void;
   onContextMenu: (e: any, item: any) => void;
   onMouseEnter: (path: string) => void;

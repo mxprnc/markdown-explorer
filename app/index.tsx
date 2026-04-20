@@ -179,7 +179,9 @@ function MainScreen() {
       }
     }
 
-    if (targetPane === 1) {
+    const actualTargetPane = isSplitMode ? targetPane : 1;
+
+    if (actualTargetPane === 1) {
       if (file === selectedFile && !isPreview && !previewFile1) return;
       if (selectedFile && !/\.(png|jpe?g|gif|webp)$/i.test(selectedFile)) {
           setLocalFiles(prev => ({ ...prev, [selectedFile]: editorContent }));
@@ -293,7 +295,10 @@ function MainScreen() {
   };
 
   const handleTabContextMenu = (e: any, file: string, paneId: 1 | 2) => {
-    if (Platform.OS === 'web') e.preventDefault();
+    if (Platform.OS === 'web') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const x = e.clientX || (e.nativeEvent && e.nativeEvent.pageX) || e.pageX;
     const y = e.clientY || (e.nativeEvent && e.nativeEvent.pageY) || e.pageY;
     
@@ -425,12 +430,18 @@ function MainScreen() {
   return (
     <ErrorBoundary>
       <Pressable 
+        accessibilityRole="main"
         nativeID="main-container" 
         style={s.container}
         onPress={() => {
           setContextMenu(prev => ({ ...prev, visible: false }));
           setTabContextMenu(null);
         }}
+        {...({ onContextMenu: (e: any) => {
+          e.preventDefault();
+          setContextMenu(prev => ({ ...prev, visible: false }));
+          setTabContextMenu(null);
+        }} as any)}
       >
         {/* HEADER */}
         <Header 

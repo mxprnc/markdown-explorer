@@ -137,7 +137,8 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderTopWidth: 2,
     borderTopColor: 'transparent',
-  },
+    cursor: 'pointer',
+  } as any,
   tabItemActive: {
   },
   tabText: {

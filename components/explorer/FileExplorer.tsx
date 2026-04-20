@@ -13,7 +13,7 @@ interface FileExplorerProps {
   selectedFile2: string;
   expandedFolders: Record<string, boolean>;
   hoveredItemPath: string | null;
-  onSelect: (path: string) => void;
+  onSelect: (path: string, isPreview?: boolean) => void;
   onToggle: (path: string) => void;
   onMouseEnter: (path: string) => void;
   onMouseLeave: () => void;
@@ -73,6 +73,7 @@ export function FileExplorer({
             onContextMenu={(e, item) => {
               if (Platform.OS === 'web') {
                 e.preventDefault();
+                e.stopPropagation();
                 setContextMenu({ x: e.clientX, y: e.clientY, visible: true, item });
               }
             }}
