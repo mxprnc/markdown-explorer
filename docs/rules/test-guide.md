@@ -18,6 +18,9 @@
 -   **Preset**: `jest-expo` (Expo 및 React Native 환경 최적화)
 -   **Transpiler**: `babel-jest` (Babel 설정을 기반으로 TypeScript 변환)
 
+> [!NOTE]
+> 상세 설정은 [Jest 설정 가이드](../test-settings/jest.md) 및 [Playwright 설정 가이드](../test-settings/playwright.md)를 참조하십시오.
+
 ---
 
 ## 📁 파일 구조 및 명명 규칙
