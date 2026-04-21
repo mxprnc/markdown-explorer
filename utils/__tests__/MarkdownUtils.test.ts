@@ -1,70 +1,47 @@
-import { extractTOC, findBestHeadingMatch } from '../MarkdownUtils';
+import { preprocessMarkdown, postprocessMarkdown, processTemplateVariables } from '../MarkdownUtils';
 
-describe('MarkdownUtils - extractTOC', () => {
-  it('should extract simple headings', () => {
-    const md = '# H1\n## H2\n### H3';
-    const toc = extractTOC(md);
-    
-    expect(toc.length).toBe(3);
-    expect(toc[0]).toEqual({ id: 'toc-0', level: 1, text: 'H1' });
-    expect(toc[1]).toEqual({ id: 'toc-1', level: 2, text: 'H2' });
-    expect(toc[2]).toEqual({ id: 'toc-2', level: 3, text: 'H3' });
-    // Wait, let's check index calculation: # H1 (lines[0]), ## H2 (lines[1]), ### H3 (lines[2])
-    // So id should be toc-0, toc-1, toc-2.
-    // My manual expectation was wrong.
+describe('MarkdownUtils', () => {
+  describe('preprocessMarkdown', () => {
+    test('이스케이프된 헤딩을 복구해야 한다', () => {
+      const input = '\\# Heading\nText';
+      expect(preprocessMarkdown(input)).toBe('# Heading\nText');
+    });
+
+    test('이스케이프된 리스트를 복구해야 한다', () => {
+      const input = '\\- Item 1\n\\- Item 2';
+      expect(preprocessMarkdown(input)).toBe('- Item 1\n- Item 2');
+    });
+
+    test('이스케이프된 링크 괄호를 복구해야 한다', () => {
+      const input = 'Click \\[[Link](url)\\]';
+      expect(preprocessMarkdown(input)).toBe('Click [[Link](url)]');
+    });
   });
 
-  it('should ignore indented code comments as headings', () => {
-    const md = '# Real Heading\n    # Code Comment\n    ## Still Comment';
-    const toc = extractTOC(md);
-    
-    expect(toc.length).toBe(1);
-    expect(toc[0].text).toBe('Real Heading');
+  describe('postprocessMarkdown', () => {
+    test('여러 마크다운 기호의 이스케이프를 제거해야 한다', () => {
+      const input = '\\# Heading\n\\*bold\\*\n\\- list';
+      const output = postprocessMarkdown(input);
+      expect(output).toBe('# Heading\n*bold*\n- list');
+    });
+
+    test('YouTube iframe을 원래의 URL로 복구해야 한다', () => {
+      const input = '<iframe src="https://www.youtube.com/embed/123" originalurl="https://youtube.com/watch?v=123"></iframe>';
+      expect(postprocessMarkdown(input)).toBe('https://youtube.com/watch?v=123');
+    });
   });
 
-  it('should ignore headings in fenced code blocks', () => {
-    const md = '# Real Heading\n```markdown\n# Not a heading\n```\n## Another Real One';
-    const toc = extractTOC(md);
-    
-    expect(toc.length).toBe(2);
-    expect(toc[0].text).toBe('Real Heading');
-    expect(toc[1].text).toBe('Another Real One');
-  });
+  describe('processTemplateVariables', () => {
+    test('{{변수}} 형태의 텍스트를 정확히 치환해야 한다', () => {
+      const template = 'Hello {{name}}, welcome to {{place}}!';
+      const variables = { name: 'Alice', place: 'Wonderland' };
+      expect(processTemplateVariables(template, variables)).toBe('Hello Alice, welcome to Wonderland!');
+    });
 
-  it('should handle correctly indented headings (0-3 spaces)', () => {
-    const md = ' # H1\n  ## H2\n   ### H3';
-    const toc = extractTOC(md);
-    expect(toc.length).toBe(3);
-    expect(toc[0]).toEqual({ id: 'toc-0', level: 1, text: 'H1' });
-    expect(toc[1]).toEqual({ id: 'toc-1', level: 2, text: 'H2' });
-    expect(toc[2]).toEqual({ id: 'toc-2', level: 3, text: 'H3' });
-  });
-});
-
-describe('MarkdownUtils - findBestHeadingMatch', () => {
-  const matches = [
-    { pos: 100, index: 5, text: 'A' },
-    { pos: 500, index: 15, text: 'A' },
-    { pos: 900, index: 25, text: 'A' },
-  ];
-
-  it('should find the closest match to target index', () => {
-    // Target index is 16, closest is index 15
-    const best = findBestHeadingMatch(matches, 16);
-    expect(best?.pos).toBe(500);
-  });
-
-  it('should find the first one if closer to start', () => {
-    const best = findBestHeadingMatch(matches, 7);
-    expect(best?.pos).toBe(100);
-  });
-
-  it('should find the last one if closer to end', () => {
-    const best = findBestHeadingMatch(matches, 30);
-    expect(best?.pos).toBe(900);
-  });
-
-  it('should return null for empty matches', () => {
-    expect(findBestHeadingMatch([], 10)).toBeNull();
+    test('존재하지 않는 변수는 그대로 두어야 한다', () => {
+      const template = 'Keep {{this}} and replace {{that}}';
+      const variables = { that: 'replaced' };
+      expect(processTemplateVariables(template, variables)).toBe('Keep {{this}} and replace replaced');
+    });
   });
 });

@@ -699,13 +699,8 @@ const LiveMarkdownExtension = Extension.create({
   }
 });
 
-const postprocessMd = (md: string) => {
-  let processed = md.replace(/\\\*/g, '*').replace(/\\~/g, '~').replace(/\\`/g, '`').replace(/\\_/g, '_')
-           .replace(/\\!\\\[/g, '![').replace(/\\\]/g, ']');
-  // Convert custom Youtube iframe HTML from tiptap-markdown back to its original text URL.
-  processed = processed.replace(/<iframe[^>]*originalurl="([^"]+)"[^>]*><\/iframe>/gi, '$1');
-  return processed;
-};
+// Functions moved to utils/MarkdownUtils.ts for better testability.
+import { preprocessMarkdown, postprocessMarkdown } from '@/utils/MarkdownUtils';
 
 const ImagePastingExtension = Extension.create({
   name: 'imagePasting',
@@ -1165,10 +1160,16 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
         'Mod-s': () => {
           if (onSave) {
             let md = (this.editor.storage as any).markdown.getMarkdown();
-            onSave(postprocessMd(md));
+            onSave(postprocessMarkdown(md));
           }
           return true; // prevent default
         },
+        // Alt-t (Option-t on Mac) for templates
+        'Alt-t': () => {
+          // This will be caught by the AppInstance or handled via event bus
+          window.dispatchEvent(new CustomEvent('command:execute', { detail: { id: 'insert-template' } }));
+          return true;
+        }
       }
     },
   });
@@ -1187,10 +1188,10 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
       MathExtension.configure({ evaluation: false }),
       SaveShortcut,
     ],
-    content: value,
+    content: preprocessMarkdown(value),
     onUpdate: ({ editor }) => {
       // Get the markdown content whenever the user types
-      const markdown = postprocessMd((editor.storage as any).markdown.getMarkdown());
+      const markdown = postprocessMarkdown((editor.storage as any).markdown.getMarkdown());
       onChange(markdown);
     },
     editorProps: {
@@ -1201,6 +1202,17 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
     }
   });
 
+  useEffect(() => {
+    if (editor && value !== undefined && !editor.isFocused) {
+      // Check if content actually changed to avoid unnecessary updates
+      const currentMarkdown = (editor.storage as any).markdown.getMarkdown();
+      const newMarkdown = preprocessMarkdown(value);
+      if (preprocessMarkdown(currentMarkdown) !== newMarkdown) {
+        editor.commands.setContent(newMarkdown);
+      }
+    }
+  }, [value, editor]);
+
   useImperativeHandle(ref, () => ({
     scrollToHeading: (index: number, text?: string) => {
       if (!editor) return;
@@ -1208,7 +1220,6 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
       let targetPos = -1;
       let currentIndex = 0;
       
-      // We will collect all headings that match the text
       const matches: { pos: number, index: number }[] = [];
 
       editor.state.doc.descendants((node, pos) => {
@@ -1228,7 +1239,6 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
         return true;
       });
 
-      // Find the best match:
       const bestMatch = findBestHeadingMatch(matches, index);
       let finalPos = bestMatch ? bestMatch.pos : targetPos;
 
@@ -1256,6 +1266,11 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
         
         editor.commands.focus();
       }
+    },
+    insertText: (text: string) => {
+      if (!editor) return;
+      editor.commands.insertContent(text);
+      editor.commands.focus();
     }
   }));
 

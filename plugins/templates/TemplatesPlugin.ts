@@ -1,5 +1,6 @@
 import { Plugin } from '@/core/plugin/Plugin';
 import { format } from 'date-fns';
+import { processTemplateVariables } from '@/utils/MarkdownUtils';
 
 /**
  * 마크다운 템플릿 기능을 제공하는 플러그인입니다.
@@ -57,10 +58,13 @@ export class TemplatesPlugin extends Plugin {
    */
   private processVariables(content: string): string {
     const now = new Date();
-    return content
-      .replace(/{{date}}/g, format(now, 'yyyy-MM-dd'))
-      .replace(/{{time}}/g, format(now, 'HH:mm:ss'))
-      .replace(/{{title}}/g, this.app.workspace.getActiveFile()?.split('/').pop() || 'Untitled');
+    const variables = {
+      date: format(now, 'yyyy-MM-dd'),
+      time: format(now, 'HH:mm:ss'),
+      title: this.app.workspace.getActiveFile()?.split('/').pop() || 'Untitled'
+    };
+    
+    return processTemplateVariables(content, variables);
   }
 
   async onunload() {

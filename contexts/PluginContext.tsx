@@ -20,6 +20,20 @@ export const PluginProvider: React.FC<{ children: React.ReactNode; app: App }> =
   const pluginManager = useMemo(() => new PluginManager(app), [app]);
 
   useEffect(() => {
+    // 템플릿 플러그인 등록 (PoC용 직접 등록)
+    const { TemplatesPlugin } = require('@/plugins/templates/TemplatesPlugin');
+    pluginManager.registerPlugin(
+      { id: 'templates', name: 'Templates', version: '1.0.0', author: 'Mark Explorer' },
+      TemplatesPlugin
+    );
+    
+    // 기본적으로 활성화
+    pluginManager.enablePlugin('templates').then(() => {
+      setEnabledPluginIds(pluginManager.getEnabledPluginIds());
+    });
+  }, [pluginManager]);
+
+  useEffect(() => {
     // 초기 로딩 시 플러그인 상태 동기화
     setEnabledPluginIds(pluginManager.getEnabledPluginIds());
   }, [pluginManager]);

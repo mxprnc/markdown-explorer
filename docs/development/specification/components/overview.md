@@ -8,8 +8,9 @@
 
 - **전역 상태**: `contexts/` 내의 Theme, Settings 컨텍스트 사용.
 - **파일 시스템**: `useFileSystem.ts` 커스텀 훅을 통해 IndexedDB(브라우저 캐시) 및 Native File System API 연동.
-- **비속기 처리**: `useMarkdownWorker.ts`를 통해 무거운 마크다운 파싱 작업을 Web Worker에서 병렬 처리.
-- **플러그인 시스템**: `PluginManager`를 통해 기능 모듈의 동적 로드 및 생명주기 관리.
+- **비동기 처리**: `useMarkdownWorker.ts`를 통해 무거운 마크다운 파싱 작업을 Web Worker에서 병렬 처리.
+- **플러그인 시스템**: `PluginManager`를 통해 기능 모듈(예: 템플릿 플러그인)의 동적 로드 및 생명주기 관리.
+- **마크다운 정규화**: `preprocessMarkdown`을 통해 로딩 시 이스케이프된 헤딩 복구 및 저장 시 `postprocessMarkdown`을 통한 안정적 데이터 관리.
 - **AI 도구 연동**: `MCPClient`를 통해 외부 MCP 서버와 연동하여 AI 모델에 도구(Tools) 제공.
 
 ## 🏗 아키텍처 및 코어 엔진

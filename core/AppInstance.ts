@@ -15,29 +15,18 @@ export class AppInstance implements App {
 
   // 인스턴스 생성을 위해 필요한 외부 주입 (나중에 React 레이어와 연결)
   public vault: Vault = {} as Vault;
-  public workspace: Workspace;
+  public workspace: Workspace = {} as Workspace;
 
   constructor() {
     this.commands = new CommandManager();
     this.plugins = new PluginManager(this);
     this.events = new EventBus();
     this.views = new ViewRegistry();
-
-    // Workspace 기본 구현
-    this.workspace = {
-      getActiveFile: () => null,
-      openFile: async () => {},
-      addSidebarView: (id, name, icon, component) => {
-        this.views.registerView({ id, name, icon, component });
-        this.views.addToSidebar(id);
-        this.emit('views-updated');
-      },
-      removeSidebarView: (id) => {
-        this.views.removeFromSidebar(id);
-        this.emit('views-updated');
-      }
-    };
   }
+
+  // implementations setters
+  setVault(vault: Vault) { this.vault = vault; }
+  setWorkspace(workspace: Workspace) { this.workspace = workspace; }
 
   // App 인터페이스 구현체
   on(event: string, callback: (...args: any[]) => void) { this.events.on(event, callback); }

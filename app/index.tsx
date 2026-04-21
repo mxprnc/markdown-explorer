@@ -34,6 +34,11 @@ WebBrowser.maybeCompleteAuthSession();
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { PluginProvider, usePlugins } from '@/contexts/PluginContext';
+import { AppInstance } from '@/core/AppInstance';
+import { QuickPicker } from '@/components/ui/QuickPicker';
+
+const appInstance = new AppInstance();
 
 function MainScreen() {
   const { themeMode, isDark, toggleTheme, colors, fontFamilyUI, fontFamilyCode } = useTheme();
@@ -119,6 +124,154 @@ function MainScreen() {
   const previewRef2 = useRef(null);
   const editorRef1 = useRef(null);
   const editorRef2 = useRef(null);
+
+  const { pluginManager } = usePlugins();
+  const [templatePicker, setTemplatePicker] = useState<{ visible: boolean, items: any[] }>({ visible: false, items: [] });
+
+  useEffect(() => {
+    // Vault implementation
+    const vault = {
+      read: async (path: string) => {
+        if (localFiles[path]) return localFiles[path];
+        // If not in localFiles, try to find handle and read
+        const findHandle = (items: any[], p: string): any => {
+          for (const item of items) {
+            if (item.path === p) return item.handle;
+            if (item.children) {
+              const h = findHandle(item.children, p);
+              if (h) return h;
+            }
+          }
+          return null;
+        };
+        const handle = findHandle(fileSystemData, path);
+        if (handle) {
+          const f = await handle.getFile();
+          return await f.text();
+        }
+        throw new Error(`File not found: ${path}`);
+      },
+      write: async (path: string, data: string) => {
+        await handleSaveToDiskInHook(path, data);
+      },
+      exists: async (path: string) => {
+        const findItem = (items: any[], p: string): boolean => {
+          for (const item of items) {
+            if (item.path === p) return true;
+            if (item.children && findItem(item.children, p)) return true;
+          }
+          return false;
+        };
+        return findItem(fileSystemData, path);
+      },
+      getAllFiles: () => {
+        const list: string[] = [];
+        const collect = (items: any[]) => {
+          for (const it of items) {
+            if (it.kind === 'file') list.push(it.path);
+            if (it.children) collect(it.children);
+          }
+        };
+        collect(fileSystemData);
+        return list;
+      },
+      listFiles: async (path: string) => {
+        const findItems = (items: any[], p: string): any[] | null => {
+          if (p === '' || p === '.') return items;
+          const parts = p.split('/');
+          let current = items;
+          for (const part of parts) {
+            const found = current.find(it => it.name === part);
+            if (!found || !found.children) return null;
+            current = found.children;
+          }
+          return current;
+        };
+        const items = findItems(fileSystemData, path);
+        return items ? items.map(it => it.path) : [];
+      },
+      createFolder: async (path: string) => {
+        const lastSlash = path.lastIndexOf('/');
+        const parent = lastSlash === -1 ? '' : path.substring(0, lastSlash);
+        const name = lastSlash === -1 ? path : path.substring(lastSlash + 1);
+        await createItem(parent, name, 'directory');
+      }
+    };
+
+    // Workspace implementation
+    const workspace = {
+      getActiveFile: () => activePane === 1 ? selectedFile : selectedFile2,
+      openFile: async (path: string, options?: { leaf?: 'left' | 'right' | 'main' }) => {
+        const pane = options?.leaf === 'right' ? 2 : 1;
+        await handleSelectFile(path, false, pane as 1 | 2);
+      },
+      addSidebarView: (id: string, name: string, icon: string, component: any) => {
+        appInstance.workspace.addSidebarView(id, name, icon, component);
+      },
+      removeSidebarView: (id: string) => {
+        appInstance.workspace.removeSidebarView(id);
+      }
+    };
+
+    appInstance.setVault(vault);
+    appInstance.setWorkspace(workspace);
+  }, [fileSystemData, localFiles, selectedFile, selectedFile2, activePane]);
+
+  useEffect(() => {
+    const onShowTemplatePicker = (templates: string[]) => {
+      setTemplatePicker({
+        visible: true,
+        items: templates.map(t => ({
+          id: t,
+          label: t.split('/').pop() || t,
+          description: t
+        }))
+      });
+    };
+
+    const onInsertText = (text: string) => {
+      const targetRef = activePane === 1 ? editorRef1 : editorRef2;
+      if (targetRef.current && (targetRef.current as any).insertText) {
+        (targetRef.current as any).insertText(text);
+      } else {
+        // Fallback for native or if ref not ready
+        if (activePane === 1) setEditorContent(prev => prev + text);
+        else setEditorContent2(prev => prev + text);
+      }
+    };
+
+    const onExecuteCommand = (e: any) => {
+      const { id } = e.detail;
+      appInstance.commands.executeCommand(id);
+    };
+
+    appInstance.on('templates:show-picker', onShowTemplatePicker);
+    appInstance.on('editor:insert-text', onInsertText);
+    window.addEventListener('command:execute', onExecuteCommand);
+
+    return () => {
+      appInstance.off('templates:show-picker', onShowTemplatePicker);
+      appInstance.off('editor:insert-text', onInsertText);
+      window.removeEventListener('command:execute', onExecuteCommand);
+    };
+  }, [activePane]);
+
+  // Global Keyboard Listener
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Use e.code ('KeyT') instead of e.key ('t') to support Mac Option key correctly
+      if (e.altKey && e.code === 'KeyT') {
+        e.preventDefault();
+        console.log('[Shortcut] Option+T triggered');
+        appInstance.commands.executeCommand('insert-template');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
+  }, []);
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -720,6 +873,20 @@ function MainScreen() {
           visible={!!renamingItem} name={newName} onChangeName={setNewName}
           onConfirm={handleRenameFileSystem} onCancel={() => setRenamingItem(null)}
         />
+
+        <QuickPicker 
+          visible={templatePicker.visible}
+          title="Select Template"
+          items={templatePicker.items}
+          onSelect={(item) => {
+            const plugin = pluginManager.getPlugin('templates') as any;
+            if (plugin) {
+              plugin.insertTemplate(item.id);
+            }
+            setTemplatePicker(prev => ({ ...prev, visible: false }));
+          }}
+          onClose={() => setTemplatePicker(prev => ({ ...prev, visible: false }))}
+        />
       </Pressable>
     </ErrorBoundary>
   );
@@ -729,7 +896,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <SettingsProvider>
-        <MainScreen />
+        <PluginProvider app={appInstance}>
+          <MainScreen />
+        </PluginProvider>
       </SettingsProvider>
     </ThemeProvider>
   );

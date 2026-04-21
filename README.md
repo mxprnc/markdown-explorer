@@ -10,6 +10,8 @@ Mark Explorer는 로컬 마크다운 파일을 지능적으로 탐색하고, 현
 - **Intelligent TOC**: 코드 블록 내의 주석을 구분하여 실제 의미 있는 헤딩만 추출하는 스마트 목차 시스템.
 - **Offline-First Resource**: IndexedDB 캐싱과 브라우저 Native File System API를 통한 강력한 로컬 파일 관리.
 - **Rich Media**: 수식(KaTeX), 다이어그램(Mermaid), 코드 하이라이팅(Prism) 완벽 지원.
+- **Plugin-based Template System**: `.mark-explorer/templates/` 폴더의 파일을 활용한 동적 변수 치환 및 템플릿 삽입 확장 시스템.
+- **Robust Markdown Processing**: 헤딩 정규화, 링크 이스케이프 복구 등 다양한 렌더링 예외를 처리하는 마크다운 전처리 시스템.
 
 ## 🛠 Tech Stack
 
@@ -61,6 +63,9 @@ npm test -- --watch
 ### 브라우저 확장 프로그램 충돌
 DeepL, YouTube Summary 등 실시간 페이지 분석 확장 프로그램과 충돌할 수 있습니다. `SecurityError`가 발생하거나 에디터가 느려진다면 **시크릿 모드**에서 실행하거나 `localhost:8081`을 예외 처리해 주십시오.
 
+### 알려진 이슈 (Known Issues)
+- **템플릿 단축키 (Mac OS)**: `Option + T` (템플릿 삽입) 단축키가 Mac OS 자판 특성 및 이벤트 전파 간섭으로 인해 특정 상황에서만 작동할 수 있습니다. 대안으로 커맨드 팔레트나 UI 버튼 도입을 검토 중입니다. 상세 내용은 [Issue 문서](./docs/product/errors/open-template---shortcut-error/issue-20260421.md)를 참조하십시오.
+    
 ---
 
 > [!TIP]
