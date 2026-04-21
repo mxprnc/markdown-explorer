@@ -16,6 +16,8 @@ export interface Vault {
   listFiles(path: string): Promise<string[]>;
   /** 폴더를 생성합니다. */
   createFolder(path: string): Promise<void>;
+  /** 파일이나 폴더를 삭제합니다. */
+  delete(path: string): Promise<boolean>;
 }
 
 /**

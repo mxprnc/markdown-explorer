@@ -25,6 +25,7 @@ import { TabBar } from '@/components/layout/TabBar';
 import { GeminiSettingsModal } from '@/components/gemini/GeminiSettingsModal';
 import { RenameModal } from '@/components/explorer/RenameModal';
 import { EditorWorkspace } from '@/components/editor/EditorWorkspace';
+import { Sidebar } from '@/components/layout/Sidebar';
 import { AVAILABLE_MODELS } from '@/constants/Models';
 import { getFileCache, setFileCache } from '@/utils/IndexedDBUtils';
 import { handleTabSelection, pinTab, closeOthers, closeAll } from '@/utils/TabUtils';
@@ -127,42 +128,105 @@ function MainScreen() {
 
   const { pluginManager } = usePlugins();
   const [templatePicker, setTemplatePicker] = useState<{ visible: boolean, items: any[] }>({ visible: false, items: [] });
+  const [activeSidebarViewId, setActiveSidebarViewId] = useState('files');
+  const [sidebarViews, setSidebarViews] = useState<any[]>([]);
+
+  // ViewRegistry 변화 감지 (등록된 사이드바 뷰 목록 동기화)
+  useEffect(() => {
+    const updateViews = () => {
+      setSidebarViews(appInstance.views.getSidebarViews());
+    };
+    updateViews();
+    // registerView 시점에 이벤트를 발생시키도록 core를 수정하거나, 
+    // 여기서는 간단히 setInterval로 체크하거나 plugin 로드 후 직접 호출할 수도 있지만
+    // 일단 registerView 시점에 로깅만 하니, pluginManager 로드 후 한번 더 업데이트하도록 합니다.
+    const timer = setInterval(updateViews, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     // Vault implementation
     const vault = {
       read: async (path: string) => {
         if (localFiles[path]) return localFiles[path];
-        // If not in localFiles, try to find handle and read
-        const findHandle = (items: any[], p: string): any => {
+        const findHandleRec = (items: any[], p: string): any => {
           for (const item of items) {
             if (item.path === p) return item.handle;
             if (item.children) {
-              const h = findHandle(item.children, p);
+              const h = findHandleRec(item.children, p);
               if (h) return h;
             }
           }
           return null;
         };
-        const handle = findHandle(fileSystemData, path);
+        let handle = findHandleRec(fileSystemData, path);
+        
+        // Fallback: Try to find handle directly via dirHandle
+        if (!handle && dirHandle) {
+          try {
+            const parts = path.split('/').filter(Boolean);
+            let current = dirHandle;
+            for (let i = 0; i < parts.length - 1; i++) {
+              current = await current.getDirectoryHandle(parts[i]);
+            }
+            handle = await current.getFileHandle(parts[parts.length - 1]);
+          } catch (e) {}
+        }
+
         if (handle) {
-          const f = await handle.getFile();
-          return await f.text();
+          try {
+            const f = await handle.getFile();
+            return await f.text();
+          } catch (e) {}
         }
         throw new Error(`File not found: ${path}`);
       },
       write: async (path: string, data: string) => {
         await handleSaveToDiskInHook(path, data);
+        appInstance.emit('vault:changed');
       },
       exists: async (path: string) => {
-        const findItem = (items: any[], p: string): boolean => {
+        const findItemRec = (items: any[], p: string): boolean => {
           for (const item of items) {
             if (item.path === p) return true;
-            if (item.children && findItem(item.children, p)) return true;
+            if (item.children && findItemRec(item.children, p)) return true;
           }
           return false;
         };
-        return findItem(fileSystemData, path);
+        if (findItemRec(fileSystemData, path)) return true;
+        
+        // Fallback: Check disk directly
+        if (dirHandle) {
+          try {
+            const parts = path.split('/').filter(Boolean);
+            let current = dirHandle;
+            for (let i = 0; i < parts.length - 1; i++) {
+              current = await current.getDirectoryHandle(parts[i]);
+            }
+            await current.getFileHandle(parts[parts.length - 1]);
+            return true;
+          } catch (e) {}
+        }
+        return false;
+      },
+      delete: async (path: string) => {
+        const findItem = (items: any[], p: string): any => {
+          for (const item of items) {
+            if (item.path === p) return item;
+            if (item.children) {
+              const it = findItem(item.children, p);
+              if (it) return it;
+            }
+          }
+          return null;
+        };
+        const item = findItem(fileSystemData, path);
+        if (item) {
+          const success = await deleteItem(item);
+          if (success) appInstance.emit('vault:changed');
+          return success;
+        }
+        return false;
       },
       getAllFiles: () => {
         const list: string[] = [];
@@ -191,10 +255,16 @@ function MainScreen() {
         return items ? items.map(it => it.path) : [];
       },
       createFolder: async (path: string) => {
-        const lastSlash = path.lastIndexOf('/');
-        const parent = lastSlash === -1 ? '' : path.substring(0, lastSlash);
-        const name = lastSlash === -1 ? path : path.substring(lastSlash + 1);
-        await createItem(parent, name, 'directory');
+        const parts = path.split('/').filter(Boolean);
+        let currentPath = '';
+        for (const part of parts) {
+          const nextPath = currentPath ? `${currentPath}/${part}` : part;
+          if (!(await vault.exists(nextPath))) {
+            await createItem(currentPath, part, 'directory');
+          }
+          currentPath = nextPath;
+        }
+        appInstance.emit('vault:changed');
       }
     };
 
@@ -206,10 +276,13 @@ function MainScreen() {
         await handleSelectFile(path, false, pane as 1 | 2);
       },
       addSidebarView: (id: string, name: string, icon: string, component: any) => {
-        appInstance.workspace.addSidebarView(id, name, icon, component);
+        appInstance.views.registerView({ id, name, icon, component });
+        appInstance.views.addToSidebar(id);
+        setSidebarViews(appInstance.views.getSidebarViews());
       },
       removeSidebarView: (id: string) => {
-        appInstance.workspace.removeSidebarView(id);
+        appInstance.views.removeFromSidebar(id);
+        setSidebarViews(appInstance.views.getSidebarViews());
       }
     };
 
@@ -230,14 +303,25 @@ function MainScreen() {
     };
 
     const onInsertText = (text: string) => {
+      // Automatically switch to Editor tab if we are in Preview (Files) mode
+      if (activeTab === 'files') {
+        setActiveTab('editor');
+      }
+
       const targetRef = activePane === 1 ? editorRef1 : editorRef2;
       if (targetRef.current && (targetRef.current as any).insertText) {
         (targetRef.current as any).insertText(text);
       } else {
         // Fallback for native or if ref not ready
-        if (activePane === 1) setEditorContent(prev => prev + text);
-        else setEditorContent2(prev => prev + text);
+        // PREPEND for better visibility when switching tabs
+        if (activePane === 1) {
+          setEditorContent(prev => text + "\n" + prev);
+        } else {
+          setEditorContent2(prev => text + "\n" + prev);
+        }
       }
+      
+      console.log('[Editor] Text inserted successfully');
     };
 
     const onExecuteCommand = (e: any) => {
@@ -254,7 +338,7 @@ function MainScreen() {
       appInstance.off('editor:insert-text', onInsertText);
       window.removeEventListener('command:execute', onExecuteCommand);
     };
-  }, [activePane]);
+  }, [activePane, activeTab]);
 
   // Global Keyboard Listener
   useEffect(() => {
@@ -297,34 +381,39 @@ function MainScreen() {
     let content = localFiles[file];
     
     if (content === undefined) {
-      // Try to load from IndexedDB cache first
-      content = await getFileCache(file);
-      
-      if (content) {
-        setLocalFiles(prev => ({ ...prev, [file]: content }));
-      } else {
-        const findHandle = (items: any[], path: string): any => {
-          for (const item of items) {
-            if (item.path === path) return item.handle;
-            if (item.children) {
-              const h = findHandle(item.children, path);
-              if (h) return h;
-            }
-          }
-          return null;
-        };
-        const handle = findHandle(fileSystemData, file);
-        if (handle) {
-          try {
-            const f = await handle.getFile();
-            content = isImage ? URL.createObjectURL(f) : await f.text();
+      // Try to load content via vault implementation (which now has fallback)
+      try {
+        content = await appInstance.vault.read(file);
+        if (content) {
             setLocalFiles(prev => ({ ...prev, [file]: content }));
-            // Cache the loaded content
-            if (!isImage) {
-              await setFileCache(file, content);
+            if (!isImage) await setFileCache(file, content);
+        }
+      } catch (e) {
+        // If image and not in localFiles, we might need a special handle
+        if (isImage) {
+          const findHandleRec = (items: any[], path: string): any => {
+            for (const item of items) {
+              if (item.path === path) return item.handle;
+              if (item.children) {
+                const h = findHandleRec(item.children, path);
+                if (h) return h;
+              }
             }
-          } catch (e) {
-            content = '';
+            return null;
+          };
+          let handle = findHandleRec(fileSystemData, file);
+          if (!handle && dirHandle) {
+             try {
+                const parts = file.split('/').filter(Boolean);
+                let current = dirHandle;
+                for (let i = 0; i < parts.length - 1; i++) current = await current.getDirectoryHandle(parts[i]);
+                handle = await current.getFileHandle(parts[parts.length - 1]);
+             } catch(err) {}
+          }
+          if (handle) {
+            const f = await handle.getFile();
+            content = URL.createObjectURL(f);
+            setLocalFiles(prev => ({ ...prev, [file]: content }));
           }
         } else {
           content = '';
@@ -722,30 +811,39 @@ function MainScreen() {
 
         {/* BODY */}
         <View style={s.body}>
-          <FileExplorer 
-            leftPaneWidth={leftPaneWidth}
-            leftPaneResponder={leftPaneResponder}
-            fileSystemData={fileSystemData}
-            selectedFile={selectedFile}
-            selectedFile2={selectedFile2}
-            expandedFolders={expandedFolders}
-            hoveredItemPath={hoveredItemPath}
-            onSelect={handleSelectFile}
-            onToggle={toggleFolder}
-            onMouseEnter={setHoveredItemPath}
-            onMouseLeave={() => setHoveredItemPath(null)}
-            onOpenDirectory={handleOpenDirectory}
-            contextMenu={contextMenu}
-            setContextMenu={setContextMenu}
-            onDelete={handleDeleteFileSystem}
-            onRenameRequest={(item) => { setRenamingItem(item); setNewName(item.name); }}
-            onCreateRequest={(parentPath, kind) => setCreatingItem({ parentPath, kind })}
-            creatingItem={creatingItem}
-            creationName={creationName}
-            setCreationName={setCreationName}
-            onConfirmCreation={handleConfirmCreation}
-            onCancelCreation={() => setCreatingItem(null)}
-            setDraggingTab={setDraggingTab}
+          <Sidebar
+            app={appInstance}
+            width={leftPaneWidth}
+            activeViewId={activeSidebarViewId}
+            setActiveViewId={setActiveSidebarViewId}
+            registeredViews={sidebarViews}
+            renderFileExplorer={() => (
+              <FileExplorer 
+                leftPaneWidth={leftPaneWidth - 48} // Leave space for icon bar
+                leftPaneResponder={{ panHandlers: {} }} // Resize is handled by MainScreen
+                fileSystemData={fileSystemData}
+                selectedFile={selectedFile}
+                selectedFile2={selectedFile2}
+                expandedFolders={expandedFolders}
+                hoveredItemPath={hoveredItemPath}
+                onSelect={handleSelectFile}
+                onToggle={toggleFolder}
+                onMouseEnter={setHoveredItemPath}
+                onMouseLeave={() => setHoveredItemPath(null)}
+                onOpenDirectory={handleOpenDirectory}
+                contextMenu={contextMenu}
+                setContextMenu={setContextMenu}
+                onDelete={handleDeleteFileSystem}
+                onRenameRequest={(item) => { setRenamingItem(item); setNewName(item.name); }}
+                onCreateRequest={(parentPath, kind) => setCreatingItem({ parentPath, kind })}
+                creatingItem={creatingItem}
+                creationName={creationName}
+                setCreationName={setCreationName}
+                onConfirmCreation={handleConfirmCreation}
+                onCancelCreation={() => setCreatingItem(null)}
+                setDraggingTab={setDraggingTab}
+              />
+            )}
           />
 
           {/* Resizing Area */}

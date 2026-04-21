@@ -1,20 +1,25 @@
 import { Plugin } from '@/core/plugin/Plugin';
 import { format } from 'date-fns';
 import { processTemplateVariables } from '@/utils/MarkdownUtils';
+import { TemplateListView } from '@/components/plugins/TemplateListView';
 
 /**
  * 마크다운 템플릿 기능을 제공하는 플러그인입니다.
  */
 export class TemplatesPlugin extends Plugin {
-  private templatesFolder = '.mark-explorer/templates';
+  private templatesFolder = '_mark-explorer/templates';
 
   async onload() {
     console.log('[TemplatesPlugin] Loading...');
 
     // 1. 템플릿 폴더 존재 확인 및 생성
-    if (!(await this.app.vault.exists(this.templatesFolder))) {
-      await this.app.vault.createFolder(this.templatesFolder);
-      console.log(`[TemplatesPlugin] Created templates folder: ${this.templatesFolder}`);
+    try {
+      if (!(await this.app.vault.exists(this.templatesFolder))) {
+        await this.app.vault.createFolder(this.templatesFolder);
+        console.log(`[TemplatesPlugin] Created templates folder: ${this.templatesFolder}`);
+      }
+    } catch (e) {
+      console.warn('[TemplatesPlugin] Folder initialization failed', e);
     }
 
     // 2. 명령어 등록
@@ -23,6 +28,14 @@ export class TemplatesPlugin extends Plugin {
       name: '템플릿 삽입',
       callback: () => this.openTemplatePicker()
     });
+
+    // 3. 사이드바 뷰 등록 (Phase 2)
+    this.app.workspace.addSidebarView(
+      'templates-list',
+      'Templates',
+      'document-text-outline',
+      TemplateListView
+    );
 
     console.log('[TemplatesPlugin] Loaded successfully.');
   }
@@ -39,7 +52,6 @@ export class TemplatesPlugin extends Plugin {
       return;
     }
 
-    // 실제로는 UI Picker를 띄워야 하지만, PoC를 위해 첫 번째 템플릿을 사용하는 예시
     this.app.emit('templates:show-picker', templates);
   }
 
@@ -47,10 +59,27 @@ export class TemplatesPlugin extends Plugin {
    * 선택된 템플릿을 현재 에디터에 삽입합니다.
    */
   async insertTemplate(templatePath: string) {
-    const rawContent = await this.app.vault.read(templatePath);
-    const processedContent = this.processVariables(rawContent);
-    
-    this.app.emit('editor:insert-text', processedContent);
+    try {
+      const rawContent = await this.app.vault.read(templatePath);
+      const processedContent = this.processVariables(rawContent);
+      this.app.emit('editor:insert-text', processedContent);
+    } catch (e) {
+      console.error(`[TemplatesPlugin] Failed to insert template: ${templatePath}`, e);
+    }
+  }
+
+  /**
+   * 템플릿 파일을 삭제합니다.
+   */
+  async deleteTemplate(path: string) {
+    try {
+      const success = await this.app.vault.delete(path);
+      if (!success) {
+        console.error(`[TemplatesPlugin] Failed to delete template: ${path}`);
+      }
+    } catch (e) {
+      console.error(`[TemplatesPlugin] Error deleting template: ${path}`, e);
+    }
   }
 
   /**
@@ -69,6 +98,7 @@ export class TemplatesPlugin extends Plugin {
 
   async onunload() {
     this.app.commands.removeCommand('insert-template');
+    this.app.workspace.removeSidebarView('templates-list');
     console.log('[TemplatesPlugin] Unloaded.');
   }
 }
