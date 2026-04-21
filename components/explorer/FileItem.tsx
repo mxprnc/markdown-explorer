@@ -63,17 +63,26 @@ export function FileItem({
   const handleCopyPath = async (e: any) => {
     e.stopPropagation();
     const p = `./${item.path}`;
-    await Clipboard.setStringAsync(p);
-    if (Platform.OS === 'web') window.alert(`상대 경로가 복사되었습니다:\n${p}`);
+    try {
+      await Clipboard.setStringAsync(p);
+      if (Platform.OS === 'web') {
+        window.alert(`상대 경로가 복사되었습니다:\n${p}`);
+      }
+    } catch (error) {
+      console.error('Failed to copy path:', error);
+    }
   };
 
   const fileContent = (
-    <View style={[
-      styles.itemContainer,
-      { paddingLeft: (item.kind === 'directory' ? 12 : 30) + depth * 12 },
-      isSelected && [styles.selectedItem, { borderLeftColor: colors.primary, backgroundColor: isDark ? '#2D3748' : '#EFF6FF', paddingLeft: (item.kind === 'directory' ? 9 : 27) + depth * 12 }],
-      isHovered && !isSelected && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
-    ]}>
+    <View 
+      testID={`explorer-item-${item.path}`}
+      style={[
+        styles.itemContainer,
+        { paddingLeft: (item.kind === 'directory' ? 12 : 30) + depth * 12 },
+        isSelected ? [styles.selectedItem, { borderLeftColor: colors.primary, backgroundColor: isDark ? '#2D3748' : '#EFF6FF', paddingLeft: (item.kind === 'directory' ? 9 : 27) + depth * 12 }] : {},
+        (isHovered && !isSelected) ? { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' } : {}
+      ]}
+    >
       {item.kind === 'directory' && (
         <Ionicons 
           name={isExpanded ? "chevron-down" : "chevron-forward"} 
@@ -96,12 +105,17 @@ export function FileItem({
 
       {isHovered && (
         <View style={styles.actionGroup}>
-          <Pressable onPress={handleCopyPath} style={styles.actionBtn}>
+          <Pressable 
+            onPress={handleCopyPath} 
+            style={styles.actionBtn}
+            testID={`explorer-item-copy-${item.path}`}
+          >
             <Text style={{ color: colors.primary, fontSize: 12, fontWeight: 'bold' }}>@</Text>
           </Pressable>
           <Pressable 
             onPress={(e) => { e.stopPropagation(); onRenameRequest(item); }}
             style={styles.actionBtn}
+            testID={`explorer-item-rename-${item.path}`}
           >
             <Ionicons name="pencil-outline" size={14} color={colors.primary} />
           </Pressable>
@@ -121,6 +135,7 @@ export function FileItem({
     return (
       <div
         draggable={item.kind === 'file'}
+        data-testid={`explorer-item-wrapper-${item.path}`}
         onDragStart={(e: any) => {
           if (item.kind === 'file' && e.dataTransfer) {
             e.dataTransfer.effectAllowed = "move";

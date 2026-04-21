@@ -23,6 +23,7 @@ export function RenameModal({ visible, name, onChangeName, onConfirm, onCancel }
         <div style={{ marginBottom: 24 }}>
           <input 
             autoFocus
+            data-testid="rename-input"
             value={name}
             onChange={(e) => onChangeName(e.target.value)}
             onKeyDown={(e: any) => {
@@ -48,11 +49,13 @@ export function RenameModal({ visible, name, onChangeName, onConfirm, onCancel }
             label="Cancel"
             onPress={onCancel}
             variant="secondary"
+            testID="rename-cancel-btn"
           />
           <Button 
             label="Confirm"
             onPress={onConfirm}
             variant="primary"
+            testID="rename-confirm-btn"
           />
         </View>
       </View>

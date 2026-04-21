@@ -55,7 +55,7 @@ export function FileTree({
             onRenameRequest={onRenameRequest}
             setDraggingTab={setDraggingTab}
           />
-          {isExpanded && item.children && (
+          {(isExpanded && item.children) ? (
             <FileTree 
               items={item.children}
               depth={depth + 1}
@@ -77,7 +77,7 @@ export function FileTree({
               onCancelCreation={onCancelCreation}
               setDraggingTab={setDraggingTab}
             />
-          )}
+          ) : null}
         </View>
       );
     });

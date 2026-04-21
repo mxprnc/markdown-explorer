@@ -10,10 +10,11 @@ interface ButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   disabled?: boolean;
+  testID?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({ 
-  label, onPress, variant = 'primary', size = 'md', style, textStyle, disabled 
+  label, onPress, variant = 'primary', size = 'md', style, textStyle, disabled, testID 
 }) => {
   const { colors, fontFamilyUI } = useTheme();
 
@@ -44,6 +45,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <Pressable 
+      testID={testID}
       onPress={onPress} 
       disabled={disabled}
       style={[

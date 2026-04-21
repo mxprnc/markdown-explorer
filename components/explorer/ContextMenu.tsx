@@ -42,13 +42,17 @@ export function ContextMenu({
   if (!visible || !item) return null;
 
   return (
-    <View style={[
-      styles.menu, 
-      { top: y, left: x, backgroundColor: colors.background, borderColor: colors.border }
-    ]}>
+    <View 
+      testID="explorer-context-menu"
+      style={[
+        styles.menu, 
+        { top: y, left: x, backgroundColor: colors.background, borderColor: colors.border }
+      ]}
+    >
       {item.kind === 'directory' && (
         <>
           <Pressable 
+            testID="context-menu-new-file"
             onPress={() => { onCreateFile(item.path); onClose(); }} 
             style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
           >
@@ -56,6 +60,7 @@ export function ContextMenu({
             <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>New File</Text>
           </Pressable>
           <Pressable 
+            testID="context-menu-new-folder"
             onPress={() => { onCreateFolder(item.path); onClose(); }}
             style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
           >
@@ -66,6 +71,7 @@ export function ContextMenu({
         </>
       )}
       <Pressable 
+        testID="context-menu-rename"
         onPress={() => { onRename(item); onClose(); }}
         style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
       >
@@ -73,6 +79,7 @@ export function ContextMenu({
         <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Rename</Text>
       </Pressable>
       <Pressable 
+        testID="context-menu-delete"
         onPress={() => { onDelete(item); onClose(); }}
         style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
       >
@@ -91,11 +98,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 4,
     zIndex: 1000,
-    ...Platform.select({
-      web: { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' } as any,
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
-      android: { elevation: 4 }
-    })
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    elevation: 4,
   },
   menuItem: {
     flexDirection: 'row',

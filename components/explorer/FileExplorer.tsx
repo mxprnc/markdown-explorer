@@ -57,6 +57,7 @@ export function FileExplorer({
               accessibilityRole="button"
               onPress={onOpenDirectory} 
               style={[styles.openBtn, { backgroundColor: colors.primary, cursor: 'pointer' } as any]}
+              testID="open-folder-btn"
             >
               <Text style={styles.openBtnText}>Open Folder</Text>
             </Pressable>

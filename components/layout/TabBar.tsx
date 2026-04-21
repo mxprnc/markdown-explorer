@@ -178,6 +178,8 @@ export const TabBar = memo(({
                   e.stopPropagation();
                   handleDrop(e, index);
                 }}
+                className="tab-item"
+                data-testid={`tab-item-${file}`}
                 style={{ display: 'flex', flexDirection: 'row', userSelect: 'none', WebkitUserSelect: 'none', cursor: 'grab' } as any}
               >
                 {tabContent}

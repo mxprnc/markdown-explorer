@@ -354,6 +354,27 @@ function MainScreen() {
     };
 
     window.addEventListener('keydown', handleKeyDown, { capture: true });
+    
+    // E2E Test Hook
+    if (process.env.NODE_ENV === 'development') {
+      (window as any).__E2E_HOOKS__ = {
+        setFileSystemData: (data: any) => {
+          setFileSystemData(data);
+          setSelectedFolder('MOCK_REPO');
+        },
+        setDirHandle: (handle: any) => setDirHandle(handle),
+        setLocalFiles: (files: any) => setLocalFiles(files),
+        setExpandedFolders: (folders: any) => setExpandedFolders(folders),
+        appInstance,
+        mockClipboard: () => {
+          try {
+            const Clipboard = require('expo-clipboard');
+            Clipboard.setStringAsync = () => Promise.resolve();
+          } catch (e) {}
+        }
+      };
+    }
+
     return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
   }, []);
 
@@ -934,12 +955,12 @@ function MainScreen() {
           )}
 
           {/* TOC Pane */}
-          {(activePane === 1 ? selectedFile : selectedFile2) && !/\.(png|jpe?g|gif|webp)$/i.test(activePane === 1 ? selectedFile : selectedFile2) && (
+          {((activePane === 1 ? selectedFile : selectedFile2) && !/\.(png|jpe?g|gif|webp)$/i.test(activePane === 1 ? selectedFile : selectedFile2)) ? (
             <TOCPane 
                content={activePane === 1 ? deferredContent : deferredContent2} 
                width={tocPaneWidth} onTOCClick={handleTOCClick} responder={tocPaneResponder}
             />
-          )}
+          ) : null}
         </View>
 
         {/* FOOTER */}
@@ -1008,10 +1029,7 @@ const styles = StyleSheet.create({
     width: 180,
     borderRadius: 8,
     paddingVertical: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
     elevation: 5,
     borderWidth: 1,
   } as any,
