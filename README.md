@@ -43,12 +43,17 @@ npm test utils/__tests__/FileSystemUtils.test.ts
 
 # 테스트 감시 모드 (변경 시 자동 재실행)
 npm test -- --watch
+
+# E2E 테스트 실행 (Playwright)
+npm run test:e2e       # 전체 실행
+npm run test:e2e:ui    # UI 대시보드 실행
 ```
 
 ### 테스트 구조
 - `utils/__tests__/`: 유틸리티 함수(FileSystemUtils, MarkdownUtils 등)에 대한 단위 테스트.
 - `hooks/__tests__/`: 커스텀 훅(useFileSystem, useMarkdownWorker 등)의 로직 테스트.
 - `components/**/__tests__/`: 각 UI 컴포넌트의 렌더링 및 인터랙션 테스트.
+- `tests/e2e/`: 전체 서비스 흐름을 검증하는 End-to-End 테스트 (Playwright).
 
 ## 📖 문서 시스템
 

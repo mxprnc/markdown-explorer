@@ -14,7 +14,7 @@
 
 ## 🛠️ 테스트 환경 및 도구
 
--   **Test Runner**: Jest
+-   **Test Runner**: Jest (Unit/Hook/Component), Playwright (E2E)
 -   **Preset**: `jest-expo` (Expo 및 React Native 환경 최적화)
 -   **Transpiler**: `babel-jest` (Babel 설정을 기반으로 TypeScript 변환)
 
@@ -54,13 +54,24 @@
     -   핵심 사용자 인터랙션(탭 전환, 모달 열기)을 검증합니다.
     -   `Snapshot Testing`은 UI가 자주 변하는 초기 단계에서는 지양하고, 안정화된 이후 회귀 테스트 용도로 사용합니다.
 
+### 4. E2E 테스트 (E2E Tests)
+-   **대상**: 전체 애플리케이션 흐름 (파일 열기 -> 편집 -> 저장 -> 탭 이동 등).
+-   **도구**: Playwright
+-   **위치**: `tests/e2e/`
+-   **권장사항**: 
+    -   실제 브라우저 환경에서 사용자 시나리오를 처음부터 끝까지 검증합니다.
+    -   테스트 실행 시 자동으로 개발 서버(`npm run web`)가 기동되도록 설정되어 있습니다.
+    -   복잡한 인터랙션(드래그 앤 드롭 등)의 회귀 방지를 위해 필수적으로 작성합니다.
+
 ---
 
 ## 🚀 실행 및 모니터링
 
 ### 명령어
--   `npm test`: 전체 테스트 실행 및 커버리지 보고서 생성.
-*   `npm test -- --watch`: 개발 중 실시간 테스트 피드백 확인.
+-   `npm test`: 전체 Jest 테스트 실행 및 커버리지 보고서 생성.
+-   `npm test -- --watch`: 개발 중 실시간 Jest 테스트 피드백 확인.
+-   `npm run test:e2e`: Playwright E2E 테스트 실행.
+-   `npm run test:e2e:ui`: 시각적 디버깅을 위한 Playwright UI 모드 실행.
 
 ### CI/CD 가이드 (추후 적용)
 -   모든 Pull Request는 테스트가 100% 통과해야 Merge가 가능함을 원칙으로 합니다.
