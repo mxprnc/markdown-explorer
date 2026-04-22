@@ -43,16 +43,16 @@ export function ImageViewer({ uri, name }: ImageViewerProps) {
     <View style={{ flex: 1, backgroundColor: isDark ? '#1a1a1a' : '#f0f0f0' }}>
       {/* Toolbar */}
       <View style={[styles.toolbar, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => setZoom(prev => Math.max(0.1, prev - 0.2))} style={styles.toolBtn}>
+        <Pressable onPress={() => setZoom(prev => Math.max(0.1, prev - 0.2))} style={styles.toolBtn} testID="zoom-out-btn">
           <Ionicons name="remove-circle-outline" size={24} color={colors.primary} />
         </Pressable>
-        <Text style={[styles.zoomText, { color: colors.text, fontFamily: fontFamilyUI }]}>
+        <Text style={[styles.zoomText, { color: colors.text, fontFamily: fontFamilyUI }]} testID="zoom-percentage">
           {Math.round(zoom * 100)}%
         </Text>
-        <Pressable onPress={() => setZoom(prev => Math.min(10, prev + 0.5))} style={styles.toolBtn}>
+        <Pressable onPress={() => setZoom(prev => Math.min(10, prev + 0.5))} style={styles.toolBtn} testID="zoom-in-btn">
           <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
         </Pressable>
-        <Pressable onPress={handleReset} style={[styles.toolBtn, { marginLeft: 8 }]}>
+        <Pressable onPress={handleReset} style={[styles.toolBtn, { marginLeft: 8 }]} testID="zoom-reset-btn">
           <Ionicons name="refresh-outline" size={20} color={colors.textMuted} />
         </Pressable>
         <Text style={[styles.hint, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>
@@ -93,6 +93,7 @@ export function ImageViewer({ uri, name }: ImageViewerProps) {
             src={uri} 
             alt={name} 
             draggable="false"
+            data-testid="viewer-image"
             style={{ maxWidth: 'none', maxHeight: '80vh', border: `1px solid ${colors.border}`, borderRadius: 4, userSelect: 'none' }} 
           />
         </div>

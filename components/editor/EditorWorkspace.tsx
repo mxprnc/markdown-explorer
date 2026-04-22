@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, Platform, StyleSheet } from 'react-native';
 import Editor from '@/components/Editor';
-import Preview from '@/components/Preview';
+import MarkdownPreview from '@/components/preview/MarkdownPreview';
 import { TabBar } from '@/components/layout/TabBar';
 import { ImageViewer } from '@/components/preview/ImageViewer';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -116,10 +116,11 @@ export function EditorWorkspace({
 
     if (activeTab === 'files') {
       return (
-        <Preview 
+        <MarkdownPreview 
           ref={paneId === 1 ? previewRef1 : previewRef2}
           key={`preview-${paneId}-${selFile}`}
           content={content} 
+          isDark={isDark}
           resolveImage={(src) => resolveImage(src, selFile)} 
         />
       );

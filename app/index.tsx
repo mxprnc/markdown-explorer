@@ -10,7 +10,7 @@ import { makeRedirectUri } from 'expo-auth-session';
 
 import Editor from '@/components/Editor';
 import GeminiChat from '@/components/GeminiChat';
-import Preview from '@/components/Preview';
+import MarkdownPreview from '@/components/preview/MarkdownPreview';
 
 import { useGemini } from '@/hooks/useGemini';
 import { usePaneResize } from '@/hooks/usePaneResize';
@@ -369,6 +369,8 @@ function MainScreen() {
         setEditorContent: (content: string) => setEditorContent(content),
         setEditorContent2: (content: string) => setEditorContent2(content),
         appInstance,
+        previewRef1,
+        previewRef2,
         mockClipboard: () => {
           try {
             const Clipboard = require('expo-clipboard');
@@ -376,6 +378,8 @@ function MainScreen() {
           } catch (e) {}
         }
       };
+      (window as any).previewRef1 = previewRef1;
+      (window as any).previewRef2 = previewRef2;
     }
 
     return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
