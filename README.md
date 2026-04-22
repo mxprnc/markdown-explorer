@@ -33,6 +33,8 @@ npm run web
 ```
 
 ### 테스트 가이드
+
+#### 1. 단위 및 통합 테스트 (Jest)
 ```bash
 # 전체 테스트 실행
 npm test
@@ -43,10 +45,25 @@ npm test utils/__tests__/FileSystemUtils.test.ts
 
 # 테스트 감시 모드 (변경 시 자동 재실행)
 npm test -- --watch
+```
 
-# E2E 테스트 실행 (Playwright)
-npm run test:e2e       # 전체 실행
-npm run test:e2e:ui    # UI 대시보드 실행
+#### 2. E2E 테스트 (Playwright)
+```bash
+# 모든 E2E 테스트 실행
+npm run test:e2e
+
+# 특정 컴포넌트 테스트 파일만 실행 (예: TOC 패널)
+npx playwright test tests/e2e/toc-basic.spec.ts
+
+# 특정 브라우저 엔진에서만 실행 (chromium, firefox, webkit)
+npx playwright test tests/e2e/explorer-basic.spec.ts --project=chromium
+
+# UI 모드로 실행 (테스트 과정을 시각적으로 확인 및 디버깅)
+npm run test:e2e:ui
+
+# 마지막 테스트 결과 리포트 보기
+npx playwright show-report
+# (Tip: 포트 충돌 시 npx playwright show-report --port 9324 처럼 다른 포트 지정 가능)
 ```
 
 ### 테스트 구조

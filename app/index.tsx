@@ -365,6 +365,9 @@ function MainScreen() {
         setDirHandle: (handle: any) => setDirHandle(handle),
         setLocalFiles: (files: any) => setLocalFiles(files),
         setExpandedFolders: (folders: any) => setExpandedFolders(folders),
+        setSelectedFile: (file: string) => setSelectedFile(file),
+        setEditorContent: (content: string) => setEditorContent(content),
+        setEditorContent2: (content: string) => setEditorContent2(content),
         appInstance,
         mockClipboard: () => {
           try {
