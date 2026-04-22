@@ -1,6 +1,6 @@
 # Implementation Plan: TOC Scroll Spy (Active Section Highlighting)
 
-## Phase 1: State Management & UI Foundation
+## Phase 1: State Management & UI Foundation ✅ Done
 1.  **Global State (`app/index.tsx`)**:
     - Add `activeHeadingIndex` state in `MainScreen`.
     - Pass this state down to `TOCPane`.
@@ -11,14 +11,14 @@
         - `backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)'`
         - `color: colors.primary`
 
-## Phase 2: Preview Mode Integration
+## Phase 2: Preview Mode Integration ✅ Done
 1.  **Scroll Detection (`MarkdownPreview.tsx`)**:
     - Add `onHeadingVisible` prop.
     - Use `IntersectionObserver` on `h1-h6` elements.
     - Logic: Use a `rootMargin` (e.g., `-50px 0px -80% 0px`) to detect when a heading is at the "reading position" near the top.
     - Update `activeHeadingIndex` via the callback.
 
-## Phase 3: Editor Mode Integration
+## Phase 3: Editor Mode Integration ✅ Done
 1.  **Editor Sync (`Editor.web.tsx`)**:
     - Listen to editor scroll or cursor updates.
     - Periodically (or on change) identify which heading is currently at the top of the editor view.

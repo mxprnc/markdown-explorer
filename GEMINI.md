@@ -14,7 +14,14 @@
 - **제품 명세 (Plugin)**: [plugin-system.md](docs/product/plugin-system.md)
 - **제품 명세 (Template)**: [template-system.md](docs/product/template-system.md)
 - **제품 명세 (AI & MCP)**: [ai-integration.md](docs/product/ai-integration.md)
+- **제품 명세 (Nextra Export)**: [export-to-nextra.md](docs/product/new-feature/export-to-nextra.md)
 - **핵심 목표**: 사용자 친화적인 로컬 마크다운 탐색 및 편집 환경 제공.
+
+## 📈 현재 진행 상황 (2026-04-22)
+- **TOC 네비게이션 개선**: 스크롤 스파이(Scroll Spy) 정밀도 향상 및 하이라이트 싱크 완료.
+- **타이포그래피 최적화**: H1-H6 헤딩 계층 구조 명확화 및 인라인 코드 스타일 개선.
+- **테스트 자동화**: TOC 및 마크다운 렌더링에 대한 E2E 테스트(Playwright) 구축 완료.
+- **알려진 이슈**: [TOC 하이라이트 떨림 현상](docs/product/errors/scroll-bar-and-toc-highlighting/issue-20260422.md) 기록 완료.
 
 ## 🎨 디자인 시스템 및 UX 스타일
 **상태**: 🎨 정의 중
