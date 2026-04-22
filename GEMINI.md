@@ -17,10 +17,11 @@
 - **제품 명세 (Nextra Export)**: [export-to-nextra.md](docs/product/new-feature/export-to-nextra.md)
 - **핵심 목표**: 사용자 친화적인 로컬 마크다운 탐색 및 편집 환경 제공.
 
-## 📈 현재 진행 상황 (2026-04-22)
-- **TOC 네비게이션 개선**: 스크롤 스파이(Scroll Spy) 정밀도 향상 및 하이라이트 싱크 완료.
-- **타이포그래피 최적화**: H1-H6 헤딩 계층 구조 명확화 및 인라인 코드 스타일 개선.
-- **테스트 자동화**: TOC 및 마크다운 렌더링에 대한 E2E 테스트(Playwright) 구축 완료.
+- **Nextra Export 기능 안정화**:
+  - **타입 호환성 해결**: `FileSystemItem`(`kind`)과 `ExportNode` 간의 속성 불일치 해결 및 트래버스 로직 정상화.
+  - **파일 누락 방지**: 내보내기 시 자동 재귀 스캔(`loadDirectoryRecursive`) 로직 추가로 전체 구조 보존.
+  - **호환성 강화**: 한글 파일명 Hex 인코딩(ASCII safe) 적용 및 MDX 컴파일 에러 방지를 위한 기본 포맷(`.md`) 최적화.
+  - **메타데이터 필터링**: 실제 페이지가 아닌 파일들을 `_meta.js`에서 제외하여 Nextra 검증 오류 해결.
 - **알려진 이슈**: [TOC 하이라이트 떨림 현상](docs/product/errors/scroll-bar-and-toc-highlighting/issue-20260422.md) 기록 완료.
 
 ## 🎨 디자인 시스템 및 UX 스타일

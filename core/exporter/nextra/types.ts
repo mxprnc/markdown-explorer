@@ -31,7 +31,8 @@ export interface FileEntry {
 
 export interface ExportNode {
   name: string;
-  type: 'file' | 'directory';
+  kind: 'file' | 'directory';
+  path?: string; // Original path in the workspace
   children?: ExportNode[];
-  originalPath?: string; // Original path in the workspace/file system
+  originalPath?: string; // Optional original path (for backward compatibility or explicit override)
 }

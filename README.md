@@ -12,6 +12,7 @@ Mark Explorer는 로컬 마크다운 파일을 지능적으로 탐색하고, 현
 - **Rich Media**: 수식(KaTeX), 다이어그램(Mermaid), 코드 하이라이팅(Prism) 완벽 지원.
 - **Plugin-based Template System**: `.mark-explorer/templates/` 폴더의 파일을 활용한 동적 변수 치환 및 템플릿 삽입 확장 시스템.
 - **Robust Markdown Processing**: 헤딩 정규화, 링크 이스케이프 복구 등 다양한 렌더링 예외를 처리하는 마크다운 전처리 시스템.
+- **One-click Nextra Export**: 로컬 디렉터리를 설정 마법사를 통해 즉시 Nextra 정적 사이트 프로젝트(ZIP)로 추출. 이미지 경로 자동 치환 및 `_meta.js` 생성을 통한 완벽한 네비게이션 제공.
 
 ## 🛠 Tech Stack
 
@@ -79,6 +80,7 @@ npx playwright show-report
 1. **[GEMINI.md](./GEMINI.md)**: 프로젝트의 전체 기획 방향성과 코딩 가이드라인 (AI 메인 허브).
 2. **[Component Specification](./docs/development/specification/components/overview.md)**: 각 핵심 컴포넌트의 동작 방식 및 스크롤 로직 상세 설명.
 3. **[Architecture: Editor Engine](./docs/development/specification/architecture/editor-engine.md)**: Tiptap 및 ProseMirror 채택 배경과 활용 전략.
+4. **[Plan: Nextra Exporter](./docs/plan/exporter/nextra-exporter/PLAN1.md)**: Nextra 프로젝트 추출 시스템의 아키텍처 및 구현 로드맵.
 
 ## ⚠️ 주의 사항 (Troubleshooting)
 

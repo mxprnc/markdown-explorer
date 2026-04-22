@@ -53,9 +53,9 @@ export class ExportService {
       return;
     }
 
-    if (node.type === 'file') {
+    if (node.kind === 'file') {
       await this.processFile(node, relativeDir);
-    } else if (node.type === 'directory' && node.children) {
+    } else if (node.kind === 'directory' && node.children) {
       // For the root directory, we don't want to include its name in the path
       // so that its contents appear at the root of the site.
       const isRoot = depth === 0;
@@ -70,14 +70,18 @@ export class ExportService {
         await this.traverse(child, depth + 1, newRelativeDir);
       }
 
-      // Add _meta.js for this directory
-      this.engine.addMetaJson(newRelativeDir, node.children);
+      // Add _meta.js for this directory (only for actually exported pages)
+      const exportedChildren = node.children.filter(child => {
+        if (child.kind === 'directory') return true;
+        return child.name.endsWith('.md') || child.name.endsWith('.mdx');
+      });
+      this.engine.addMetaJson(newRelativeDir, exportedChildren);
     }
   }
 
   private async processFile(node: ExportNode, relativeDir: string): Promise<void> {
     const isMarkdown = node.name.endsWith('.md') || node.name.endsWith('.mdx');
-    const path = node.originalPath || node.name;
+    const path = node.originalPath || node.path || node.name;
 
     try {
       if (isMarkdown) {

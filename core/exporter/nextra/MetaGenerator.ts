@@ -16,7 +16,7 @@ export class MetaGenerator {
 
       const slug = SlugService.getSlug(node.name);
       
-      if (node.type === 'file') {
+      if (node.kind === 'file') {
         // For files, we usually just want the display name
         // Nextra will use the filename as key
         const displayName = node.name.replace(/\.[^/.]+$/, "");

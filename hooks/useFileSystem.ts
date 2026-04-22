@@ -78,6 +78,41 @@ export function useFileSystem() {
     });
   }, []);
 
+  const loadDirectoryRecursive = useCallback(async (path: string) => {
+    const scanRecursive = async (handle: any, currentPath: string): Promise<FileSystemItem[]> => {
+      const items = await scanLevel(handle, currentPath);
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === 'directory') {
+          items[i].children = await scanRecursive(items[i].handle, items[i].path);
+          items[i].isLoaded = true;
+        }
+      }
+      return items;
+    };
+
+    const findAndLoadRecursive = async (items: FileSystemItem[]): Promise<FileSystemItem[]> => {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].path === path && items[i].kind === 'directory') {
+          const newChildren = await scanRecursive(items[i].handle, path);
+          const newItems = [...items];
+          newItems[i] = { ...items[i], children: newChildren, isLoaded: true };
+          return newItems;
+        }
+        if (items[i].children && path.startsWith(items[i].path + '/')) {
+          const updatedChildren = await findAndLoadRecursive(items[i].children!);
+          const newItems = [...items];
+          newItems[i] = { ...items[i], children: updatedChildren };
+          return newItems;
+        }
+      }
+      return items;
+    };
+
+    const updatedFS = await findAndLoadRecursive(fileSystemData);
+    setFileSystemData(updatedFS);
+    return updatedFS;
+  }, [fileSystemData, scanLevel]);
+
   const loadDirectory = useCallback(async (path: string) => {
     const findAndLoad = async (items: FileSystemItem[]): Promise<FileSystemItem[]> => {
       for (let i = 0; i < items.length; i++) {
@@ -201,6 +236,7 @@ export function useFileSystem() {
     checkWritePermission,
     requestWritePermission,
     loadDirectory,
+    loadDirectoryRecursive,
     toggleFolder,
     scanLevel,
     saveToDisk,

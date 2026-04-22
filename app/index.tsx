@@ -74,6 +74,7 @@ function MainScreen() {
     checkWritePermission,
     requestWritePermission,
     loadDirectory,
+    loadDirectoryRecursive,
     toggleFolder,
     scanLevel,
     saveToDisk: handleSaveToDiskInHook,
@@ -916,7 +917,10 @@ function MainScreen() {
                 onConfirmCreation={handleConfirmCreation}
                 onCancelCreation={() => setCreatingItem(null)}
                 setDraggingTab={setDraggingTab}
-                onExportToNextra={(item) => {
+                onExportToNextra={async (item) => {
+                  if (item.kind === 'directory') {
+                    await loadDirectoryRecursive(item.path);
+                  }
                   setNextraExportTarget(item);
                   setNextraExportModalVisible(true);
                 }}
@@ -1070,7 +1074,10 @@ function MainScreen() {
           onDelete={handleDeleteFileSystem}
           onCreateFile={(path) => setCreatingItem({ parentPath: path, kind: 'file' })}
           onCreateFolder={(path) => setCreatingItem({ parentPath: path, kind: 'directory' })}
-          onExportToNextra={(item) => {
+          onExportToNextra={async (item) => {
+            if (item.kind === 'directory') {
+              await loadDirectoryRecursive(item.path);
+            }
             setNextraExportTarget(item);
             setNextraExportModalVisible(true);
           }}

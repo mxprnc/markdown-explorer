@@ -30,7 +30,7 @@ const initialConfig: NextraConfig = {
     darkMode: 'system',
   },
   exportOptions: {
-    convertToMdx: true,
+    convertToMdx: false,
     sortOrder: 'explorer',
     includeAssets: true,
     imageStrategy: 'slugified-colocation',

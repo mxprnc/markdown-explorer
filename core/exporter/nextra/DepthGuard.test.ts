@@ -40,21 +40,21 @@ describe('DepthGuard', () => {
       children: [
         {
           name: '1',
-          type: 'directory',
+          kind: 'directory',
           children: [
             {
               name: '2',
-              type: 'directory',
+              kind: 'directory',
               children: [
                 {
                   name: '3',
-                  type: 'directory',
+                  kind: 'directory',
                   children: [
                     {
                       name: '4',
-                      type: 'directory',
+                      kind: 'directory',
                       children: [
-                        { name: '5', type: 'directory', children: [] }
+                        { name: '5', kind: 'directory', children: [] }
                       ]
                     }
                   ]
