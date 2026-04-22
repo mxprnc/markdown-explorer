@@ -67,3 +67,27 @@ jobs:
         run: |
           # EAS builds run in the cloud.
           eas build --platform all --profile production --non-interactive --no-wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  # 3. Build Desktop (Windows, macOS, Linux)
+  build-desktop:
+    needs: create-release
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Build and Release Desktop
+        run: npm run build:desktop
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # electron-builder specific token
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
