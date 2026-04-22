@@ -1284,7 +1284,7 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
   const cbCopy = isDark ? '#9CA3AF' : '#6B7280';
 
   return (
-    <div ref={wrapperRef} className="tiptap-wrapper" style={{ height: '100%', maxHeight: '100%', boxSizing: 'border-box', flex: 1, backgroundColor: bgColor, overflowY: 'auto', color: textColor, '--cb-bg': cbBg, '--cb-bg-header': cbBgHeader, '--cb-border': cbBorder, '--cb-text': cbText, '--cb-copy': cbCopy } as React.CSSProperties}>
+    <div ref={wrapperRef} className="tiptap-wrapper" data-testid="editor-container" style={{ height: '100%', maxHeight: '100%', boxSizing: 'border-box', flex: 1, backgroundColor: bgColor, overflowY: 'auto', color: textColor, '--cb-bg': cbBg, '--cb-bg-header': cbBgHeader, '--cb-border': cbBorder, '--cb-text': cbText, '--cb-copy': cbCopy } as React.CSSProperties}>
       <style>{`
         .tiptap-wrapper .ProseMirror {
           min-height: 100%;
@@ -1344,7 +1344,9 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
         }
       `}</style>
       <ThemeContext.Provider value={{ isDark }}>
-        <EditorContent editor={editor} style={{ height: '100%' }} />
+        <div data-testid="editor-input" style={{ height: '100%' }}>
+          <EditorContent editor={editor} />
+        </div>
       </ThemeContext.Provider>
     </div>
   );

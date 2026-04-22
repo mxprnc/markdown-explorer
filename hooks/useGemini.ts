@@ -88,5 +88,6 @@ export function useGemini() {
     promptAsync,
     saveSettings,
     logout,
+    setGeminiApiKey,
   };
 }

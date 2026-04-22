@@ -382,6 +382,9 @@ function MainScreen() {
             }))
           });
         },
+        setGeminiApiKey: (key: string) => {
+          gemini.setGeminiApiKey(key);
+        },
         mockClipboard: () => {
           try {
             const Clipboard = require('expo-clipboard');

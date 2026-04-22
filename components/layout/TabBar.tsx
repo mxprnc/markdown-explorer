@@ -100,6 +100,7 @@ export const TabBar = memo(({
     <View 
       accessibilityRole="tablist"
       style={[styles.tabBar, { borderBottomColor: colors.border }]}
+      testID="tab-bar-container"
       {...({
         onDragOver: (e: any) => { e.preventDefault(); e.stopPropagation(); setDragOverIndex(files.length); },
         onDragLeave: () => setDragOverIndex(null),
@@ -144,6 +145,7 @@ export const TabBar = memo(({
                   onClose(file); 
                 }} 
                 style={styles.tabCloseBtn}
+                testID={`tab-close-${file}`}
               >
                 <Text selectable={false} style={[styles.tabCloseText, { color: colors.textMuted }]}>✕</Text>
               </Pressable>

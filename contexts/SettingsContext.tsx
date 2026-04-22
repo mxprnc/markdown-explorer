@@ -22,6 +22,7 @@ interface SettingsContextType {
   saveSettings: () => void;
   logout: () => void;
   promptAsync: any;
+  setGeminiApiKey: (key: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

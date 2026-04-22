@@ -256,6 +256,7 @@ ${userMsg}`;
          ref={scrollViewRef}
          style={styles.chatArea}
          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+         testID="chat-message-list"
        >
          {!hasAuth && (
             <View style={styles.emptyState}>
@@ -307,11 +308,13 @@ ${userMsg}`;
            editable={hasAuth && !loading}
            multiline={true}
            onKeyPress={handleKeyPress}
+           testID="chat-input"
          />
          <Pressable 
            onPress={handleSend} 
            disabled={!inputText.trim() || !hasAuth || loading}
            style={[styles.sendBtn, (!inputText.trim() || !hasAuth || loading) && { opacity: 0.5 }]}
+           testID="chat-send-btn"
          >
            <Ionicons name="send" size={16} color="#FFF" />
          </Pressable>

@@ -34,13 +34,17 @@ export const Header = memo(({
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Pressable 
           onPress={() => setActiveTab('files')}
-          style={[styles.tabBtn, activeTab === 'files' && { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+          style={[styles.tabBtn, activeTab === 'files' && { backgroundColor: colors.surface, borderColor: colors.primary }]}
+          testID="header-files-btn"
+        >
           <Ionicons name="documents-outline" size={18} color={activeTab === 'files' ? colors.primary : colors.textMuted} />
           <Text style={[styles.tabBtnText, { color: activeTab === 'files' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>탐색기</Text>
         </Pressable>
         <Pressable 
           onPress={() => setActiveTab('editor')}
-          style={[styles.tabBtn, activeTab === 'editor' && { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+          style={[styles.tabBtn, activeTab === 'editor' && { backgroundColor: colors.surface, borderColor: colors.primary }]}
+          testID="header-editor-btn"
+        >
           <Ionicons name="code-working-outline" size={18} color={activeTab === 'editor' ? colors.primary : colors.textMuted} />
           <Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>에디터</Text>
         </Pressable>
@@ -50,6 +54,7 @@ export const Header = memo(({
         <Pressable 
           onPress={onSplitToggle}
           style={[styles.tabBtn, isSplitMode && { backgroundColor: colors.surface, borderColor: colors.primary }]}
+          testID="header-split-btn"
         >
           <Ionicons 
             name={isSplitMode ? "copy" : "copy-outline"} 
@@ -59,7 +64,11 @@ export const Header = memo(({
           <Text style={[styles.tabBtnText, { color: isSplitMode ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Split View</Text>
         </Pressable>
 
-        <Pressable onPress={toggleTheme} style={[styles.themeBtn, { borderColor: colors.border }]}>
+        <Pressable 
+          onPress={toggleTheme} 
+          style={[styles.themeBtn, { borderColor: colors.border }]}
+          testID="header-theme-btn"
+        >
           <Ionicons 
             name={themeMode === 'light' ? 'moon-outline' : 'sunny-outline'} 
             size={18} 
