@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer from 'react-test-renderer';
-import Preview from '../Preview.web';
+import Preview from '../preview/MarkdownPreview.web';
 
 // Mock ESM packages
 jest.mock('react-markdown', () => ({

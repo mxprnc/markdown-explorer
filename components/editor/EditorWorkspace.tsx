@@ -43,6 +43,7 @@ interface EditorWorkspaceProps {
   editorRef2: React.RefObject<any>;
   onTabContextMenu?: (e: any, file: string, paneId: 1 | 2) => void;
   isDark: boolean;
+  onHeadingVisible?: (index: number) => void;
 }
 
 export function EditorWorkspace({
@@ -54,7 +55,7 @@ export function EditorWorkspace({
   middlePaneResponder, fontFamilyCode,
   previewFile1, previewFile2,
   previewRef1, previewRef2, editorRef1, editorRef2,
-  onTabContextMenu, isDark, onDropTab
+  onTabContextMenu, isDark, onDropTab, onHeadingVisible
 }: EditorWorkspaceProps) {
   const { colors, fontFamilyUI } = useTheme();
   const [dragOverPane, setDragOverPane] = React.useState<number | null>(null);
@@ -122,6 +123,7 @@ export function EditorWorkspace({
           content={content} 
           isDark={isDark}
           resolveImage={(src) => resolveImage(src, selFile)} 
+          onHeadingVisible={paneId === activePane ? onHeadingVisible : undefined}
         />
       );
     }
@@ -137,6 +139,7 @@ export function EditorWorkspace({
         onRenameImage={onRenameImage}
         onSave={(val: string) => onSaveFile(val, selFile)}
         isDark={isDark}
+        onHeadingVisible={paneId === activePane ? onHeadingVisible : undefined}
       />
     );
   };

@@ -6,7 +6,7 @@ import { ThemeProvider } from '../../../contexts/ThemeContext';
 
 // Mock components
 jest.mock('../../Editor', () => 'Editor');
-jest.mock('../../Preview', () => 'Preview');
+jest.mock('../../preview/MarkdownPreview', () => 'Preview');
 jest.mock('../../layout/TabBar', () => ({ TabBar: 'TabBar' }));
 jest.mock('../../preview/ImageViewer', () => ({ ImageViewer: 'ImageViewer' }));
 

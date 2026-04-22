@@ -1150,7 +1150,7 @@ const CustomYoutube = Node.create<any>({
   }
 });
 
-export default forwardRef(function Editor({ value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, isDark }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean }, ref: any) {
+export default forwardRef(function Editor({ value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, isDark, onHeadingVisible }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean, onHeadingVisible?: (index: number) => void }, ref: any) {
   const wrapperRef = React.useRef<HTMLDivElement>(null);
 
   const SaveShortcut = Extension.create({
@@ -1212,6 +1212,56 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
       }
     }
   }, [value, editor]);
+
+  useEffect(() => {
+    if (!onHeadingVisible || !wrapperRef.current || !editor) return;
+
+    const container = wrapperRef.current;
+    const observer = new IntersectionObserver(
+      () => {
+        const allHeadings = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+        if (allHeadings.length === 0) return;
+
+        const containerRect = container.getBoundingClientRect();
+        let bestIndex = -1;
+        
+        for (let i = 0; i < allHeadings.length; i++) {
+          const rect = allHeadings[i].getBoundingClientRect();
+          const relativeTop = rect.top - containerRect.top;
+          if (relativeTop <= 170) {
+            bestIndex = i;
+          } else {
+            break;
+          }
+        }
+        
+        if (bestIndex !== -1) {
+          onHeadingVisible(bestIndex);
+        }
+      },
+      {
+        root: container,
+        rootMargin: '0px 0px -80% 0px',
+        threshold: [0, 1]
+      }
+    );
+
+    const updateObservations = () => {
+      observer.disconnect();
+      const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      headings.forEach(h => observer.observe(h));
+    };
+
+    updateObservations();
+    editor.on('selectionUpdate', updateObservations);
+    editor.on('update', updateObservations);
+
+    return () => {
+      observer.disconnect();
+      editor.off('selectionUpdate', updateObservations);
+      editor.off('update', updateObservations);
+    };
+  }, [editor, onHeadingVisible]);
 
   useImperativeHandle(ref, () => ({
     scrollToHeading: (index: number, text?: string) => {
@@ -1299,14 +1349,16 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
         .tiptap-wrapper h4,
         .tiptap-wrapper h5,
         .tiptap-wrapper h6 {
-          line-height: 1.2;
-          margin-top: 1.5em;
-          margin-bottom: 0.5rem;
+          line-height: 1.25;
+          font-weight: 700;
         }
         
-        .tiptap-wrapper h1 { font-size: 2.25rem; font-weight: bold; border-bottom: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding-bottom: 0.3em; margin-bottom: 1em; }
-        .tiptap-wrapper h2 { font-size: 1.75rem; font-weight: bold; border-bottom: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding-bottom: 0.3em; margin-bottom: 0.8em; }
-        .tiptap-wrapper h3 { font-size: 1.5rem; font-weight: bold; }
+        .tiptap-wrapper h1 { font-size: 2rem; font-weight: 800; border-bottom: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding-bottom: 0.3em; margin-top: 2rem; margin-bottom: 1rem; }
+        .tiptap-wrapper h2 { font-size: 1.6rem; font-weight: 700; border-bottom: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding-bottom: 0.3em; margin-top: 1.8rem; margin-bottom: 0.8rem; }
+        .tiptap-wrapper h3 { font-size: 1.3rem; font-weight: 700; margin-top: 1.6rem; margin-bottom: 0.6rem; }
+        .tiptap-wrapper h4 { font-size: 1.15rem; font-weight: 700; margin-top: 1.4rem; margin-bottom: 0.4rem; color: ${isDark ? '#F3F4F6' : '#111827'}; }
+        .tiptap-wrapper h5 { font-size: 1.05rem; font-weight: 700; margin-top: 1.2rem; margin-bottom: 0.3rem; color: ${isDark ? '#D1D5DB' : '#374151'}; }
+        .tiptap-wrapper h6 { font-size: 1rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.2rem; color: ${isDark ? '#9CA3AF' : '#6B7280'}; text-transform: uppercase; letter-spacing: 0.05em; }
         
         .tiptap-wrapper p {
           margin-bottom: 1em;

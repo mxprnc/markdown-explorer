@@ -113,6 +113,7 @@ function MainScreen() {
   // Creation State
   const [creatingItem, setCreatingItem] = useState<{ parentPath: string, kind: 'file' | 'directory' } | null>(null);
   const [creationName, setCreationName] = useState('');
+  const [activeHeadingIndex, setActiveHeadingIndex] = useState(-1);
 
   // Preview File States
   const [previewFile1, setPreviewFile1] = useState<string | null>(null);
@@ -496,6 +497,9 @@ function MainScreen() {
       const fileName = file.split('/').pop() || file;
       addRecentFile(file, fileName);
     }
+    
+    // Reset active heading when switching files
+    setActiveHeadingIndex(-1);
   };
 
   const handleDropTab = (fileFromDrop: string, _sourcePane: 1 | 2, targetPane: 1 | 2, targetIndex: number) => {
@@ -811,6 +815,7 @@ function MainScreen() {
   });
 
   const handleTOCClick = (text: string, index: number) => {
+    setActiveHeadingIndex(index);
     if (activePane === 1) {
       if (activeTab === 'files' && previewRef1.current) {
         (previewRef1.current as any).scrollToHeading(index, text);
@@ -943,6 +948,7 @@ function MainScreen() {
             isDark={isDark}
             onTabContextMenu={handleTabContextMenu}
             onDropTab={handleDropTab}
+            onHeadingVisible={setActiveHeadingIndex}
           />
 
           {tabContextMenu && (
@@ -980,6 +986,7 @@ function MainScreen() {
             <TOCPane 
                content={activePane === 1 ? deferredContent : deferredContent2} 
                width={tocPaneWidth} onTOCClick={handleTOCClick} responder={tocPaneResponder}
+               activeIndex={activeHeadingIndex}
             />
           ) : null}
         </View>

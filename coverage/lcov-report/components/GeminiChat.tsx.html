@@ -472,7 +472,10 @@
 <a name='L407'></a><a href='#L407'>407</a>
 <a name='L408'></a><a href='#L408'>408</a>
 <a name='L409'></a><a href='#L409'>409</a>
-<a name='L410'></a><a href='#L410'>410</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L410'></a><a href='#L410'>410</a>
+<a name='L411'></a><a href='#L411'>411</a>
+<a name='L412'></a><a href='#L412'>412</a>
+<a name='L413'></a><a href='#L413'>413</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -748,7 +751,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -942,13 +948,13 @@ export default function <span class="fstat-no" title="function not covered" >Gem
 <span class="cstat-no" title="statement not covered" >    try {</span>
       let text = <span class="cstat-no" title="statement not covered" >"";</span>
       
-      const systemPrompt = <span class="cstat-no" title="statement not covered" >`당신은 마크다운 에디터 'Markdown Explorer'의 인공지능 어시스턴트입니다.</span>
-현재 사용자가 편집 중인 파일의 내용은 다음과 같습니다:
+      const systemPrompt = <span class="cstat-no" title="statement not covered" >`You are an AI assistant for 'Mark Explorer', a markdown editor.</span>
+The current content of the file the user is editing is as follows:
 ---
-${currentContent || "(비어 있음)"}
+${currentContent || "(empty)"}
 ---
 &nbsp;
-위 내용을 바탕으로 다음 질문에 답해주세요:
+Based on the content above, please answer the following question:
 ${userMsg}`;
 &nbsp;
       // Unified v1beta for 2026 model compatibility (Gemini 2.5, 3.1, etc.)
@@ -985,7 +991,7 @@ ${userMsg}`;
       }
     } catch (error: any) {
 <span class="cstat-no" title="statement not covered" >      console.error("Gemini Error:", error);</span>
-<span class="cstat-no" title="statement not covered" >      setMessages(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; <span class="cstat-no" title="statement not covered" >[...prev, { role: 'model', content: "❌ 오류가 발생했습니다: " + (error.message || "알 수 없는 오류") }])</span>;</span>
+<span class="cstat-no" title="statement not covered" >      setMessages(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; <span class="cstat-no" title="statement not covered" >[...prev, { role: 'model', content: "❌ An error occurred: " + (error.message || "Unknown error") }])</span>;</span>
     } finally {
 <span class="cstat-no" title="statement not covered" >      setLoading(false);</span>
     }
@@ -995,7 +1001,7 @@ ${userMsg}`;
 <span class="cstat-no" title="statement not covered" >    if (messages.length === 0) <span class="cstat-no" title="statement not covered" >return;</span></span>
     const md = <span class="cstat-no" title="statement not covered" >formatChatAsMarkdown(messages);</span>
 <span class="cstat-no" title="statement not covered" >    await Clipboard.setStringAsync(md);</span>
-<span class="cstat-no" title="statement not covered" >    if (Platform.OS === 'web') <span class="cstat-no" title="statement not covered" >alert('채팅 내역이 클립보드에 복사되었습니다.');</span></span>
+<span class="cstat-no" title="statement not covered" >    if (Platform.OS === 'web') <span class="cstat-no" title="statement not covered" >alert('Chat history copied to clipboard.');</span></span>
   };
 &nbsp;
   const handleKeyPress = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(e</span>: any) =&gt; {</span>
@@ -1078,12 +1084,12 @@ ${userMsg}`;
             {mode === 'general' &amp;&amp; messages.length &gt; 0 &amp;&amp; (
               &lt;Pressable onPress={handleCopyMd} style={styles.actionBtn}&gt;
                 &lt;Ionicons name="copy-outline" size={14} color={colors.primary} /&gt;
-                &lt;Text style={[styles.actionBtnText, { color: colors.primary }]}&gt;복사(md)&lt;/Text&gt;
+                &lt;Text style={[styles.actionBtnText, { color: colors.primary }]}&gt;Copy (MD)&lt;/Text&gt;
               &lt;/Pressable&gt;
             )}
-            &lt;Pressable onPress={onOpenSettings} style={styles.settingsBtn}&gt;
+            &lt;Pressable onPress={onOpenSettings} style={styles.settingsBtn} testID="settings-btn"&gt;
               &lt;Ionicons name="settings-outline" size={14} color={colors.text} /&gt;
-              &lt;Text style={[styles.settingsBtnText, { color: colors.text }]}&gt;설정&lt;/Text&gt;
+              &lt;Text style={[styles.settingsBtnText, { color: colors.text }]}&gt;Settings&lt;/Text&gt;
             &lt;/Pressable&gt;
           &lt;/View&gt;
        &lt;/View&gt;
@@ -1109,7 +1115,7 @@ ${userMsg}`;
                   // Small delay to allow Pressable to trigger
 <span class="cstat-no" title="statement not covered" >                  setTimeout(<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setShowSuggestions(false),</span> 200);</span>
                 }}
-                placeholder="파일명.md"
+                placeholder="filename.md"
                 placeholderTextColor={colors.textMuted}
               /&gt;
               {showSuggestions &amp;&amp; filteredSuggestions.length &gt; 0 &amp;&amp; (
@@ -1139,12 +1145,13 @@ ${userMsg}`;
          ref={scrollViewRef}
          style={styles.chatArea}
          onContentSizeChange={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >scrollViewRef.current?.scrollToEnd({ animated: true })}</span>
+         testID="chat-message-list"
        &gt;
          {!hasAuth &amp;&amp; (
             &lt;View style={styles.emptyState}&gt;
               &lt;Ionicons name="lock-closed" size={32} color={colors.textMuted} /&gt;
               &lt;Text style={[styles.emptyText, { color: colors.textMuted }]}&gt;
-                인증이 필요합니다. 설정 버튼을 눌러 API Key 또는 Google 로그인을 완료해주세요.
+                Authentication required. Please click the Settings button to provide an API Key or log in with Google.
               &lt;/Text&gt;
             &lt;/View&gt;
          )}
@@ -1152,7 +1159,7 @@ ${userMsg}`;
            &lt;View style={styles.emptyState}&gt;
              &lt;Ionicons name="chatbubble-ellipses-outline" size={32} color={colors.textMuted} /&gt;
              &lt;Text style={[styles.emptyText, { color: colors.textMuted}]}&gt;
-               Gemini에게 질문해보세요! (Cmd/Ctrl + Enter로 전송)
+                Ask Gemini anything! (Press Cmd/Ctrl + Enter to send)
              &lt;/Text&gt;
            &lt;/View&gt;
          )}
@@ -1175,7 +1182,7 @@ ${userMsg}`;
          {loading &amp;&amp; (
            &lt;View style={styles.loadingContainer}&gt;
              &lt;ActivityIndicator size="small" color={colors.primary} /&gt;
-             &lt;Text style={{ marginLeft: 8, fontSize: 11, color: colors.textMuted }}&gt;생각 중...&lt;/Text&gt;
+              &lt;Text style={{ marginLeft: 8, fontSize: 11, color: colors.textMuted }}&gt;Thinking...&lt;/Text&gt;
            &lt;/View&gt;
          )}
        &lt;/ScrollView&gt;
@@ -1183,18 +1190,20 @@ ${userMsg}`;
        &lt;View style={[styles.inputContainer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}&gt;
          &lt;TextInput
            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}
-           placeholder={hasAuth ? "메시지를 입력하세요..." : "인증 후 사용 가능합니다."}
+            placeholder={hasAuth ? "Type a message..." : "Available after authentication."}
            placeholderTextColor={colors.textMuted}
            value={inputText}
            onChangeText={setInputText}
            editable={hasAuth &amp;&amp; !loading}
            multiline={true}
            onKeyPress={handleKeyPress}
+           testID="chat-input"
          /&gt;
          &lt;Pressable 
            onPress={handleSend} 
            disabled={!inputText.trim() || !hasAuth || loading}
            style={[styles.sendBtn, (!inputText.trim() || !hasAuth || loading) &amp;&amp; { opacity: 0.5 }]}
+           testID="chat-send-btn"
          &gt;
            &lt;Ionicons name="send" size={16} color="#FFF" /&gt;
          &lt;/Pressable&gt;
@@ -1297,7 +1306,7 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-21T05:38:38.860Z
+                at 2026-04-22T05:29:53.781Z
             </div>
         <script src="../prettify.js"></script>
         <script>

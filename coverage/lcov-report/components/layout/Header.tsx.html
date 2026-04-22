@@ -186,7 +186,16 @@
 <a name='L121'></a><a href='#L121'>121</a>
 <a name='L122'></a><a href='#L122'>122</a>
 <a name='L123'></a><a href='#L123'>123</a>
-<a name='L124'></a><a href='#L124'>124</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -227,7 +236,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -336,7 +354,7 @@ export const Header = memo(({
         &lt;Text style={[styles.logoText, { color: colors.text, fontFamily: fontFamilyUI }]}&gt;Mark Explorer&lt;/Text&gt;
         &lt;View style={{ flexDirection: 'row', alignItems: 'center' }}&gt;
           &lt;Text style={[styles.headerTitle, { color: colors.textMuted, fontFamily: fontFamilyUI, fontWeight: '600' }]}&gt;
-            {selectedFolder || <span class="branch-1 cbranch-no" title="branch not covered" >'폴더를 열어주세요'}</span>
+            {selectedFolder || <span class="branch-1 cbranch-no" title="branch not covered" >'Please open a folder'}</span>
           &lt;/Text&gt;
           &lt;Ionicons name="folder-open-outline" size={14} color={colors.primary} /&gt;
         &lt;/View&gt;
@@ -345,15 +363,19 @@ export const Header = memo(({
       &lt;View style={{ flexDirection: 'row', alignItems: 'center' }}&gt;
         &lt;Pressable 
           onPress={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setActiveTab('files')}</span>
-          style={[styles.tabBtn, activeTab === 'files' &amp;&amp; { backgroundColor: colors.surface, borderColor: colors.primary }]}&gt;
+          style={[styles.tabBtn, activeTab === 'files' &amp;&amp; { backgroundColor: colors.surface, borderColor: colors.primary }]}
+          testID="header-files-btn"
+        &gt;
           &lt;Ionicons name="documents-outline" size={18} color={activeTab === 'files' ? colors.primary : <span class="branch-1 cbranch-no" title="branch not covered" >colors.textMuted}</span> /&gt;
-          &lt;Text style={[styles.tabBtnText, { color: activeTab === 'files' ? colors.text : <span class="branch-1 cbranch-no" title="branch not covered" >colors.textMuted,</span> fontFamily: fontFamilyUI }]}&gt;탐색기&lt;/Text&gt;
+          &lt;Text style={[styles.tabBtnText, { color: activeTab === 'files' ? colors.text : <span class="branch-1 cbranch-no" title="branch not covered" >colors.textMuted,</span> fontFamily: fontFamilyUI }]}&gt;Explorer&lt;/Text&gt;
         &lt;/Pressable&gt;
         &lt;Pressable 
           onPress={() =&gt; setActiveTab('editor')}
-          style={[styles.tabBtn, activeTab === 'editor' &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >{ backgroundColor: colors.surface, borderColor: colors.primary }]</span>}&gt;
+          style={[styles.tabBtn, activeTab === 'editor' &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >{ backgroundColor: colors.surface, borderColor: colors.primary }]</span>}
+          testID="header-editor-btn"
+        &gt;
           &lt;Ionicons name="code-working-outline" size={18} color={activeTab === 'editor' ? <span class="branch-0 cbranch-no" title="branch not covered" >colors.primary </span>: colors.textMuted} /&gt;
-          &lt;Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? <span class="branch-0 cbranch-no" title="branch not covered" >colors.text </span>: colors.textMuted, fontFamily: fontFamilyUI }]}&gt;에디터&lt;/Text&gt;
+          &lt;Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? <span class="branch-0 cbranch-no" title="branch not covered" >colors.text </span>: colors.textMuted, fontFamily: fontFamilyUI }]}&gt;Editor&lt;/Text&gt;
         &lt;/Pressable&gt;
 &nbsp;
         &lt;View style={{ width: 1, height: 20, backgroundColor: colors.border, marginHorizontal: 8 }} /&gt;
@@ -361,6 +383,7 @@ export const Header = memo(({
         &lt;Pressable 
           onPress={onSplitToggle}
           style={[styles.tabBtn, isSplitMode &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >{ backgroundColor: colors.surface, borderColor: colors.primary }]</span>}
+          testID="header-split-btn"
         &gt;
           &lt;Ionicons 
             name={isSplitMode ? <span class="branch-0 cbranch-no" title="branch not covered" >"copy" </span>: "copy-outline"} 
@@ -370,7 +393,11 @@ export const Header = memo(({
           &lt;Text style={[styles.tabBtnText, { color: isSplitMode ? <span class="branch-0 cbranch-no" title="branch not covered" >colors.text </span>: colors.textMuted, fontFamily: fontFamilyUI }]}&gt;Split View&lt;/Text&gt;
         &lt;/Pressable&gt;
 &nbsp;
-        &lt;Pressable onPress={toggleTheme} style={[styles.themeBtn, { borderColor: colors.border }]}&gt;
+        &lt;Pressable 
+          onPress={toggleTheme} 
+          style={[styles.themeBtn, { borderColor: colors.border }]}
+          testID="header-theme-btn"
+        &gt;
           &lt;Ionicons 
             name={themeMode === 'light' ? <span class="branch-0 cbranch-no" title="branch not covered" >'moon-outline' </span>: 'sunny-outline'} 
             size={18} 
@@ -439,7 +466,7 @@ const styles = StyleSheet.create({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-21T05:38:38.860Z
+                at 2026-04-22T05:29:53.781Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

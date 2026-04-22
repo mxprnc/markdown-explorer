@@ -48,7 +48,7 @@ test.describe('TOC Pane Interactions', () => {
     
     // 2. Verify empty message
     await expect(page.getByTestId('toc-empty-msg')).toBeVisible();
-    await expect(page.getByText('작성된 헤딩(제목)이 없습니다.')).toBeVisible();
+    await expect(page.getByText('No headings found.')).toBeVisible();
   });
 
   test('should have correct indentation based on heading level', async ({ page }) => {

@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/44</span>
+                <span class='fraction'>0/46</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/45</span>
+                <span class='fraction'>0/46</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/42</span>
+                <span class='fraction'>0/45</span>
             </div>
         
             
@@ -232,7 +232,22 @@
 <a name='L167'></a><a href='#L167'>167</a>
 <a name='L168'></a><a href='#L168'>168</a>
 <a name='L169'></a><a href='#L169'>169</a>
-<a name='L170'></a><a href='#L170'>170</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -299,6 +314,12 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -334,6 +355,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -344,6 +372,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -353,6 +382,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -466,17 +496,26 @@ export function <span class="fstat-no" title="function not covered" >FileItem(</
   const handleCopyPath = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (e: any) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    e.stopPropagation();</span>
     const p = <span class="cstat-no" title="statement not covered" >`./${item.path}`;</span>
-<span class="cstat-no" title="statement not covered" >    await Clipboard.setStringAsync(p);</span>
-<span class="cstat-no" title="statement not covered" >    if (Platform.OS === 'web') <span class="cstat-no" title="statement not covered" >window.alert(`상대 경로가 복사되었습니다:\n${p}`);</span></span>
+<span class="cstat-no" title="statement not covered" >    try {</span>
+<span class="cstat-no" title="statement not covered" >      await Clipboard.setStringAsync(p);</span>
+<span class="cstat-no" title="statement not covered" >      if (Platform.OS === 'web') {</span>
+<span class="cstat-no" title="statement not covered" >        window.alert(`Relative path copied:\n${p}`);</span>
+      }
+    } catch (error) {
+<span class="cstat-no" title="statement not covered" >      console.error('Failed to copy path:', error);</span>
+    }
   };
 &nbsp;
   const fileContent = (
-<span class="cstat-no" title="statement not covered" >    &lt;View style={[</span>
-      styles.itemContainer,
-      { paddingLeft: (item.kind === 'directory' ? 12 : 30) + depth * 12 },
-      isSelected &amp;&amp; [styles.selectedItem, { borderLeftColor: colors.primary, backgroundColor: isDark ? '#2D3748' : '#EFF6FF', paddingLeft: (item.kind === 'directory' ? 9 : 27) + depth * 12 }],
-      isHovered &amp;&amp; !isSelected &amp;&amp; { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }
-    ]}&gt;
+<span class="cstat-no" title="statement not covered" >    &lt;View </span>
+      testID={`explorer-item-${item.path}`}
+      style={[
+        styles.itemContainer,
+        { paddingLeft: (item.kind === 'directory' ? 12 : 30) + depth * 12 },
+        isSelected ? [styles.selectedItem, { borderLeftColor: colors.primary, backgroundColor: isDark ? '#2D3748' : '#EFF6FF', paddingLeft: (item.kind === 'directory' ? 9 : 27) + depth * 12 }] : {},
+        (isHovered &amp;&amp; !isSelected) ? { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' } : {}
+      ]}
+    &gt;
       {item.kind === 'directory' &amp;&amp; (
         &lt;Ionicons 
           name={isExpanded ? "chevron-down" : "chevron-forward"} 
@@ -499,12 +538,17 @@ export function <span class="fstat-no" title="function not covered" >FileItem(</
 &nbsp;
       {isHovered &amp;&amp; (
         &lt;View style={styles.actionGroup}&gt;
-          &lt;Pressable onPress={handleCopyPath} style={styles.actionBtn}&gt;
+          &lt;Pressable 
+            onPress={handleCopyPath} 
+            style={styles.actionBtn}
+            testID={`explorer-item-copy-${item.path}`}
+          &gt;
             &lt;Text style={{ color: colors.primary, fontSize: 12, fontWeight: 'bold' }}&gt;@&lt;/Text&gt;
           &lt;/Pressable&gt;
           &lt;Pressable 
             onPress={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.stopPropagation(); <span class="cstat-no" title="statement not covered" ></span>onRenameRequest(item); </span>}}
             style={styles.actionBtn}
+            testID={`explorer-item-rename-${item.path}`}
           &gt;
             &lt;Ionicons name="pencil-outline" size={14} color={colors.primary} /&gt;
           &lt;/Pressable&gt;
@@ -524,6 +568,7 @@ export function <span class="fstat-no" title="function not covered" >FileItem(</
 <span class="cstat-no" title="statement not covered" >    return (</span>
       &lt;div
         draggable={item.kind === 'file'}
+        data-testid={`explorer-item-wrapper-${item.path}`}
         onDragStart={<span class="fstat-no" title="function not covered" >(e</span>: any) =&gt; {
 <span class="cstat-no" title="statement not covered" >          if (item.kind === 'file' &amp;&amp; e.dataTransfer) {</span>
 <span class="cstat-no" title="statement not covered" >            e.dataTransfer.effectAllowed = "move";</span>
@@ -577,7 +622,7 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-21T05:38:38.860Z
+                at 2026-04-22T05:29:53.781Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

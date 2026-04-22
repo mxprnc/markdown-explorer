@@ -74,7 +74,9 @@ export class TemplatesPlugin extends Plugin {
   async deleteTemplate(path: string) {
     try {
       const success = await this.app.vault.delete(path);
-      if (!success) {
+      if (success) {
+        this.app.emit('vault:delete-item', { path });
+      } else {
         console.error(`[TemplatesPlugin] Failed to delete template: ${path}`);
       }
     } catch (e) {
