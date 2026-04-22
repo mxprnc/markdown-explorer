@@ -56,7 +56,7 @@ describe('Header', () => {
     // Click '에디터' tab (should be the second pressable under tabs section)
     const editorTab = pressables.find(p => {
         const text = p.findByType(Text);
-        return text.props.children === '에디터';
+        return text.props.children === 'Editor';
     });
 
     if (editorTab) {

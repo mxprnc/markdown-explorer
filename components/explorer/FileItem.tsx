@@ -66,7 +66,7 @@ export function FileItem({
     try {
       await Clipboard.setStringAsync(p);
       if (Platform.OS === 'web') {
-        window.alert(`상대 경로가 복사되었습니다:\n${p}`);
+        window.alert(`Relative path copied:\n${p}`);
       }
     } catch (error) {
       console.error('Failed to copy path:', error);

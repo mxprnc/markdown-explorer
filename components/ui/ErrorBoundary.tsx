@@ -38,10 +38,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <View style={styles.container}>
-          <Text style={styles.title}>문제가 발생했습니다 😢</Text>
-          <Text style={styles.message}>{this.state.error?.message || '알 수 없는 오류가 발생했습니다.'}</Text>
+          <Text style={styles.title}>Something went wrong 😢</Text>
+          <Text style={styles.message}>{this.state.error?.message || 'An unknown error has occurred.'}</Text>
           <Pressable style={styles.button} onPress={this.handleRetry}>
-            <Text style={styles.buttonText}>다시 시도하기</Text>
+            <Text style={styles.buttonText}>Try Again</Text>
           </Pressable>
         </View>
       );

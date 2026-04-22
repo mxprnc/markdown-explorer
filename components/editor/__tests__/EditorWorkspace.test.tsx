@@ -102,7 +102,7 @@ describe('EditorWorkspace', () => {
 
     const root = renderer.root;
     const texts = root.findAllByType('Text');
-    const emptyText = texts.find((t: any) => t.props.children === '파일을 선택해주세요.');
+    const emptyText = texts.find((t: any) => t.props.children === 'Please select a file.');
     expect(emptyText).toBeTruthy();
   });
 });

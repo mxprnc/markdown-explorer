@@ -56,7 +56,7 @@ export function ImageViewer({ uri, name }: ImageViewerProps) {
           <Ionicons name="refresh-outline" size={20} color={colors.textMuted} />
         </Pressable>
         <Text style={[styles.hint, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>
-          {Platform.OS === 'web' ? '(마우스 드래그로 이동 가능)' : ''}
+          {Platform.OS === 'web' ? '(Drag with mouse to move)' : ''}
         </Text>
       </View>
 

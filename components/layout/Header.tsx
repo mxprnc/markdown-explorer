@@ -25,7 +25,7 @@ export const Header = memo(({
         <Text style={[styles.logoText, { color: colors.text, fontFamily: fontFamilyUI }]}>Mark Explorer</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text style={[styles.headerTitle, { color: colors.textMuted, fontFamily: fontFamilyUI, fontWeight: '600' }]}>
-            {selectedFolder || '폴더를 열어주세요'}
+            {selectedFolder || 'Please open a folder'}
           </Text>
           <Ionicons name="folder-open-outline" size={14} color={colors.primary} />
         </View>
@@ -38,7 +38,7 @@ export const Header = memo(({
           testID="header-files-btn"
         >
           <Ionicons name="documents-outline" size={18} color={activeTab === 'files' ? colors.primary : colors.textMuted} />
-          <Text style={[styles.tabBtnText, { color: activeTab === 'files' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>탐색기</Text>
+          <Text style={[styles.tabBtnText, { color: activeTab === 'files' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Explorer</Text>
         </Pressable>
         <Pressable 
           onPress={() => setActiveTab('editor')}
@@ -46,7 +46,7 @@ export const Header = memo(({
           testID="header-editor-btn"
         >
           <Ionicons name="code-working-outline" size={18} color={activeTab === 'editor' ? colors.primary : colors.textMuted} />
-          <Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>에디터</Text>
+          <Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Editor</Text>
         </Pressable>
 
         <View style={{ width: 1, height: 20, backgroundColor: colors.border, marginHorizontal: 8 }} />

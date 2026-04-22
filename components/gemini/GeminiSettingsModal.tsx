@@ -48,7 +48,7 @@ export const GeminiSettingsModal = memo(({ visible, onClose }: GeminiSettingsMod
                    secureTextEntry
                 />
                 <Text style={[styles.helpText, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>
-                  개인 API 키를 사용하거나, Google 로그인을 통해 OAuth 토큰을 사용할 수 있습니다.
+                  You can use your personal API key or an OAuth token via Google Login.
                 </Text>
              </View>
 
@@ -124,7 +124,7 @@ export const GeminiSettingsModal = memo(({ visible, onClose }: GeminiSettingsMod
           <View style={styles.section}>
             <Collapsible title="Advanced Settings (Test)">
               <View style={{ paddingVertical: 10, gap: 10 }}>
-                <Text style={{ fontSize: 11, color: colors.textMuted }}>E2E 테스트를 위한 UI 검증 영역입니다.</Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>This area is for UI validation during E2E testing.</Text>
                 <Button 
                   label="UI Test Button"
                   onPress={() => {}}

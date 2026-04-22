@@ -94,7 +94,7 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
   const handleCopy = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(node.textContent)
-        .then(() => window.alert('코드 블록이 복사되었습니다.'))
+        .then(() => window.alert('Code block copied.'))
         .catch(err => console.error(err));
     }
   };
@@ -150,7 +150,7 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
             padding: 16
           }}>
             <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, display: 'flex', gap: 8 }}>
-              <div onClick={handleEditClick} style={{ cursor: 'pointer', padding: 4, backgroundColor: isDark ? '#374151' : '#E5E7EB', borderRadius: 4 }} title="코드 수정">
+              <div onClick={handleEditClick} style={{ cursor: 'pointer', padding: 4, backgroundColor: isDark ? '#374151' : '#E5E7EB', borderRadius: 4 }} title="Edit code">
                 <Ionicons name="code-slash-outline" size={16} color={isDark ? '#D1D5DB' : '#4B5563'} />
               </div>
             </div>
@@ -177,7 +177,7 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
               </div>
               <div onClick={(e) => { e.stopPropagation(); handleCopy(); }} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '4px 8px', borderRadius: 4 }}>
                 <Ionicons name="copy-outline" size={14} color={isDark ? '#9CA3AF' : '#6B7280'} style={{ marginRight: 4 }} />
-                <span style={{ fontSize: 12, color: isDark ? '#9CA3AF' : '#6B7280', fontWeight: 'bold' }}>복사</span>
+                <span style={{ fontSize: 12, color: isDark ? '#9CA3AF' : '#6B7280', fontWeight: 'bold' }}>Copy</span>
               </div>
             </div>
 
@@ -279,7 +279,7 @@ const HeadingComponent = ({ node, updateAttributes, editor, getPos }: any) => {
             whiteSpace: 'nowrap',
             marginRight: '8px'
           }}
-          title={`클릭하여 H${level}에서 변경 (1~6단계 순환)`}
+          title={`Click to cycle heading level (1-6)`}
         >
           {`${'#'.repeat(level)}`}
         </span>
@@ -867,7 +867,7 @@ const CustomImage = Image.extend<any>({
       saveBtn.style.color = 'white';
       saveBtn.style.border = 'none';
       saveBtn.style.borderRadius = '4px';
-      saveBtn.title = '적용';
+      saveBtn.title = 'Apply';
       
       const cancelBtn = document.createElement('button');
       cancelBtn.innerHTML = 'x';
@@ -878,7 +878,7 @@ const CustomImage = Image.extend<any>({
       cancelBtn.style.color = 'white';
       cancelBtn.style.border = 'none';
       cancelBtn.style.borderRadius = '4px';
-      cancelBtn.title = '취소';
+      cancelBtn.title = 'Cancel';
 
       editDiv.appendChild(renameInput);
       editDiv.appendChild(saveBtn);
@@ -1055,7 +1055,7 @@ const CustomYoutube = Node.create<any>({
       overlay.style.height = '40px'
       overlay.style.zIndex = '10'
       overlay.style.cursor = 'pointer'
-      overlay.title = '클릭하여 링크 수정'
+      overlay.title = 'Click to edit link'
       overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2), transparent)'
       overlay.style.borderTopLeftRadius = '8px'
       overlay.style.borderTopRightRadius = '8px'
@@ -1105,7 +1105,7 @@ const CustomYoutube = Node.create<any>({
       copyButton.style.cursor = 'pointer'
       copyButton.style.color = '#6b7280' // text-gray-500
       copyButton.style.borderRadius = '4px'
-      copyButton.title = '주소 복사'
+      copyButton.title = 'Copy address'
       
       copyButton.addEventListener('mouseover', () => {
         copyButton.style.background = 'rgba(0,0,0,0.05)'

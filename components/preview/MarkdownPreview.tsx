@@ -157,7 +157,7 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage }: { content
   return (
     <div ref={containerRef} data-testid="preview-container" className="markdown-preview" style={{ height: '100%', overflowY: 'auto', padding: '24px', paddingBottom: '30vh', color: isDark ? '#F3F4F6' : '#121212', fontSize: '14px', lineHeight: '1.6', fontFamily: 'Inter, sans-serif' }}>
       <style>{`.markdown-preview blockquote { border-left: 4px solid #3B82F6; padding-left: 16px; color: ${isDark ? '#9CA3AF' : '#6B7280'}; } .markdown-preview h1, .markdown-preview h2 { border-bottom: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding-bottom: 0.3em; }`}</style>
-      {isParsing && !hast ? <span style={{ display: 'flex', justifyContent: 'center', padding: '20px', color: '#9CA3AF' }}>파싱 중...</span> : null}
+      {isParsing && !hast ? <span style={{ display: 'flex', justifyContent: 'center', padding: '20px', color: '#9CA3AF' }}>Parsing...</span> : null}
       {!workerError && hast ? hast.children.map((child: any, i: number) => <MarkdownBlock key={i} node={child} components={components} isDark={isDark} resolveImage={resolveImage} />) : <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]} components={components as any}>{content}</ReactMarkdown>}
     </div>
   );

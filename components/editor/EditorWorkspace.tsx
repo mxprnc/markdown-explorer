@@ -105,7 +105,7 @@ export function EditorWorkspace({
             onDragLeave: (e: any) => handleDragLeave(e),
           } as any)}
         >
-          <Text style={{ color: colors.textMuted, fontSize: 16, fontFamily: fontFamilyUI }}>파일을 선택해주세요.</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 16, fontFamily: fontFamilyUI }}>Please select a file.</Text>
         </View>
       );
     }
@@ -222,7 +222,7 @@ export function EditorWorkspace({
         <>
           <View 
             accessibilityRole="separator"
-            accessibilityLabel="창 크기 조절"
+            accessibilityLabel="Resize panes"
             {...middlePaneResponder.panHandlers} 
             style={{ width: 14, marginLeft: -7, marginRight: -7, cursor: 'col-resize', zIndex: 10 } as any} 
           />

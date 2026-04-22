@@ -50,11 +50,11 @@ export function useFileSystem() {
       const nextPerm = await dirHandle.requestPermission({ mode: 'readwrite' });
       const granted = nextPerm === 'granted';
       setHasWritePermission(granted);
-      if (granted && Platform.OS === 'web') window.alert('수정 권한이 승인되었습니다.');
+      if (granted && Platform.OS === 'web') window.alert('Write permission granted.');
       return granted;
     } catch (e) {
       console.error('Failed to request permission', e);
-      if (Platform.OS === 'web') window.alert('권한 요청 중 오류가 발생했습니다. 브라우저 설정을 확인해주세요.');
+      if (Platform.OS === 'web') window.alert('An error occurred while requesting permission. Please check your browser settings.');
       return false;
     }
   }, [dirHandle]);

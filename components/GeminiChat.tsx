@@ -59,13 +59,13 @@ export default function GeminiChat({ currentContent, onSaveChatToFile, bottomSpa
     try {
       let text = "";
       
-      const systemPrompt = `당신은 마크다운 에디터 'Markdown Explorer'의 인공지능 어시스턴트입니다.
-현재 사용자가 편집 중인 파일의 내용은 다음과 같습니다:
+      const systemPrompt = `You are an AI assistant for 'Mark Explorer', a markdown editor.
+The current content of the file the user is editing is as follows:
 ---
-${currentContent || "(비어 있음)"}
+${currentContent || "(empty)"}
 ---
 
-위 내용을 바탕으로 다음 질문에 답해주세요:
+Based on the content above, please answer the following question:
 ${userMsg}`;
 
       // Unified v1beta for 2026 model compatibility (Gemini 2.5, 3.1, etc.)
@@ -102,7 +102,7 @@ ${userMsg}`;
       }
     } catch (error: any) {
       console.error("Gemini Error:", error);
-      setMessages(prev => [...prev, { role: 'model', content: "❌ 오류가 발생했습니다: " + (error.message || "알 수 없는 오류") }]);
+      setMessages(prev => [...prev, { role: 'model', content: "❌ An error occurred: " + (error.message || "Unknown error") }]);
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ ${userMsg}`;
     if (messages.length === 0) return;
     const md = formatChatAsMarkdown(messages);
     await Clipboard.setStringAsync(md);
-    if (Platform.OS === 'web') alert('채팅 내역이 클립보드에 복사되었습니다.');
+    if (Platform.OS === 'web') alert('Chat history copied to clipboard.');
   };
 
   const handleKeyPress = (e: any) => {
@@ -195,12 +195,12 @@ ${userMsg}`;
             {mode === 'general' && messages.length > 0 && (
               <Pressable onPress={handleCopyMd} style={styles.actionBtn}>
                 <Ionicons name="copy-outline" size={14} color={colors.primary} />
-                <Text style={[styles.actionBtnText, { color: colors.primary }]}>복사(md)</Text>
+                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Copy (MD)</Text>
               </Pressable>
             )}
             <Pressable onPress={onOpenSettings} style={styles.settingsBtn} testID="settings-btn">
               <Ionicons name="settings-outline" size={14} color={colors.text} />
-              <Text style={[styles.settingsBtnText, { color: colors.text }]}>설정</Text>
+              <Text style={[styles.settingsBtnText, { color: colors.text }]}>Settings</Text>
             </Pressable>
           </View>
        </View>
@@ -226,7 +226,7 @@ ${userMsg}`;
                   // Small delay to allow Pressable to trigger
                   setTimeout(() => setShowSuggestions(false), 200);
                 }}
-                placeholder="파일명.md"
+                placeholder="filename.md"
                 placeholderTextColor={colors.textMuted}
               />
               {showSuggestions && filteredSuggestions.length > 0 && (
@@ -262,7 +262,7 @@ ${userMsg}`;
             <View style={styles.emptyState}>
               <Ionicons name="lock-closed" size={32} color={colors.textMuted} />
               <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                인증이 필요합니다. 설정 버튼을 눌러 API Key 또는 Google 로그인을 완료해주세요.
+                Authentication required. Please click the Settings button to provide an API Key or log in with Google.
               </Text>
             </View>
          )}
@@ -270,7 +270,7 @@ ${userMsg}`;
            <View style={styles.emptyState}>
              <Ionicons name="chatbubble-ellipses-outline" size={32} color={colors.textMuted} />
              <Text style={[styles.emptyText, { color: colors.textMuted}]}>
-               Gemini에게 질문해보세요! (Cmd/Ctrl + Enter로 전송)
+                Ask Gemini anything! (Press Cmd/Ctrl + Enter to send)
              </Text>
            </View>
          )}
@@ -293,7 +293,7 @@ ${userMsg}`;
          {loading && (
            <View style={styles.loadingContainer}>
              <ActivityIndicator size="small" color={colors.primary} />
-             <Text style={{ marginLeft: 8, fontSize: 11, color: colors.textMuted }}>생각 중...</Text>
+              <Text style={{ marginLeft: 8, fontSize: 11, color: colors.textMuted }}>Thinking...</Text>
            </View>
          )}
        </ScrollView>
@@ -301,7 +301,7 @@ ${userMsg}`;
        <View style={[styles.inputContainer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
          <TextInput
            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}
-           placeholder={hasAuth ? "메시지를 입력하세요..." : "인증 후 사용 가능합니다."}
+            placeholder={hasAuth ? "Type a message..." : "Available after authentication."}
            placeholderTextColor={colors.textMuted}
            value={inputText}
            onChangeText={setInputText}

@@ -31,12 +31,12 @@ export const TOCPane = memo(({ content, width, onTOCClick, responder }: TOCPaneP
         />
       )}
       <View style={[styles.paneHeader, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
-        <Text style={[styles.paneTitle, { color: colors.textMuted }]}>목차 (TOC)</Text>
+        <Text style={[styles.paneTitle, { color: colors.textMuted }]}>Table of Contents</Text>
       </View>
       <ScrollView style={{ flex: 1 }}>
         {tocList.length === 0 ? (
           <View style={{ padding: 16 }} testID="toc-empty-msg">
-            <Text style={{ color: colors.textMuted, fontSize: 12 }}>작성된 헤딩(제목)이 없습니다.</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12 }}>No headings found.</Text>
           </View>
         ) : (
           tocList.map((item, index) => (
