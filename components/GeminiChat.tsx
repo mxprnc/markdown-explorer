@@ -198,7 +198,7 @@ ${userMsg}`;
                 <Text style={[styles.actionBtnText, { color: colors.primary }]}>복사(md)</Text>
               </Pressable>
             )}
-            <Pressable onPress={onOpenSettings} style={styles.settingsBtn}>
+            <Pressable onPress={onOpenSettings} style={styles.settingsBtn} testID="settings-btn">
               <Ionicons name="settings-outline" size={14} color={colors.text} />
               <Text style={[styles.settingsBtnText, { color: colors.text }]}>설정</Text>
             </Pressable>

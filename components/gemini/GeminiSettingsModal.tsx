@@ -5,6 +5,7 @@ import { AVAILABLE_MODELS } from '@/constants/Models';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Button } from '@/components/ui/Button';
+import { Collapsible } from '@/components/ui/Collapsible';
 
 interface GeminiSettingsModalProps {
   visible: boolean;
@@ -119,6 +120,21 @@ export const GeminiSettingsModal = memo(({ visible, onClose }: GeminiSettingsMod
                 />
              </View>
           </ScrollView>
+
+          <View style={styles.section}>
+            <Collapsible title="Advanced Settings (Test)">
+              <View style={{ paddingVertical: 10, gap: 10 }}>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>E2E 테스트를 위한 UI 검증 영역입니다.</Text>
+                <Button 
+                  label="UI Test Button"
+                  onPress={() => {}}
+                  variant="outline"
+                  size="sm"
+                  testID="ui-test-button"
+                />
+              </View>
+            </Collapsible>
+          </View>
 
           <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
              <Button 

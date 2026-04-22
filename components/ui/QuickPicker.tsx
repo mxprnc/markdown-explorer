@@ -41,9 +41,10 @@ export const QuickPicker = ({ visible, title, placeholder = 'Search...', items, 
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
+      <Pressable style={styles.overlay} onPress={onClose} testID="picker-overlay">
         <Pressable 
           style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]} 
+          testID="picker-container"
           onPress={(e) => {
             if (Platform.OS === 'web') {
                // @ts-ignore
@@ -64,6 +65,7 @@ export const QuickPicker = ({ visible, title, placeholder = 'Search...', items, 
               placeholderTextColor={colors.textMuted}
               value={search}
               onChangeText={setSearch}
+              testID="picker-input"
               autoFocus
               onSubmitEditing={() => {
                 if (filteredItems.length > 0) {
@@ -84,6 +86,7 @@ export const QuickPicker = ({ visible, title, placeholder = 'Search...', items, 
                   hovered && { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
                 ]}
                 onPress={() => onSelect(item)}
+                testID={`picker-item-${item.id}`}
               >
                 <View style={styles.itemIcon}>
                   <Ionicons name={(item.icon as any) || 'document-text-outline'} size={20} color={colors.primary} />
@@ -97,7 +100,7 @@ export const QuickPicker = ({ visible, title, placeholder = 'Search...', items, 
               </Pressable>
             )}
             ListEmptyComponent={
-              <View style={styles.empty}>
+              <View style={styles.empty} testID="picker-empty">
                 <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>No results found</Text>
               </View>
             }

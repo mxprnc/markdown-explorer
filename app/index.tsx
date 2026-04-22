@@ -371,6 +371,17 @@ function MainScreen() {
         appInstance,
         previewRef1,
         previewRef2,
+        triggerTemplatePicker: (items: string[]) => {
+          // Manually trigger the state update that normally happens via events
+          setTemplatePicker({
+            visible: true,
+            items: items.map(t => ({
+              id: t,
+              label: t.split('/').pop() || t,
+              description: t
+            }))
+          });
+        },
         mockClipboard: () => {
           try {
             const Clipboard = require('expo-clipboard');
