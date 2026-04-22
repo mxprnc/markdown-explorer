@@ -142,13 +142,46 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage }: { content
       return <img src={resolvedSrc} alt={alt} data-testid="preview-image" style={{ maxWidth: '100%', borderRadius: '8px', display: 'block', margin: '16px 0' }} {...rest} />;
     },
     code: (props: any) => {
-      const { children, className, ...rest } = props;
+      const { children, className, inline, ...rest } = props;
       const match = /language-(\w+)/.exec(className || '');
       const codeString = String(children).replace(/\n$/, '');
+
       if (match && match[1] === 'mermaid') return <Mermaid chart={codeString} isDark={isDark} />;
+
+      if (inline || !match) {
+        return (
+          <code
+            style={{
+              backgroundColor: isDark ? '#374151' : '#F3F4F6',
+              color: isDark ? '#FCA5A5' : '#EF4444',
+              padding: '2px 4px',
+              borderRadius: '4px',
+              fontSize: '0.9em',
+              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+            }}
+          >
+            {codeString}
+          </code>
+        );
+      }
+
       return (
         <span style={{ display: 'block', position: 'relative', margin: '16px 0' }}>
-          <SyntaxHighlighter {...rest} PreTag="div" children={codeString} language={match ? match[1] : 'text'} style={isDark ? oneDark : oneLight} showLineNumbers={!!match} customStyle={{ borderRadius: '8px', padding: '16px', fontSize: '13px', backgroundColor: isDark ? '#111827' : '#F9FAFB', border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}` }} />
+          <SyntaxHighlighter
+            {...rest}
+            PreTag="div"
+            children={codeString}
+            language={match[1]}
+            style={isDark ? oneDark : oneLight}
+            showLineNumbers={true}
+            customStyle={{
+              borderRadius: '8px',
+              padding: '16px',
+              fontSize: '13px',
+              backgroundColor: isDark ? '#111827' : '#F9FAFB',
+              border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
+            }}
+          />
         </span>
       );
     }
