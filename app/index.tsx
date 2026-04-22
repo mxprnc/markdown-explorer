@@ -26,6 +26,8 @@ import { GeminiSettingsModal } from '@/components/gemini/GeminiSettingsModal';
 import { RenameModal } from '@/components/explorer/RenameModal';
 import { EditorWorkspace } from '@/components/editor/EditorWorkspace';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { NextraExportModal } from '@/components/exporter/nextra/NextraExportModal';
+import { ContextMenu } from '@/components/explorer/ContextMenu';
 import { AVAILABLE_MODELS } from '@/constants/Models';
 import { getFileCache, setFileCache } from '@/utils/IndexedDBUtils';
 import { handleTabSelection, pinTab, closeOthers, closeAll } from '@/utils/TabUtils';
@@ -115,6 +117,10 @@ function MainScreen() {
   const [creationName, setCreationName] = useState('');
   const [activeHeadingIndex, setActiveHeadingIndex] = useState(-1);
 
+  // Nextra Export State
+  const [nextraExportModalVisible, setNextraExportModalVisible] = useState(false);
+  const [nextraExportTarget, setNextraExportTarget] = useState<any | null>(null);
+
   // Preview File States
   const [previewFile1, setPreviewFile1] = useState<string | null>(null);
   const [previewFile2, setPreviewFile2] = useState<string | null>(null);
@@ -181,6 +187,27 @@ function MainScreen() {
           } catch (e) {}
         }
         throw new Error(`File not found: ${path}`);
+      },
+      readBinary: async (path: string) => {
+        const findHandleRec = (items: any[], p: string): any => {
+          for (const item of items) {
+            if (item.path === p) return item.handle;
+            if (item.children) {
+              const h = findHandleRec(item.children, p);
+              if (h) return h;
+            }
+          }
+          return null;
+        };
+        let handle = findHandleRec(fileSystemData, path);
+        if (handle) {
+          try {
+            const f = await handle.getFile();
+            const buffer = await f.arrayBuffer();
+            return new Uint8Array(buffer);
+          } catch (e) {}
+        }
+        throw new Error(`Binary file not found: ${path}`);
       },
       write: async (path: string, data: string) => {
         await handleSaveToDiskInHook(path, data);
@@ -889,6 +916,10 @@ function MainScreen() {
                 onConfirmCreation={handleConfirmCreation}
                 onCancelCreation={() => setCreatingItem(null)}
                 setDraggingTab={setDraggingTab}
+                onExportToNextra={(item) => {
+                  setNextraExportTarget(item);
+                  setNextraExportModalVisible(true);
+                }}
               />
             )}
           />
@@ -1017,8 +1048,32 @@ function MainScreen() {
         />
 
         <RenameModal 
-          visible={!!renamingItem} name={newName} onChangeName={setNewName}
-          onConfirm={handleRenameFileSystem} onCancel={() => setRenamingItem(null)}
+          visible={!!renamingItem}
+          onClose={() => setRenamingItem(null)}
+          currentName={renamingItem?.name || ''}
+          onRename={handleRenameFileSystem}
+          newName={newName}
+          setNewName={setNewName}
+        />
+
+        <NextraExportModal 
+          visible={nextraExportModalVisible}
+          onClose={() => setNextraExportModalVisible(false)}
+          app={appInstance}
+          targetNode={nextraExportTarget}
+        />
+
+        <ContextMenu 
+          {...contextMenu}
+          onClose={() => setContextMenu({ ...contextMenu, visible: false })}
+          onRename={(item) => { setRenamingItem(item); setNewName(item.name); }}
+          onDelete={handleDeleteFileSystem}
+          onCreateFile={(path) => setCreatingItem({ parentPath: path, kind: 'file' })}
+          onCreateFolder={(path) => setCreatingItem({ parentPath: path, kind: 'directory' })}
+          onExportToNextra={(item) => {
+            setNextraExportTarget(item);
+            setNextraExportModalVisible(true);
+          }}
         />
 
         <QuickPicker 

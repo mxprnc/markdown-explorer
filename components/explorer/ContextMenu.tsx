@@ -13,10 +13,11 @@ interface ContextMenuProps {
   onDelete: (item: any) => void;
   onCreateFile: (parentPath: string) => void;
   onCreateFolder: (parentPath: string) => void;
+  onExportToNextra: (item: any) => void;
 }
 
 export function ContextMenu({ 
-  x, y, visible, item, onClose, onRename, onDelete, onCreateFile, onCreateFolder
+  x, y, visible, item, onClose, onRename, onDelete, onCreateFile, onCreateFolder, onExportToNextra
 }: ContextMenuProps) {
   const { colors, isDark, fontFamilyUI } = useTheme();
 
@@ -66,6 +67,15 @@ export function ContextMenu({
           >
             <Ionicons name="folder-outline" size={14} color={colors.text} style={styles.menuIcon} />
             <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>New Folder</Text>
+          </Pressable>
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
+          <Pressable 
+            testID="context-menu-export-nextra"
+            onPress={() => { onExportToNextra(item); onClose(); }}
+            style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
+          >
+            <Ionicons name="share-outline" size={14} color={colors.primary} style={styles.menuIcon} />
+            <Text style={[styles.menuText, { color: colors.primary, fontFamily: fontFamilyUI, fontWeight: 'bold' }]}>Export to Nextra</Text>
           </Pressable>
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
         </>

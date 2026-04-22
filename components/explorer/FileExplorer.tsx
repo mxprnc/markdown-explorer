@@ -29,6 +29,7 @@ interface FileExplorerProps {
   onConfirmCreation: () => void;
   onCancelCreation: () => void;
   setDraggingTab: (val: any) => void;
+  onExportToNextra: (item: any) => void;
 }
 
 export function FileExplorer({
@@ -37,7 +38,7 @@ export function FileExplorer({
   onSelect, onToggle, onMouseEnter, onMouseLeave, onOpenDirectory,
   contextMenu, setContextMenu, onDelete, onRenameRequest, onCreateRequest,
   creatingItem, creationName, setCreationName, onConfirmCreation, onCancelCreation,
-  setDraggingTab
+  setDraggingTab, onExportToNextra
 }: FileExplorerProps) {
   const { colors, isDark, fontFamilyUI } = useTheme();
   
@@ -99,14 +100,6 @@ export function FileExplorer({
         />
       )}
 
-      <ContextMenu 
-        {...contextMenu}
-        onClose={() => setContextMenu({ ...contextMenu, visible: false })}
-        onRename={onRenameRequest}
-        onDelete={onDelete}
-        onCreateFile={(path) => onCreateRequest(path, 'file')}
-        onCreateFolder={(path) => onCreateRequest(path, 'directory')}
-      />
     </View>
   );
 }

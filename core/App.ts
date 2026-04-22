@@ -6,6 +6,8 @@ import { PluginManifest } from './plugin/Manifest';
 export interface Vault {
   /** 파일의 내용을 읽어옵니다. */
   read(path: string): Promise<string>;
+  /** 바이너리 파일의 내용을 읽어옵니다. */
+  readBinary(path: string): Promise<Uint8Array>;
   /** 파일에 내용을 씁니다. */
   write(path: string, data: string): Promise<void>;
   /** 파일이나 폴더가 존재하는지 확인합니다. */
