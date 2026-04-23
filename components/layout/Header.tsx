@@ -9,10 +9,14 @@ interface HeaderProps {
   setActiveTab: (tab: 'files' | 'editor') => void;
   isSplitMode: boolean;
   onSplitToggle: () => void;
+  isMobile?: boolean;
+  onMenuPress?: () => void;
+  onOpenDirectory?: () => void;
 }
 
 export const Header = memo(({ 
-  selectedFolder, activeTab, setActiveTab, isSplitMode, onSplitToggle
+  selectedFolder, activeTab, setActiveTab, isSplitMode, onSplitToggle,
+  isMobile, onMenuPress, onOpenDirectory
 }: HeaderProps) => {
   const { colors, themeMode, toggleTheme, fontFamilyUI } = useTheme();
 
@@ -22,13 +26,29 @@ export const Header = memo(({
       nativeID="app-header"
       style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
       <View style={styles.headerLeft}>
-        <Text style={[styles.logoText, { color: colors.text, fontFamily: fontFamilyUI }]}>Mark Explorer</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={[styles.headerTitle, { color: colors.textMuted, fontFamily: fontFamilyUI, fontWeight: '600' }]}>
-            {selectedFolder || 'Please open a folder'}
+        {isMobile && (
+          <Pressable onPress={onMenuPress} style={{ marginRight: 12 }}>
+            <Ionicons name="menu-outline" size={24} color={colors.text} />
+          </Pressable>
+        )}
+        {!isMobile && <Text style={[styles.logoText, { color: colors.text, fontFamily: fontFamilyUI }]}>Mark Explorer</Text>}
+        <Pressable 
+          onPress={onOpenDirectory}
+          style={{ flexDirection: 'row', alignItems: 'center' }}
+        >
+          <Text 
+            style={[styles.headerTitle, { color: selectedFolder ? colors.text : colors.primary, fontFamily: fontFamilyUI, fontWeight: '600' }]} 
+            numberOfLines={1}
+          >
+            {selectedFolder || 'Open Folder'}
           </Text>
-          <Ionicons name="folder-open-outline" size={14} color={colors.primary} />
-        </View>
+          <Ionicons 
+            name="folder-open-outline" 
+            size={16} 
+            color={selectedFolder ? colors.primary : colors.primary} 
+            style={{ marginLeft: 4 }}
+          />
+        </Pressable>
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -38,7 +58,7 @@ export const Header = memo(({
           testID="header-files-btn"
         >
           <Ionicons name="documents-outline" size={18} color={activeTab === 'files' ? colors.primary : colors.textMuted} />
-          <Text style={[styles.tabBtnText, { color: activeTab === 'files' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Explorer</Text>
+          {!isMobile && <Text style={[styles.tabBtnText, { color: activeTab === 'files' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Explorer</Text>}
         </Pressable>
         <Pressable 
           onPress={() => setActiveTab('editor')}
@@ -46,23 +66,25 @@ export const Header = memo(({
           testID="header-editor-btn"
         >
           <Ionicons name="code-working-outline" size={18} color={activeTab === 'editor' ? colors.primary : colors.textMuted} />
-          <Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Editor</Text>
+          {!isMobile && <Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Editor</Text>}
         </Pressable>
 
-        <View style={{ width: 1, height: 20, backgroundColor: colors.border, marginHorizontal: 8 }} />
+        {!isMobile && <View style={{ width: 1, height: 20, backgroundColor: colors.border, marginHorizontal: 8 }} />}
 
-        <Pressable 
-          onPress={onSplitToggle}
-          style={[styles.tabBtn, isSplitMode && { backgroundColor: colors.surface, borderColor: colors.primary }]}
-          testID="header-split-btn"
-        >
-          <Ionicons 
-            name={isSplitMode ? "copy" : "copy-outline"} 
-            size={18} 
-            color={isSplitMode ? colors.primary : colors.textMuted} 
-          />
-          <Text style={[styles.tabBtnText, { color: isSplitMode ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Split View</Text>
-        </Pressable>
+        {!isMobile && (
+          <Pressable 
+            onPress={onSplitToggle}
+            style={[styles.tabBtn, isSplitMode && { backgroundColor: colors.surface, borderColor: colors.primary }]}
+            testID="header-split-btn"
+          >
+            <Ionicons 
+              name={isSplitMode ? "copy" : "copy-outline"} 
+              size={18} 
+              color={isSplitMode ? colors.primary : colors.textMuted} 
+            />
+            <Text style={[styles.tabBtnText, { color: isSplitMode ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Split View</Text>
+          </Pressable>
+        )}
 
         <Pressable 
           onPress={toggleTheme} 

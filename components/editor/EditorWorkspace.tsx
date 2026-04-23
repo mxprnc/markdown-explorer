@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, Platform, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Editor from '@/components/Editor';
 import MarkdownPreview from '@/components/preview/MarkdownPreview';
 import { TabBar } from '@/components/layout/TabBar';
@@ -44,6 +45,8 @@ interface EditorWorkspaceProps {
   onTabContextMenu?: (e: any, file: string, paneId: 1 | 2) => void;
   isDark: boolean;
   onHeadingVisible?: (index: number) => void;
+  onOpenDirectory?: () => void;
+  selectedFolder: string;
 }
 
 export function EditorWorkspace({
@@ -55,7 +58,8 @@ export function EditorWorkspace({
   middlePaneResponder, fontFamilyCode,
   previewFile1, previewFile2,
   previewRef1, previewRef2, editorRef1, editorRef2,
-  onTabContextMenu, isDark, onDropTab, onHeadingVisible
+  onTabContextMenu, isDark, onDropTab, onHeadingVisible,
+  onOpenDirectory, selectedFolder
 }: EditorWorkspaceProps) {
   const { colors, fontFamilyUI } = useTheme();
   const [dragOverPane, setDragOverPane] = React.useState<number | null>(null);
@@ -106,7 +110,34 @@ export function EditorWorkspace({
             onDragLeave: (e: any) => handleDragLeave(e),
           } as any)}
         >
-          <Text style={{ color: colors.textMuted, fontSize: 16, fontFamily: fontFamilyUI }}>Please select a file.</Text>
+          <Ionicons name="folder-open-outline" size={48} color={colors.primary} style={{ marginBottom: 16 }} />
+          {!selectedFolder ? (
+            <>
+              <Text style={{ color: colors.text, fontSize: 18, fontFamily: fontFamilyUI, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }}>
+                Welcome to Mark Explorer
+              </Text>
+              <Text style={{ color: colors.textMuted, fontSize: 14, fontFamily: fontFamilyUI, marginBottom: 24, textAlign: 'center' }}>
+                Open a local folder to start exploring and editing your Markdown files.
+              </Text>
+              <View 
+                style={{ 
+                  backgroundColor: colors.primary, 
+                  paddingHorizontal: 24, 
+                  paddingVertical: 12, 
+                  borderRadius: 8,
+                }}
+              >
+                <Text 
+                  onPress={onOpenDirectory}
+                  style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold', fontFamily: fontFamilyUI }}
+                >
+                  Open Folder
+                </Text>
+              </View>
+            </>
+          ) : (
+            <Text style={{ color: colors.textMuted, fontSize: 16, fontFamily: fontFamilyUI }}>Please select a file.</Text>
+          )}
         </View>
       );
     }

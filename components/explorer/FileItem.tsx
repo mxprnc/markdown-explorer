@@ -95,12 +95,16 @@ export function FileItem({
         numberOfLines={1} 
         style={[
           styles.itemText,
-          { color: isDoc || item.kind === 'directory' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI },
-          item.kind === 'directory' && { fontWeight: '500' },
+          { 
+            color: isDoc || item.kind === 'directory' ? (isDark ? '#FFFFFF' : '#1A202C') : colors.textMuted, 
+            fontFamily: fontFamilyUI,
+            fontSize: 14,
+          },
+          item.kind === 'directory' && { fontWeight: 'bold' },
           isSelected && { fontWeight: 'bold', color: colors.primary }
         ]}
       >
-        {item.kind === 'directory' ? '📁' : (isImage ? '🖼️' : '📄')} {item.name}
+        {item.kind === 'directory' ? '📁' : (isImage ? '🖼️' : '📄')} {item.name || 'Unknown'}
       </Text>
 
       {isHovered && (

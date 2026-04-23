@@ -1,7 +1,12 @@
 // Updated TOC Logic - 2026-04-20
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Platform, Alert, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Platform, Alert, PanResponder, useWindowDimensions } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
+import * as FileSystem from 'expo-file-system';
+import * as FileSystemLegacy from 'expo-file-system/legacy';
+const fsLegacy = (FileSystemLegacy as any).default || FileSystemLegacy;
+const readAsStringAsync = fsLegacy.readAsStringAsync;
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import * as WebBrowser from 'expo-web-browser';
@@ -46,6 +51,9 @@ const appInstance = new AppInstance();
 function MainScreen() {
   const { themeMode, isDark, toggleTheme, colors, fontFamilyUI, fontFamilyCode } = useTheme();
   const gemini = useSettings();
+  const { width: windowWidth } = useWindowDimensions();
+  const isMobile = windowWidth < 768;
+  const [isSidebarVisible, setIsSidebarVisible] = useState(!isMobile);
 
   const {
     leftPaneWidth,
@@ -77,6 +85,8 @@ function MainScreen() {
     loadDirectoryRecursive,
     toggleFolder,
     scanLevel,
+    pickDirectory,
+    isLoading,
     saveToDisk: handleSaveToDiskInHook,
     updateFileSystemData,
     removeItemFromData,
@@ -91,6 +101,12 @@ function MainScreen() {
   } = useFileSystem();
   
   const { recentFiles, addRecentFile } = useRecentFiles();
+  
+  useEffect(() => {
+    if (fileSystemData.length > 0) {
+      console.log('[App] fileSystemData updated:', JSON.stringify(fileSystemData.map(i => ({ name: i.name, kind: i.kind })), null, 2));
+    }
+  }, [fileSystemData]);
 
   const [editorContent, setEditorContent] = useState('# Markdown Explorer Project\n\n* This is a functional CodeMirror-based editor.\n* Typing here will be reflected in the Live Preview below.\n\nDoes it work well? 😊');
   const [activeTab, setActiveTab] = useState<'files' | 'editor'>('files');
@@ -183,11 +199,14 @@ function MainScreen() {
 
         if (handle) {
           try {
-            const f = await handle.getFile();
-            return await f.text();
+            if (Platform.OS === 'web') {
+              const f = await handle.getFile();
+              return await f.text();
+            } else {
+              return await readAsStringAsync(handle);
+            }
           } catch (e) {}
         }
-        throw new Error(`File not found: ${path}`);
       },
       readBinary: async (path: string) => {
         const findHandleRec = (items: any[], p: string): any => {
@@ -487,8 +506,12 @@ function MainScreen() {
              } catch(err) {}
           }
           if (handle) {
-            const f = await handle.getFile();
-            content = URL.createObjectURL(f);
+            if (Platform.OS === 'web') {
+              const f = await handle.getFile();
+              content = URL.createObjectURL(f);
+            } else {
+              content = handle;
+            }
             setLocalFiles(prev => ({ ...prev, [file]: content }));
           }
         } else {
@@ -809,23 +832,51 @@ function MainScreen() {
   };
 
   const handleOpenDirectory = async () => {
-    if (Platform.OS !== 'web') return;
     try {
-      // @ts-ignore
-      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      console.log('[App] Opening directory picker...');
+      const handle = await pickDirectory();
+      console.log('[App] Picker result:', handle);
+      
+      if (!handle) return;
+
       setDirHandle(handle);
-      setSelectedFolder(handle.name);
-      await checkWritePermission(handle);
+      
+      // Better folder name extraction for Android content URIs
+      let folderName = 'Folder';
+      if (Platform.OS === 'web') {
+        folderName = handle.name;
+      } else {
+        const decodedUri = decodeURIComponent(handle);
+        folderName = decodedUri.split('/').pop() || decodedUri.split('%2F').pop() || 'Folder';
+        if (folderName.includes(':')) folderName = folderName.split(':').pop() || folderName;
+      }
+      
+      setSelectedFolder(folderName);
+      
+      if (Platform.OS === 'web') {
+        await checkWritePermission(handle);
+      }
       
       const topLevelItems = await scanLevel(handle);
       setFileSystemData(topLevelItems);
       setLocalFiles({}); 
       setSelectedDirPath('');
+      
+      // On mobile, automatically show the sidebar so the user can see the file list
+      if (isMobile) {
+        setIsSidebarVisible(true);
+      }
 
+      // Auto-open first markdown file if exists
       const firstMd = topLevelItems.find(item => item.kind === 'file' && (item.name.endsWith('.md') || item.name.endsWith('.txt')));
       if (firstMd) {
-        const f = await firstMd.handle.getFile();
-        const text = await f.text();
+        let text = '';
+        if (Platform.OS === 'web') {
+          const f = await (firstMd.handle as any).getFile();
+          text = await f.text();
+        } else {
+          text = await readAsStringAsync(firstMd.handle);
+        }
         setLocalFiles({ [firstMd.path]: text });
         setSelectedFile(firstMd.path);
         setEditorContent(text);
@@ -836,8 +887,16 @@ function MainScreen() {
       }
       setSelectedFile2('');
       setOpenedFiles2([]);
-    } catch (e: any) {
-      if (e.name !== 'AbortError') Alert.alert('Error', 'An error occurred while selecting the folder.');
+
+      // Give immediate feedback
+      Alert.alert('Success', `Successfully opened folder: ${folderName}`);
+
+      console.log('[App] Directory loaded successfully:', folderName);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error('[App] Failed to load directory:', err);
+        Alert.alert('Error', 'Failed to read the selected folder.');
+      }
     }
   };
 
@@ -885,6 +944,10 @@ function MainScreen() {
 
   return (
     <ErrorBoundary>
+    <SafeAreaView 
+        edges={['bottom', 'left', 'right']} 
+        style={{ flex: 1, backgroundColor: colors.background }}
+    >
       <Pressable 
         accessibilityRole={Platform.OS === 'web' ? 'main' : 'none'}
         nativeID="main-container" 
@@ -906,21 +969,41 @@ function MainScreen() {
           setActiveTab={setActiveTab}
           isSplitMode={isSplitMode}
           onSplitToggle={() => setIsSplitMode(!isSplitMode)}
+          isMobile={isMobile}
+          onMenuPress={() => setIsSidebarVisible(!isSidebarVisible)}
+          onOpenDirectory={handleOpenDirectory}
         />
 
         {/* BODY */}
         <View style={s.body}>
-          <Sidebar
-            app={appInstance}
-            width={leftPaneWidth}
-            activeViewId={activeSidebarViewId}
-            setActiveViewId={setActiveSidebarViewId}
-            registeredViews={sidebarViews}
-            renderFileExplorer={() => (
-              <FileExplorer 
-                leftPaneWidth={leftPaneWidth - 48} // Leave space for icon bar
-                leftPaneResponder={{ panHandlers: {} }} // Resize is handled by MainScreen
-                fileSystemData={fileSystemData}
+          {isSidebarVisible && (
+            <View style={isMobile ? {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              zIndex: 1000,
+              width: windowWidth * 0.7,
+              backgroundColor: colors.background + 'EE', // Semi-transparent
+              borderRightWidth: 1,
+              borderRightColor: colors.border,
+              shadowColor: '#000',
+              shadowOffset: { width: 4, height: 0 },
+              shadowOpacity: 0.3,
+              shadowRadius: 10,
+              elevation: 10,
+            } : { width: leftPaneWidth }}>
+              <Sidebar
+                app={appInstance}
+                width={isMobile ? windowWidth * 0.7 : leftPaneWidth}
+                activeViewId={activeSidebarViewId}
+                setActiveViewId={setActiveSidebarViewId}
+                registeredViews={sidebarViews}
+                renderFileExplorer={() => (
+                  <FileExplorer 
+                    leftPaneWidth={(isMobile ? windowWidth * 0.7 : leftPaneWidth) - 48}
+                  leftPaneResponder={{ panHandlers: {} }} 
+                  fileSystemData={fileSystemData}
                 selectedFile={selectedFile}
                 selectedFile2={selectedFile2}
                 expandedFolders={expandedFolders}
@@ -951,6 +1034,8 @@ function MainScreen() {
               />
             )}
           />
+          </View>
+          )}
 
           {/* Resizing Area */}
           <View 
@@ -1008,6 +1093,8 @@ function MainScreen() {
             onTabContextMenu={handleTabContextMenu}
             onDropTab={handleDropTab}
             onHeadingVisible={setActiveHeadingIndex}
+            onOpenDirectory={handleOpenDirectory}
+            selectedFolder={selectedFolder}
           />
 
           {tabContextMenu && (
@@ -1070,6 +1157,16 @@ function MainScreen() {
           })()}
         />
 
+        {/* LOADING OVERLAY */}
+        {isLoading && (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', zIndex: 999 }]}>
+            <View style={{ backgroundColor: colors.surface, padding: 20, borderRadius: 12, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 }}>
+              <Ionicons name="sync" size={24} color={colors.primary} style={{ marginRight: 12 }} />
+              <Text style={{ color: colors.text, fontSize: 16, fontFamily: fontFamilyUI, fontWeight: '600' }}>Loading Files...</Text>
+            </View>
+          </View>
+        )}
+
         {/* MODALS */}
         <GeminiSettingsModal 
           visible={gemini.showGeminiSettings} onClose={() => gemini.setShowGeminiSettings(false)}
@@ -1121,6 +1218,7 @@ function MainScreen() {
           onClose={() => setTemplatePicker(prev => ({ ...prev, visible: false }))}
         />
       </Pressable>
+    </SafeAreaView>
     </ErrorBoundary>
   );
 }

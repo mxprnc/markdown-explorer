@@ -2,22 +2,26 @@
 
 Technical roadmap to enable folder-based exploration on mobile devices.
 
-## 🛠 Step 1: Library Evaluation
+## 🛠 Step 1: Library Installation & Evaluation
+- **Install Dependencies**:
+  - `npx expo install expo-document-picker expo-file-system`
 - **Primary Choice**: `expo-document-picker` with `directory` mode.
-- **Alternative**: `react-native-file-access` if more low-level control is needed.
 - **Storage Management**: `expo-file-system` for recursive listing and metadata retrieval.
+- **Android Specific**: Use `StorageAccessFramework` for persistent folder access.
 
-## 📂 Step 2: Adaptive File Service
-- Implement a unified `FileService` wrapper that branches based on `Platform.OS`:
-  - **Web**: Continue using `FileSystemHandle` API.
-  - **Mobile**: Use `DocumentPicker.getDirectoryUriAsync()` and `FileSystem.readDirectoryAsync()`.
-- Normalize the data structure to match the existing `FileSystemItem` interface.
+## 📂 Step 2: Adaptive File Service & Hook
+- **Unified `useFileSystem`**:
+  - Refactor `handleOpenDirectory` in `app/index.tsx` to call a platform-agnostic method.
+  - Update `useFileSystem.ts` to branch based on `Platform.OS`.
+  - **Mobile Branch**: Use `DocumentPicker.getDirectoryUriAsync()` (Android) or `DocumentPicker.getDocumentAsync()` (iOS/Android).
+- **Normalization**: Normalize URI-based paths to match the existing `FileSystemItem` interface.
 
-## 🔑 Step 3: Permission Workflow
-- Implement a setup wizard or a modal that explains why folder access is needed.
-- Handle "Deny" scenarios gracefully by offering a sandbox folder option.
-- Verify security and privacy by strictly accessing only the selected folder.
+## 🔑 Step 3: Permission & Persistence
+- Implement logic to request and check permissions using `expo-file-system`.
+- On Android, use `StorageAccessFramework` to list files and read/write once URI is obtained.
+- Store the selected `directoryUri` in `AsyncStorage` or similar to persist across reloads.
 
-## 🚀 Step 4: UI Refactoring
-- Update the "Open Folder" button logic in `FileExplorer.tsx` to trigger the native picker on mobile.
-- Add a loading spinner during recursive scanning.
+## 🚀 Step 4: UI Refactoring & Visibility
+- **Fix Visibility**: Remove `Platform.OS === 'web'` checks that prevent the "Open Folder" button from appearing or functioning.
+- **Loading State**: Add a loading spinner during the initial recursive scan of a mobile folder.
+- **Responsive Sidebar**: Ensure the sidebar doesn't shrink to 0 width on mobile when no folder is selected.

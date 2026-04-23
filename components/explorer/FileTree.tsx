@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform, TextInput } from 'react-native';
 import { FileItem } from './FileItem';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -86,31 +86,49 @@ export function FileTree({
       list.push(
         <View key="creation-input" style={[styles.creationInput, { paddingLeft: 30 + depth * 12 }]}>
           <Text style={{ fontSize: 13, marginRight: 4 }}>{creatingItem.kind === 'directory' ? '📁' : '📄'}</Text>
-          <div style={{ flex: 1 }}>
-            <input
-              autoFocus
-              value={creationName}
-              onChange={(e) => setCreationName(e.target.value)}
-              onKeyDown={(e: any) => {
-                if (e.nativeEvent.isComposing) return;
-                if (e.key === 'Enter') onConfirmCreation();
-                if (e.key === 'Escape') onCancelCreation();
-              }}
-              onBlur={() => {
-                if (!creationName) onCancelCreation();
-              }}
-              style={{
-                width: '90%',
-                padding: '2px 6px',
-                fontSize: '13px',
-                border: `1px solid ${colors.primary}`,
-                backgroundColor: isDark ? '#1a1a1a' : '#fff',
-                color: isDark ? '#fff' : '#000',
-                outline: 'none',
-                borderRadius: '3px'
-              }}
-            />
-          </div>
+          <View style={{ flex: 1 }}>
+            {Platform.OS === 'web' ? (
+              <input
+                autoFocus
+                value={creationName}
+                onChange={(e: any) => setCreationName(e.target.value)}
+                onKeyDown={(e: any) => {
+                  if (e.key === 'Enter') onConfirmCreation();
+                  if (e.key === 'Escape') onCancelCreation();
+                }}
+                style={{
+                  width: '90%',
+                  padding: '2px 6px',
+                  fontSize: '13px',
+                  border: `1px solid ${colors.primary}`,
+                  backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                  color: isDark ? '#fff' : '#000',
+                  outline: 'none',
+                  borderRadius: '3px'
+                }}
+              />
+            ) : (
+              <TextInput
+                autoFocus
+                value={creationName}
+                onChangeText={setCreationName}
+                onSubmitEditing={onConfirmCreation}
+                onBlur={() => {
+                  if (!creationName) onCancelCreation();
+                }}
+                style={{
+                  width: '90%',
+                  padding: 4,
+                  fontSize: 13,
+                  borderWidth: 1,
+                  borderColor: colors.primary,
+                  backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                  color: isDark ? '#fff' : '#000',
+                  borderRadius: 3
+                }}
+              />
+            )}
+          </View>
         </View>
       );
     }

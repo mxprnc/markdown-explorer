@@ -2,6 +2,28 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Platform, Alert } from 'react-native';
 import { format } from 'date-fns';
 import * as Clipboard from 'expo-clipboard';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import * as FileSystemLegacy from 'expo-file-system/legacy';
+
+// Use Legacy API for functions that were deprecated in SDK 54
+const fs = (FileSystemLegacy as any).default || FileSystemLegacy;
+const readDirectoryAsync = fs.readDirectoryAsync;
+const makeDirectoryAsync = fs.makeDirectoryAsync;
+const writeAsStringAsync = fs.writeAsStringAsync;
+const deleteAsync = fs.deleteAsync;
+const moveAsync = fs.moveAsync;
+const copyAsync = fs.copyAsync;
+const getInfoAsync = fs.getInfoAsync;
+const readAsStringAsync = fs.readAsStringAsync;
+const StorageAccessFramework = fs.StorageAccessFramework;
+
+// Deep scan for StorageAccessFramework or the new SDK 54 Directory API
+const getDirectoryAPI = () => {
+  return (FileSystem as any).Directory || (FileSystem as any).StorageAccessFramework;
+};
+
+const getSAF = () => (FileSystem as any).StorageAccessFramework;
 import { isImageFile, getParentPath, joinPaths, normalizePath } from '@/utils/FileSystemUtils';
 
 export interface FileSystemItem {
@@ -25,9 +47,11 @@ export function useFileSystem() {
   const [openedFiles2, setOpenedFiles2] = useState<string[]>([]);
   const [hasWritePermission, setHasWritePermission] = useState(false);
   const [selectedDirPath, setSelectedDirPath] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const checkWritePermission = useCallback(async (handle = dirHandle) => {
     if (!handle) return false;
+    if (Platform.OS !== 'web') return true;
     try {
       if (typeof handle.queryPermission !== 'function') return true;
       const currentPerm = await handle.queryPermission({ mode: 'readwrite' });
@@ -46,6 +70,7 @@ export function useFileSystem() {
 
   const requestWritePermission = useCallback(async () => {
     if (!dirHandle) return false;
+    if (Platform.OS !== 'web') return true;
     try {
       const nextPerm = await dirHandle.requestPermission({ mode: 'readwrite' });
       const granted = nextPerm === 'granted';
@@ -60,22 +85,89 @@ export function useFileSystem() {
   }, [dirHandle]);
 
   const scanLevel = useCallback(async (currentHandle: any, path = '') => {
-    const items: FileSystemItem[] = [];
-    for await (const entry of currentHandle.values()) {
-      const entryPath = path ? `${path}/${entry.name}` : entry.name;
-      if (entry.kind === 'file') {
-        const isSupported = /\.(md|txt|png|jpe?g|gif|webp)$/i.test(entry.name);
-        if (isSupported) {
-          items.push({ name: entry.name, path: entryPath, kind: 'file', handle: entry });
+    setIsLoading(true);
+    try {
+      const items: FileSystemItem[] = [];
+      
+      if (Platform.OS === 'web') {
+        for await (const entry of currentHandle.values()) {
+          const entryPath = path ? `${path}/${entry.name}` : entry.name;
+          if (entry.kind === 'file') {
+            const isSupported = /\.(md|txt|png|jpe?g|gif|webp)$/i.test(entry.name);
+            if (isSupported) {
+              items.push({ name: entry.name, path: entryPath, kind: 'file', handle: entry });
+            }
+          } else if (entry.kind === 'directory') {
+            items.push({ name: entry.name, path: entryPath, kind: 'directory', children: [], handle: entry, isLoaded: false });
+          }
         }
-      } else if (entry.kind === 'directory') {
-        items.push({ name: entry.name, path: entryPath, kind: 'directory', children: [], handle: entry, isLoaded: false });
+      } else {
+        // Native Implementation
+        try {
+          let result: string[] = [];
+          
+          console.log('[useFileSystem] Scanning directory:', currentHandle);
+
+          if (Platform.OS === 'android' && currentHandle.startsWith('content://')) {
+            console.log('[useFileSystem] Using SAF.readDirectoryAsync');
+            result = await StorageAccessFramework.readDirectoryAsync(currentHandle);
+          } else {
+            console.log('[useFileSystem] Using legacy readDirectoryAsync');
+            result = await readDirectoryAsync(currentHandle);
+          }
+          
+          console.log('[useFileSystem] Found items:', result.length);
+
+          for (const name of result) {
+            const entryPath = path ? `${path}/${name}` : name;
+            
+            // For SAF, the name returned is usually the full URI or already encoded.
+            // We need to resolve the individual item info.
+            const entryUri = (Platform.OS === 'android' && currentHandle.startsWith('content://')) ? name : (currentHandle.endsWith('/') ? currentHandle + name : currentHandle + '/' + name);
+            
+            const info = await getInfoAsync(entryUri);
+            const isDir = info.exists && info.isDirectory;
+            
+            // Extract a clean name from the URI if needed for SAF
+            let cleanName = name;
+            if (Platform.OS === 'android' && name.startsWith('content://')) {
+              try {
+                const decoded = decodeURIComponent(name);
+                // Try splitting by / first, then by %2F just in case, then by :
+                const parts = decoded.split('/');
+                const lastPart = parts.pop() || '';
+                cleanName = lastPart.includes(':') ? lastPart.split(':').pop() || lastPart : lastPart;
+                
+                if (!cleanName) cleanName = name; // Fallback
+              } catch (e) {
+                cleanName = name;
+              }
+            }
+            if (isDir && cleanName.endsWith('/')) cleanName = cleanName.slice(0, -1);
+            
+            console.log(`[useFileSystem] Entry: ${cleanName} (${isDir ? 'dir' : 'file'})`);
+            
+            if (isDir) {
+              items.push({ name: cleanName, path: entryPath, kind: 'directory', children: [], handle: entryUri, isLoaded: false });
+            } else {
+              const isSupported = /\.(md|txt|png|jpe?g|gif|webp)$/i.test(cleanName);
+              if (isSupported) {
+                items.push({ name: cleanName, path: entryPath, kind: 'file', handle: entryUri });
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Failed to read directory native', e);
+        }
       }
+
+      return items.sort((a, b) => {
+        if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+    } finally {
+      setIsLoading(false);
     }
-    return items.sort((a, b) => {
-      if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
-      return a.name.localeCompare(b.name);
-    });
   }, []);
 
   const loadDirectoryRecursive = useCallback(async (path: string) => {
@@ -205,21 +297,116 @@ export function useFileSystem() {
   const saveToDisk = useCallback(async (path: string, content: string | Blob) => {
     if (!dirHandle) return false;
     try {
-      const parts = path.split('/');
-      let current = dirHandle;
-      for (let i = 0; i < parts.length - 1; i++) {
-        current = await current.getDirectoryHandle(parts[i], { create: true });
+      if (Platform.OS === 'web') {
+        const parts = path.split('/');
+        let current = dirHandle;
+        for (let i = 0; i < parts.length - 1; i++) {
+          current = await current.getDirectoryHandle(parts[i], { create: true });
+        }
+        const fileHand = await current.getFileHandle(parts[parts.length - 1], { create: true });
+        const writable = await fileHand.createWritable();
+        await writable.write(content);
+        await writable.close();
+      } else {
+        // Native
+        // Resolve the handle for this path if it exists in fileSystemData
+        const findHandleByPath = (items: FileSystemItem[], p: string): any => {
+          for (const it of items) {
+            if (it.path === p) return it.handle;
+            if (it.children && p.startsWith(it.path + '/')) {
+              return findHandleByPath(it.children, p);
+            }
+          }
+          return null;
+        };
+
+        let fileUri = findHandleByPath(fileSystemData, path);
+        
+        if (!fileUri) {
+          // If file doesn't exist, we might need to create it (though saveToDisk usually expects it exists)
+          // For now, try fallback concatenation for non-SAF, or error for SAF
+          if (Platform.OS === 'android' && dirHandle.startsWith('content://')) {
+            console.error('saveToDisk: File handle not found for SAF path', path);
+            return false;
+          }
+          fileUri = dirHandle.endsWith('/') ? dirHandle + path : dirHandle + '/' + path;
+        }
+
+        await writeAsStringAsync(fileUri, typeof content === 'string' ? content : '');
       }
-      const fileHand = await current.getFileHandle(parts[parts.length - 1], { create: true });
-      const writable = await fileHand.createWritable();
-      await writable.write(content);
-      await writable.close();
       return true;
     } catch (err) {
       console.error('Save to disk failed', err);
       return false;
     }
-  }, [dirHandle]);
+  }, [dirHandle, fileSystemData]);
+
+  const pickDirectory = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      if (Platform.OS === 'web') {
+        try {
+          const handle = await (window as any).showDirectoryPicker();
+          return handle;
+        } catch (e: any) {
+          if (e.name !== 'AbortError') console.error('Directory Picker error', e);
+          return null;
+        }
+      } else {
+        try {
+          // On Android, prioritize established SAF or use the new Directory API
+          if (Platform.OS === 'android') {
+            const SAF = getSAF();
+            const DirAPI = getDirectoryAPI();
+            
+            console.log('[useFileSystem] Attempting Android Directory Picker...');
+            try {
+              // Try the established requestDirectoryPermissionsAsync first if available
+              if (SAF && typeof SAF.requestDirectoryPermissionsAsync === 'function') {
+                console.log('[useFileSystem] Using SAF.requestDirectoryPermissionsAsync');
+                const permissions = await SAF.requestDirectoryPermissionsAsync();
+                console.log('[useFileSystem] SAF Result:', permissions);
+                if (permissions.granted) {
+                  return permissions.directoryUri;
+                }
+              } 
+              // Fallback to new pickDirectoryAsync
+              else if (DirAPI && typeof DirAPI.pickDirectoryAsync === 'function') {
+                console.log('[useFileSystem] Using DirAPI.pickDirectoryAsync');
+                const result = await DirAPI.pickDirectoryAsync();
+                console.log('[useFileSystem] DirAPI Result:', result);
+                
+                // Flexible check for success (uri property is the key)
+                if (result && result.uri) {
+                  return result.uri;
+                }
+                if (result && result.granted) {
+                  return result.uri || result.directoryUri;
+                }
+              }
+            } catch (err) {
+              console.error('[useFileSystem] Android Picker error', err);
+            }
+          }
+          
+          // iOS/Fallback
+          const result = await DocumentPicker.getDocumentAsync({
+            type: undefined,
+            copyToCacheDirectory: false,
+          });
+          
+          if (result.assets && result.assets.length > 0) {
+            return result.assets[0].uri;
+          }
+        } catch (e) {
+          console.error('DocumentPicker error', e);
+        }
+        return null;
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   return {
     dirHandle, setDirHandle,
@@ -239,6 +426,8 @@ export function useFileSystem() {
     loadDirectoryRecursive,
     toggleFolder,
     scanLevel,
+    pickDirectory,
+    isLoading,
     saveToDisk,
     updateFileSystemData,
     removeItemFromData,
@@ -247,14 +436,19 @@ export function useFileSystem() {
       if (!dirHandle) return;
       
       try {
-        const parts = item.path.split('/');
-        let parentDir = dirHandle;
-        if (parts.length > 1) {
-          for (let i = 0; i < parts.length - 1; i++) {
-            parentDir = await parentDir.getDirectoryHandle(parts[i]);
+        if (Platform.OS === 'web') {
+          const parts = item.path.split('/');
+          let parentDir = dirHandle;
+          if (parts.length > 1) {
+            for (let i = 0; i < parts.length - 1; i++) {
+              parentDir = await parentDir.getDirectoryHandle(parts[i]);
+            }
           }
+          await parentDir.removeEntry(item.name, { recursive: true });
+        } else {
+          // Native
+          await deleteAsync(item.handle, { idempotent: true });
         }
-        await parentDir.removeEntry(item.name, { recursive: true });
 
         const isInside = (path: string) => path === item.path || path.startsWith(item.path + '/');
 
@@ -360,20 +554,53 @@ export function useFileSystem() {
       if (!name || !dirHandle) return null;
 
       try {
-        const pathParts = parentPath ? parentPath.split('/') : [];
-        let parentDir = dirHandle;
-        for (const p of pathParts) {
-          parentDir = await parentDir.getDirectoryHandle(p);
-        }
-
         let newHandle;
-        if (kind === 'file') {
-          newHandle = await parentDir.getFileHandle(name, { create: true });
+        const newPath = joinPaths(parentPath, name);
+
+        if (Platform.OS === 'web') {
+          const pathParts = parentPath ? parentPath.split('/') : [];
+          let parentDir = dirHandle;
+          for (const p of pathParts) {
+            parentDir = await parentDir.getDirectoryHandle(p);
+          }
+
+          if (kind === 'file') {
+            newHandle = await parentDir.getFileHandle(name, { create: true });
+          } else {
+            newHandle = await parentDir.getDirectoryHandle(name, { create: true });
+          }
         } else {
-          newHandle = await parentDir.getDirectoryHandle(name, { create: true });
+          // Native
+          // Find the parent handle
+          const findHandleByPath = (items: FileSystemItem[], p: string): any => {
+            if (!p) return dirHandle;
+            for (const it of items) {
+              if (it.path === p) return it.handle;
+              if (it.children && p.startsWith(it.path + '/')) {
+                return findHandleByPath(it.children, p);
+              }
+            }
+            return null;
+          };
+
+          const parentHandle = findHandleByPath(fileSystemData, parentPath) || dirHandle;
+
+          if (Platform.OS === 'android' && parentHandle.startsWith('content://')) {
+            if (kind === 'file') {
+              newHandle = await StorageAccessFramework.createFileAsync(parentHandle, name, 'text/markdown');
+            } else {
+              newHandle = await StorageAccessFramework.makeDirectoryAsync(parentHandle, name);
+            }
+          } else {
+            newHandle = parentHandle.endsWith('/') ? parentHandle + name : parentHandle + '/' + name;
+            if (kind === 'file') {
+              await writeAsStringAsync(newHandle, '');
+            } else {
+              await makeDirectoryAsync(newHandle, { intermediates: true });
+            }
+          }
         }
 
-        const newPath = joinPaths(parentPath, name);
         const newItem: FileSystemItem = {
           kind,
           name,
@@ -463,7 +690,7 @@ export function useFileSystem() {
         }
         const fileHandle = await currentHandle.getFileHandle(stack[stack.length - 1]);
         const file = await fileHandle.getFile();
-        return URL.createObjectURL(file);
+        return Platform.OS === 'web' ? URL.createObjectURL(file) : fileHandle; // fileHandle is already the URI on native
       } catch (err) {
         return relativePath;
       }

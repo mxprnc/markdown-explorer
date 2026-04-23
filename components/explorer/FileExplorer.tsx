@@ -138,10 +138,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   openBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
     cursor: 'pointer',
+    marginTop: 10,
   } as any,
   openBtnText: {
     color: '#FFF',

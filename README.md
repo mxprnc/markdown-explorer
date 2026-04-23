@@ -60,7 +60,7 @@ npm run electron
 #### 📱 Mobile Environment (Expo)
 This project uses **Expo SDK 54**. You can run the app on simulators/emulators or physical devices.
 
-*   **Physical Device**: Install the **Expo Go** app ([Android](https://play.google.com/store/apps/details?id=host.exp.exponent) / [iOS](https://apps.apple.com/app/expo-go/id982107779)) and scan the QR code displayed in the terminal.
+*   **Physical Device**: Use the **Expo Go** app for the fastest development cycle.
 *   **Simulator/Emulator**: Ensure you have [Xcode](https://developer.apple.com/xcode/) (iOS) or [Android Studio](https://developer.android.com/studio) (Android) set up.
 
 ```bash
@@ -84,6 +84,20 @@ npm run android
 > [!TIP]
 > For a step-by-step guide on setting up your environment for Expo, check the **[Expo Environment Setup Guide](https://docs.expo.dev/get-started/set-up-your-environment/)**.
 > For project-specific details, refer to **[deployment.md](./docs/plan/ci-cd/deployment.md)**.
+
+### 📲 Development on Physical Devices (Expo Go)
+
+For the best experience (especially when testing file system features), we recommend using a physical device.
+
+1.  **Install Expo Go**: Download it from the [Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent) or [iOS App Store](https://apps.apple.com/app/expo-go/id982107779).
+2.  **Connect to same Wi-Fi**: Ensure your phone and PC are on the same network.
+3.  **Start with Tunnel (Recommended)**: If you encounter connection issues or are on different networks, use the tunnel mode:
+    ```bash
+    npx expo start --tunnel
+    ```
+4.  **Scan QR Code**:
+    *   **Android**: Open Expo Go and tap "Scan QR Code".
+    *   **iOS**: Open the default **Camera app** and scan the QR code, then tap the "Open in Expo Go" notification.
 
 ### 📱 For Mobile Development Beginners
 
@@ -113,6 +127,30 @@ If `npm run ios` fails with `No iOS devices available`, it usually means the sys
 5. **Run**: Once the iPhone is on the screen and fully booted, run `npm run ios` again.
    - If you see an **"Operation timed out"** error, just wait for the simulator to reach the home screen and press `i` in the terminal to try again.
    - Using `npx expo start --ios --localhost` can also help bypass network issues.
+
+### 🤖 Android Storage & Testing (SAF)
+
+Since Expo SDK 54, Android requires **Storage Access Framework (SAF)** for accessing local directories. This project implements a robust SAF handling logic to ensure seamless file operations.
+
+#### 📁 Testing with Local Files (Android Emulator)
+To verify the file system features on an Android emulator:
+
+1.  **Prepare a Test Directory**:
+    -   Open the **Files** app on the emulator.
+    -   Create a folder in **Documents** (e.g., `MarkExplorerDocs`).
+    -   Inside that folder, create a test file (e.g., `test.md`).
+2.  **Open Folder in Mark Explorer**:
+    -   Tap the **Folder Icon** in the app header.
+    -   When the system picker appears, navigate to `MarkExplorerDocs` and tap **"Use this folder"**.
+    -   Grant the requested permissions.
+3.  **Verification**:
+    -   The app scans the directory and displays `test.md` in the Sidebar.
+    -   Tapping the file loads the content into the Editor/Preview.
+
+#### 🛠 Technical Note for SAF
+-   **URI Scheme**: Native Android uses `content://` URIs. Standard string concatenation for paths is invalid for SAF.
+-   **Implementation**: This project uses `StorageAccessFramework` and `expo-file-system/legacy` to resolve compatibility issues in SDK 54.
+-   **Debug Logs**: Look for `[useFileSystem]` logs in the terminal to see the SAF URI resolution process.
 
 ### Testing Guide
 
