@@ -168,26 +168,47 @@ ${userMsg}`;
             </View>
 
             <View style={{ marginLeft: 12, borderLeftWidth: 1, borderLeftColor: colors.border, paddingLeft: 12 }}>
-              <select
-                value={model}
-                onChange={(e) => onModelChange(e.target.value)}
-                style={{
-                  height: 20,
-                  paddingHorizontal: 4,
-                  borderRadius: 4,
-                  fontSize: '9px',
-                  fontWeight: 'bold',
-                  backgroundColor: isDark ? '#1a1a1a' : '#fff',
-                  color: colors.primary,
-                  border: `1px solid ${colors.border}`,
-                  outline: 'none',
-                  cursor: 'pointer'
-                } as any}
-              >
-                {models.map(m => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
+              {Platform.OS === 'web' ? (
+                <select
+                  value={model}
+                  onChange={(e) => onModelChange(e.target.value)}
+                  style={{
+                    height: 20,
+                    paddingHorizontal: 4,
+                    borderRadius: 4,
+                    fontSize: 9,
+                    fontWeight: 'bold',
+                    backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                    color: colors.primary,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    cursor: 'pointer'
+                  } as any}
+                >
+                  {models.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <Pressable 
+                  onPress={() => {
+                    // Simple cycle through models on native for now
+                    const currentIndex = models.findIndex(m => m.value === model);
+                    const nextIndex = (currentIndex + 1) % models.length;
+                    onModelChange(models[nextIndex].value);
+                  }}
+                  style={{
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 4,
+                    backgroundColor: isDark ? '#333' : '#E5E7EB',
+                  }}
+                >
+                  <Text style={{ fontSize: 9, fontWeight: 'bold', color: colors.primary }}>
+                    {models.find(m => m.value === model)?.label || model}
+                  </Text>
+                </Pressable>
+              )}
             </View>
           </View>
 
@@ -350,18 +371,34 @@ const styles = StyleSheet.create({
   
   archiveHeader: { height: 32, paddingHorizontal: 12, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center', zIndex: 1000 },
   archiveLabel: { fontSize: 10, fontWeight: 'bold', marginRight: 8 },
-  archiveInput: { flex: 1, fontSize: 11, padding: 0, height: '100%', outlineStyle: 'none' } as any,
-  suggestionBox: {
-    position: 'absolute',
-    top: 32,
-    left: 0,
-    right: 0,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 4,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    zIndex: 2000,
-  } as any,
+  archiveInput: Platform.select({
+    web: { flex: 1, fontSize: 11, padding: 0, height: '100%', outlineStyle: 'none' } as any,
+    default: { flex: 1, fontSize: 11, padding: 0, height: '100%' }
+  }),
+  suggestionBox: Platform.select({
+    web: {
+      position: 'absolute',
+      top: 32,
+      left: 0,
+      right: 0,
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingVertical: 4,
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      zIndex: 2000,
+    } as any,
+    default: {
+      position: 'absolute',
+      top: 32,
+      left: 0,
+      right: 0,
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingVertical: 4,
+      zIndex: 2000,
+      elevation: 5,
+    }
+  }),
   suggestionItem: {
     paddingHorizontal: 10,
     paddingVertical: 6,

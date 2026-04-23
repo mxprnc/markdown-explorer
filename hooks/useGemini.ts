@@ -18,6 +18,8 @@ export function useGemini() {
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: googleClientId,
+    androidClientId: googleClientId,
+    iosClientId: googleClientId,
     scopes: [
       'https://www.googleapis.com/auth/generative-language',
       'https://www.googleapis.com/auth/drive.file',

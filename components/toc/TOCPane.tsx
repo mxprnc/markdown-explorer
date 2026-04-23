@@ -22,7 +22,7 @@ export const TOCPane = memo(({ content, width, onTOCClick, responder, activeInde
   const tocList = useMemo(() => extractTOC(content), [content]);
 
   return (
-    <View nativeID="toc-pane" id="toc-pane" accessibilityRole="complementary" style={[styles.paneTOC, { width, borderLeftColor: colors.border, backgroundColor: colors.surface }]}>
+    <View nativeID="toc-pane" id="toc-pane" accessibilityRole={Platform.OS === 'web' ? 'complementary' : 'none'} style={[styles.paneTOC, { width, borderLeftColor: colors.border, backgroundColor: colors.surface }]}>
       {/* Resize Handle for TOC Pane */}
       {Platform.OS === 'web' && (
         <View 

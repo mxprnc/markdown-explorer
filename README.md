@@ -1,96 +1,223 @@
 # Mark Explorer: AI-Powered Markdown Sidekick
 
-Mark Explorer는 로컬 마크다운 파일을 지능적으로 탐색하고, 현대적인 UI에서 실시간으로 편집하며 관리할 수 있는 도구입니다. Tiptap 에디터 기술을 활용하여 직관적인 실시간 마크다운 편집 경험을 제공합니다.
+Mark Explorer is a tool designed to intelligently explore local Markdown files and manage them in real-time within a modern UI. Leveraging Tiptap editor technology, it provides an intuitive live Markdown editing experience.
 
-## ✨ 주요 기능
+## ✨ Key Features
 
-- **Live Markdown Editor**: Tiptap(ProseMirror) 엔진 기반의 반-WYSIWYG 마크다운 편집 환경.
-- **Precision Navigation**: `getBoundingClientRect`와 `coordsAtPos`를 기반으로 한 픽셀 단위 정밀 목차 이동.
-- **Multi-pane Workspace**: 최대 2x2 분할 레이아웃과 탭 드래그 앤 드롭을 지원하는 유연한 작업 공간.
-- **Intelligent TOC**: 코드 블록 내의 주석을 구분하여 실제 의미 있는 헤딩만 추출하는 스마트 목차 시스템.
-- **Offline-First Resource**: IndexedDB 캐싱과 브라우저 Native File System API를 통한 강력한 로컬 파일 관리.
-- **Rich Media**: 수식(KaTeX), 다이어그램(Mermaid), 코드 하이라이팅(Prism) 완벽 지원.
-- **Plugin-based Template System**: `.mark-explorer/templates/` 폴더의 파일을 활용한 동적 변수 치환 및 템플릿 삽입 확장 시스템.
-- **Robust Markdown Processing**: 헤딩 정규화, 링크 이스케이프 복구 등 다양한 렌더링 예외를 처리하는 마크다운 전처리 시스템.
-- **One-click Nextra Export**: 로컬 디렉터리를 설정 마법사를 통해 즉시 Nextra 정적 사이트 프로젝트(ZIP)로 추출. 이미지 경로 자동 치환 및 `_meta.js` 생성을 통한 완벽한 네비게이션 제공.
+- **Live Markdown Editor**: A semi-WYSIWYG Markdown editing environment based on the Tiptap (ProseMirror) engine.
+- **Precision Navigation**: Pixel-perfect Table of Contents (TOC) navigation based on `getBoundingClientRect` and `coordsAtPos`.
+- **Multi-pane Workspace**: A flexible workspace supporting up to 2x2 split layouts and tab drag-and-drop.
+- **Intelligent TOC**: A smart TOC system that distinguishes comments within code blocks to extract only meaningful headings.
+- **Offline-First Resource**: Robust local file management through IndexedDB caching and the browser's Native File System API.
+- **Rich Media**: Full support for formulas (KaTeX), diagrams (Mermaid), and code highlighting (Prism).
+- **Plugin-based Template System**: An extensible system for dynamic variable substitution and template insertion using files in the `.mark-explorer/templates/` folder.
+- **Robust Markdown Processing**: A Markdown preprocessing system that handles various rendering edge cases, such as heading normalization and link escape recovery.
+- **One-click Nextra Export**: Instantly extract local directories into Nextra static site projects (ZIP) via a setup wizard. Provides perfect navigation through automatic image path substitution and `_meta.js` generation.
 
 ## 🛠 Tech Stack
 
-- **Framework**: React Native (Expo SDK 52) / React Native Web
+- **Framework**: React Native (Expo SDK 54) / React Native Web
 - **Editor Engine**: Tiptap (ProseMirror Wrapper)
 - **Markdown Parser**: react-markdown (rehype/remark ecosystem)
 - **Background Computing**: Web Worker (Worker Threads)
 - **Design System**: Vanilla CSS with Design Tokens (`index.css`)
 
-## 🚀 시작하기
+## 🚀 Getting Started
 
-### 개발 환경 구축
+### 0. Prerequisites
+Before you begin, ensure you have the following installed:
+- **Node.js**: LTS version (v20.x or higher)
+- **For Android Development**: [Android Studio](https://developer.android.com/studio) and Android SDK.
+- **For iOS Development**: [Xcode](https://developer.apple.com/xcode/) (macOS only).
+- **For Desktop Development**: No extra tools required (Electron is included in dependencies).
+
+### 1. Installation
 ```bash
-# 의존성 설치
-npm install
+# Clone the repository
+git clone https://github.com/alpha300uk/markdown-explorer.git
+cd markdown-explorer
 
-# 웹 서비스 실행 (localhost:8081)
+# Install dependencies
+npm install
+```
+
+### 2. Running by Platform
+
+#### 🌐 Web Environment
+```bash
+# Run web service (localhost:8081)
 npm run web
 ```
 
-### 테스트 가이드
-
-#### 1. 단위 및 통합 테스트 (Jest)
+#### 💻 Desktop Environment (Electron)
 ```bash
-# 전체 테스트 실행
+# Clean build and run Electron
+rm -rf dist
+npx expo export --platform web
+npm run electron
+```
+
+#### 📱 Mobile Environment (Expo)
+This project uses **Expo SDK 54**. You can run the app on simulators/emulators or physical devices.
+
+*   **Physical Device**: Install the **Expo Go** app ([Android](https://play.google.com/store/apps/details?id=host.exp.exponent) / [iOS](https://apps.apple.com/app/expo-go/id982107779)) and scan the QR code displayed in the terminal.
+*   **Simulator/Emulator**: Ensure you have [Xcode](https://developer.apple.com/xcode/) (iOS) or [Android Studio](https://developer.android.com/studio) (Android) set up.
+
+```bash
+# Run on iOS simulator or device
+# (Tip: If you see version warnings, run 'npx expo install --fix')
+npm run ios
+
+# Run on Android emulator or device
+# (Tip: If you see version warnings, run 'npx expo install --fix')
+# (Note: Requires Android SDK & Emulator setup. See Troubleshooting below if 'adb' error occurs.)
+npm run android
+```
+
+> [!NOTE]
+> **About Expo Execution**:
+> - **Global Install Not Recommended**: You don't need to run `npm install -g expo-cli`. Global installation is deprecated in favor of local versioning.
+> - **Local Dependency**: The `expo` command is already included in `package.json`. Running `npm install` will automatically install the correct version in your `node_modules`.
+> - **Execution Principle**: When you run `npm run android/ios`, it internally executes `node_modules/.bin/expo`. If you want to run expo commands directly from the terminal, use `npx expo <command>`.
+> - **Version Synchronization**: If you see dependency version warnings, `npx expo install --fix` automatically syncs your library versions with the compatible versions required by the current Expo SDK.
+
+> [!TIP]
+> For a step-by-step guide on setting up your environment for Expo, check the **[Expo Environment Setup Guide](https://docs.expo.dev/get-started/set-up-your-environment/)**.
+> For project-specific details, refer to **[deployment.md](./docs/plan/ci-cd/deployment.md)**.
+
+### 📱 For Mobile Development Beginners
+
+If you are new to Android or iOS development, please follow these steps to set up your local environment.
+
+#### 🤖 For Android Newbies (How to create an Emulator)
+If `npm run android` fails because no device is found:
+1. Open **Android Studio**.
+2. Go to **Device Manager** (Tools > Device Manager).
+3. Click **Create Device**, select a phone model (e.g., Pixel 7), and download a System Image (API 34 or 35).
+4. Once created, start the emulator and run `npm run android` again.
+
+#### 🍎 For iOS Newbies (How to setup Simulator)
+If `npm run ios` fails with `No iOS devices available`, it usually means the system tools are not linked:
+
+1. **Install Xcode**: Download it from the Mac App Store.
+2. **Link Command Line Tools**: Run this in your terminal to tell the system where the developer tools are located:
+   ```bash
+   sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+   ```
+   *(This command tells your Mac exactly where the Xcode developer tools are stored so Expo can find the simulators.)*
+3. **Download Simulators**: 
+   - Open **Xcode > Settings**.
+   - Look for **Components** (or **Platforms** in older versions).
+   - Click the **Get** (or download) icon next to the latest **iOS** version.
+4. **Manual Start**: If Expo still can't find the device (showing `No iOS devices available`), open the **Simulator.app** manually via Spotlight (Cmd + Space).
+5. **Run**: Once the iPhone is on the screen and fully booted, run `npm run ios` again.
+   - If you see an **"Operation timed out"** error, just wait for the simulator to reach the home screen and press `i` in the terminal to try again.
+   - Using `npx expo start --ios --localhost` can also help bypass network issues.
+
+### Testing Guide
+
+#### 1. Unit and Integration Tests (Jest)
+```bash
+# Run all tests
 npm test
 
-# 특정 테스트 파일 실행 (예: 마크다운 유틸리티)
+# Run specific test files (e.g., Markdown utilities)
 npm test utils/__tests__/MarkdownUtils.test.ts
 npm test utils/__tests__/FileSystemUtils.test.ts
 
-# 테스트 감시 모드 (변경 시 자동 재실행)
+# Test watch mode (automatically re-run on changes)
 npm test -- --watch
 ```
 
-#### 2. E2E 테스트 (Playwright)
+#### 2. E2E Tests (Playwright)
 ```bash
-# 모든 E2E 테스트 실행
+# Run all E2E tests
 npm run test:e2e
 
-# 특정 컴포넌트 테스트 파일만 실행 (예: TOC 패널)
+# Run only specific component test files (e.g., TOC panel)
 npx playwright test tests/e2e/toc-basic.spec.ts
 
-# 특정 브라우저 엔진에서만 실행 (chromium, firefox, webkit)
+# Run only on a specific browser engine (chromium, firefox, webkit)
 npx playwright test tests/e2e/explorer-basic.spec.ts --project=chromium
 
-# UI 모드로 실행 (테스트 과정을 시각적으로 확인 및 디버깅)
+# Run in UI mode (visually confirm and debug the test process)
 npm run test:e2e:ui
 
-# 마지막 테스트 결과 리포트 보기
+# View the last test result report
 npx playwright show-report
-# (Tip: 포트 충돌 시 npx playwright show-report --port 9324 처럼 다른 포트 지정 가능)
+# (Tip: In case of port conflict, specify another port like npx playwright show-report --port 9324)
 ```
 
-### 테스트 구조
-- `utils/__tests__/`: 유틸리티 함수(FileSystemUtils, MarkdownUtils 등)에 대한 단위 테스트.
-- `hooks/__tests__/`: 커스텀 훅(useFileSystem, useMarkdownWorker 등)의 로직 테스트.
-- `components/**/__tests__/`: 각 UI 컴포넌트의 렌더링 및 인터랙션 테스트.
-- `tests/e2e/`: 전체 서비스 흐름을 검증하는 End-to-End 테스트 (Playwright).
+### Test Structure
+- `utils/__tests__/`: Unit tests for utility functions (FileSystemUtils, MarkdownUtils, etc.).
+- `hooks/__tests__/`: Logic tests for custom hooks (useFileSystem, useMarkdownWorker, etc.).
+- `components/**/__tests__/`: Rendering and interaction tests for each UI component.
+- `tests/e2e/`: End-to-End tests verifying the entire service flow (Playwright).
 
-## 📖 문서 시스템
+## 📖 Documentation System
 
-이 프로젝트는 AI 작업 효율과 개발 일관성을 위해 단계별 명세 시스템을 운영 중입니다.
+This project operates a step-by-step specification system for AI task efficiency and development consistency.
 
-1. **[GEMINI.md](./GEMINI.md)**: 프로젝트의 전체 기획 방향성과 코딩 가이드라인 (AI 메인 허브).
-2. **[Component Specification](./docs/development/specification/components/overview.md)**: 각 핵심 컴포넌트의 동작 방식 및 스크롤 로직 상세 설명.
-3. **[Architecture: Editor Engine](./docs/development/specification/architecture/editor-engine.md)**: Tiptap 및 ProseMirror 채택 배경과 활용 전략.
-4. **[Plan: Nextra Exporter](./docs/plan/exporter/nextra-exporter/PLAN1.md)**: Nextra 프로젝트 추출 시스템의 아키텍처 및 구현 로드맵.
+1. **[GEMINI.md](./GEMINI.md)**: Overall project planning direction and coding guidelines (Main AI Hub).
+2. **[Deployment Plan](./docs/plan/ci-cd/deployment.md)**: Guide for deployment and development environment setup by platform.
+3. **[Component Specification](./docs/development/specification/components/overview.md)**: Detailed explanation of each core component's behavior and scroll logic.
+4. **[Architecture: Editor Engine](./docs/development/specification/architecture/editor-engine.md)**: Background on Tiptap and ProseMirror adoption and utilization strategy.
+5. **[Plan: Nextra Exporter](./docs/plan/exporter/nextra-exporter/PLAN1.md)**: Architecture and implementation roadmap for the Nextra project extraction system.
 
-## ⚠️ 주의 사항 (Troubleshooting)
+## ⚠️ Precautions (Troubleshooting)
 
-### 브라우저 확장 프로그램 충돌
-DeepL, YouTube Summary 등 실시간 페이지 분석 확장 프로그램과 충돌할 수 있습니다. `SecurityError`가 발생하거나 에디터가 느려진다면 **시크릿 모드**에서 실행하거나 `localhost:8081`을 예외 처리해 주십시오.
+### Android Build Issues (SDK & Dependencies)
+If `npm run android` fails with `spawn adb ENOENT` or Android SDK path errors:
+1. **Install Android SDK**: If not already installed, download and install [Android Studio](https://developer.android.com/studio) to obtain the Android SDK. Then, set environment variables in your shell config (`~/.zshrc` or `~/.bash_profile`):
+   ```bash
+   # Android SDK path (Adjust if installed in a custom location)
+   export ANDROID_HOME=$HOME/Library/Android/sdk
+   
+   # Add Android tools to PATH
+   export PATH=$PATH:$ANDROID_HOME/emulator
+   export PATH=$PATH:$ANDROID_HOME/platform-tools
+   ```
+2. **Fix Dependencies**: If you see version mismatch warnings, run:
+   ```bash
+   # Use 'npx' (not 'npm') to run the expo command
+   # Automatically fix version mismatches in package.json
+   npx expo install --fix
+   ```
+3. **Start Emulator**: Ensure an Android emulator is running (via Android Studio Device Manager) or a physical device is connected with USB Debugging enabled before running `npm run android`.
 
-### 알려진 이슈 (Known Issues)
-- **템플릿 단축키 (Mac OS)**: `Option + T` (템플릿 삽입) 단축키가 Mac OS 자판 특성 및 이벤트 전파 간섭으로 인해 특정 상황에서만 작동할 수 있습니다. 대안으로 커맨드 팔레트나 UI 버튼 도입을 검토 중입니다. 상세 내용은 [Issue 문서](./docs/product/errors/open-template---shortcut-error/issue-20260421.md)를 참조하십시오.
-    
+### Expo Command Issues
+If you see `expo: command not found` or similar errors:
+1. **Check Installation**: Ensure you have run `npm install` in the project root.
+2. **Use npx**: Instead of running `expo` directly, use `npx expo`. The project scripts (like `npm run android`) are already configured to use the local version.
+3. **Reinstall Dependencies**: If the issue persists, try resetting your environment:
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+Conflicts may occur with real-time page analysis extensions such as DeepL or YouTube Summary. If a `SecurityError` occurs or the editor slows down, please run in **Incognito Mode** or add an exception for `localhost:8081`.
+
+### Connection/Network Issues (Infinite Loading Spinner)
+If the app stays on the loading spinner forever:
+1. **Force Localhost**: Sometimes Expo's auto-detected IP is unreachable. Restart the server with the `--localhost` flag:
+   ```bash
+   npx expo start --android --localhost
+   # OR
+   npx expo start --ios --localhost
+   ```
+2. **Clear Metro Cache**: If the bundler is stuck, try clearing the cache:
+   ```bash
+   npx expo start -c
+   ```
+
+### Emulator Quits Unexpectedly
+If the emulator closes immediately after starting:
+1. **Wipe Data**: In Android Studio Device Manager, click the three dots (`...`) next to your device and select **Wipe Data**. This fixes most startup crashes.
+2. **Cold Boot**: Select **Cold Boot Now** from the same menu to bypass saved states.
+3. **Check Architecture (Mac M1/M2/M3)**: Ensure you selected an **arm64-v8a** system image. **x86_64** images will not run on Apple Silicon.
+4. **Manual Start**: Try running it directly from Android Studio first. If it works there, `npm run android` will then be able to connect to it.
+- **Template Shortcut (macOS)**: The `Option + T` (Insert Template) shortcut may only work in certain situations due to macOS keyboard characteristics and event propagation interference. Alternatives such as a command palette or UI buttons are being considered. For details, refer to the [Issue Document](./docs/product/errors/open-template---shortcut-error/issue-20260421.md).
+
 ---
 
 > [!TIP]
-> 새로운 AI 세션에서 작업을 시작할 때는 최상단 루트의 `GEMINI.md`를 가장 먼저 읽도록 유도하십시오. 프로젝트의 맥락을 즉시 파악할 수 있습니다.
+> When starting work in a new AI session, encourage reading the `GEMINI.md` at the top root first. It allows for an immediate understanding of the project context.

@@ -9,8 +9,8 @@ export class GeminiPlugin extends Plugin {
 
     // 1. 명령어 등록
     this.app.commands.addCommand({
-      id: 'gemini-ask',
-      name: 'Gemini에게 질문하기',
+      id: 'ask-gemini',
+      name: 'Ask Gemini',
       callback: () => {
         this.app.emit('gemini:open-chat');
       }
@@ -31,7 +31,7 @@ export class GeminiPlugin extends Plugin {
     console.log('[GeminiPlugin] Unloading...');
     
     // 등록된 명령어 및 뷰 제거
-    this.app.commands.removeCommand('gemini-ask');
+    this.app.commands.removeCommand('ask-gemini');
     this.app.workspace.removeSidebarView('gemini-chat-view');
   }
 }

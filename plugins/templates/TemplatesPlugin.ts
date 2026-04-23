@@ -25,7 +25,7 @@ export class TemplatesPlugin extends Plugin {
     // 2. 명령어 등록
     this.app.commands.addCommand({
       id: 'insert-template',
-      name: '템플릿 삽입',
+      name: 'Insert Template',
       callback: () => this.openTemplatePicker()
     });
 

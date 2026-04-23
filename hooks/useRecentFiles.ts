@@ -16,6 +16,8 @@ export function useRecentFiles() {
   const loadRecentFiles = useCallback(async () => {
     try {
       const db = await openDB();
+      if (!db) return;
+
       // Ensure store exists
       if (!db.objectStoreNames.contains(RECENT_STORE)) {
         // This should probably be handled in openDB upgrade, but just in case
@@ -38,6 +40,8 @@ export function useRecentFiles() {
   const addRecentFile = useCallback(async (path: string, name: string) => {
     try {
       const db = await openDB();
+      if (!db) return;
+
       const transaction = db.transaction(RECENT_STORE, 'readwrite');
       const store = transaction.objectStore(RECENT_STORE);
       

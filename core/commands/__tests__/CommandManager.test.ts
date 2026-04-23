@@ -7,20 +7,24 @@ describe('CommandManager', () => {
     manager = new CommandManager();
   });
 
-  test('명령어를 추가하고 실행할 수 있어야 한다', () => {
-    const callback = jest.fn();
-    manager.addCommand({ id: 'test-cmd', name: 'Test', callback });
-
-    manager.executeCommand('test-cmd');
-    expect(callback).toHaveBeenCalledTimes(1);
+  test('should be able to add and execute a command', () => {
+    let executed = false;
+    manager.addCommand({
+      id: 'test-command',
+      name: 'Test Command',
+      callback: () => { executed = true; }
+    });
+    manager.executeCommand('test-command');
+    expect(executed).toBe(true);
   });
 
-  test('명령어를 제거할 수 있어야 한다', () => {
-    const callback = jest.fn();
-    manager.addCommand({ id: 'test-cmd', name: 'Test', callback });
-    manager.removeCommand('test-cmd');
-
-    manager.executeCommand('test-cmd');
-    expect(callback).not.toHaveBeenCalled();
+  test('should be able to remove a command', () => {
+    manager.addCommand({
+      id: 'test-command',
+      name: 'Test Command',
+      callback: () => {}
+    });
+    manager.removeCommand('test-command');
+    expect(manager.getCommands()).toHaveLength(0);
   });
 });

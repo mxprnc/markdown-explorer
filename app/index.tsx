@@ -92,7 +92,7 @@ function MainScreen() {
   
   const { recentFiles, addRecentFile } = useRecentFiles();
 
-  const [editorContent, setEditorContent] = useState('# Markdown Explorer Project\n\n* 실제 작동하는 CodeMirror 기반 에디터입니다.\n* 여기서 타이핑하면 아래 Live Preview 에 반영됩니다.\n\n해봤는데 잘 동작하나요? 😊');
+  const [editorContent, setEditorContent] = useState('# Markdown Explorer Project\n\n* This is a functional CodeMirror-based editor.\n* Typing here will be reflected in the Live Preview below.\n\nDoes it work well? 😊');
   const [activeTab, setActiveTab] = useState<'files' | 'editor'>('files');
   
   // Drag & Drop State
@@ -360,12 +360,17 @@ function MainScreen() {
 
     appInstance.on('templates:show-picker', onShowTemplatePicker);
     appInstance.on('editor:insert-text', onInsertText);
-    window.addEventListener('command:execute', onExecuteCommand);
+    
+    if (Platform.OS === 'web') {
+      window.addEventListener('command:execute', onExecuteCommand);
+    }
 
     return () => {
       appInstance.off('templates:show-picker', onShowTemplatePicker);
       appInstance.off('editor:insert-text', onInsertText);
-      window.removeEventListener('command:execute', onExecuteCommand);
+      if (Platform.OS === 'web') {
+        window.removeEventListener('command:execute', onExecuteCommand);
+      }
     };
   }, [activePane, activeTab]);
 
@@ -457,7 +462,7 @@ function MainScreen() {
         content = await appInstance.vault.read(file);
         if (content) {
             setLocalFiles(prev => ({ ...prev, [file]: content }));
-            if (!isImage) await setFileCache(file, content);
+            if (!isImage && Platform.OS === 'web') await setFileCache(file, content);
         }
       } catch (e) {
         // If image and not in localFiles, we might need a special handle
@@ -704,14 +709,32 @@ function MainScreen() {
   };
 
   const handleDeleteFileSystem = async (item: any) => {
-    if (Platform.OS === 'web' && !window.confirm(`'${item.name}'을(를) 삭제하시겠습니까?`)) return;
+    if (Platform.OS === 'web') {
+      if (!window.confirm(`Are you sure you want to delete '${item.name}'?`)) return;
+    } else {
+      // Native Alert
+      const confirmed = await new Promise(resolve => {
+        Alert.alert('Delete', `Are you sure you want to delete '${item.name}'?`, [
+          { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+          { text: 'Delete', onPress: () => resolve(true), style: 'destructive' }
+        ]);
+      });
+      if (!confirmed) return;
+    }
+    
     const success = await deleteItem(item);
-    if (!success && Platform.OS === 'web') window.alert('삭제 오류가 발생했습니다.');
+    if (!success) {
+      if (Platform.OS === 'web') window.alert('An error occurred during deletion.');
+      else Alert.alert('Error', 'An error occurred during deletion.');
+    }
   };
 
   const handleRenameFileSystem = async () => {
     const success = await renameItem(renamingItem, newName);
-    if (!success && Platform.OS === 'web') window.alert('이름 변경 오류가 발생했습니다.');
+    if (!success) {
+      if (Platform.OS === 'web') window.alert('An error occurred during rename.');
+      else Alert.alert('Error', 'An error occurred during rename.');
+    }
     setRenamingItem(null);
   };
 
@@ -775,10 +798,11 @@ function MainScreen() {
       case 'copyPath':
         await Clipboard.setStringAsync(file);
         if (Platform.OS === 'web') window.alert('Relative path copied');
+        else Alert.alert('Success', 'Relative path copied');
         break;
       case 'reveal':
         if (Platform.OS === 'web') window.alert('Reveal in Finder is only supported in Desktop app.');
-        // If Electron, we would use shell.showItemInFolder(file)
+        else Alert.alert('Info', 'Reveal in Finder is only supported in Desktop app.');
         break;
     }
     setTabContextMenu(null);
@@ -813,7 +837,7 @@ function MainScreen() {
       setSelectedFile2('');
       setOpenedFiles2([]);
     } catch (e: any) {
-      if (e.name !== 'AbortError') Alert.alert('오류', '폴더를 선택하는 중 오류가 발생했습니다.');
+      if (e.name !== 'AbortError') Alert.alert('Error', 'An error occurred while selecting the folder.');
     }
   };
 
@@ -829,7 +853,7 @@ function MainScreen() {
     const success = await handleSaveToDiskInHook(file, content);
     if (success) {
       if (Platform.OS === 'web') {
-        window.alert('성공적으로 저장되었습니다.');
+        window.alert('Successfully saved.');
         // Update IndexedDB cache
         await setFileCache(file, content);
       }
@@ -862,7 +886,7 @@ function MainScreen() {
   return (
     <ErrorBoundary>
       <Pressable 
-        accessibilityRole="main"
+        accessibilityRole={Platform.OS === 'web' ? 'main' : 'none'}
         nativeID="main-container" 
         style={s.container}
         onPress={() => {

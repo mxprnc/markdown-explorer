@@ -7,7 +7,7 @@ describe('TemplatesPlugin Extended', () => {
 
   beforeEach(() => {
     app = new AppInstance();
-    // Vault 및 Workspace 모킹
+    // Mock Vault and Workspace
     app.vault = {
       exists: jest.fn().mockResolvedValue(true),
       createFolder: jest.fn().mockResolvedValue(undefined),
@@ -33,7 +33,7 @@ describe('TemplatesPlugin Extended', () => {
     });
   });
 
-  test('onload 시 사이드바 뷰를 등록해야 한다', async () => {
+  test('should register sidebar view on load', async () => {
     await plugin.onload();
     expect(app.workspace.addSidebarView).toHaveBeenCalledWith(
       'templates-list',
@@ -43,18 +43,18 @@ describe('TemplatesPlugin Extended', () => {
     );
   });
 
-  test('onunload 시 사이드바 뷰를 제거해야 한다', async () => {
+  test('should remove sidebar view on unload', async () => {
     await plugin.onunload();
     expect(app.workspace.removeSidebarView).toHaveBeenCalledWith('templates-list');
   });
 
-  test('deleteTemplate 호출 시 vault:delete-item 이벤트를 발생시켜야 한다', async () => {
+  test('should emit vault:delete-item event when deleteTemplate is called', async () => {
     const emitSpy = jest.spyOn(app, 'emit');
     await plugin.deleteTemplate('test-path.md');
     expect(emitSpy).toHaveBeenCalledWith('vault:delete-item', { path: 'test-path.md' });
   });
 
-  test('insertTemplate 시 변수가 처리된 텍스트가 삽입되어야 한다', async () => {
+  test('should insert processed text when insertTemplate is called', async () => {
     const emitSpy = jest.spyOn(app, 'emit');
     await plugin.insertTemplate('test-path.md');
     expect(app.vault.read).toHaveBeenCalledWith('test-path.md');

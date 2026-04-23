@@ -15,13 +15,19 @@ export class MCPPlugin extends Plugin {
     
     // 초기 서버 연결 예시
     this.addServer('default-server', 'http://localhost:3000');
-
+    // 1. 명령어 등록
     this.app.commands.addCommand({
-      id: 'mcp-list-tools',
-      name: 'MCP 도구 목록 보기',
+      id: 'mcp-tools',
+      name: 'View MCP Tools',
       callback: () => {
         this.app.emit('mcp:show-tools');
       }
+    });
+
+    this.app.commands.addCommand({
+      id: 'open-mcp-settings',
+      name: 'MCP Settings',
+      callback: () => this.app.emit('mcp:open-settings')
     });
   }
 
@@ -33,6 +39,6 @@ export class MCPPlugin extends Plugin {
 
   async onunload() {
     this.clients.clear();
-    this.app.commands.removeCommand('mcp-list-tools');
+    this.app.commands.removeCommand('mcp-tools');
   }
 }

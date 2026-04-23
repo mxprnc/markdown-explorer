@@ -1,52 +1,64 @@
 # Mark Explorer: AI Assistant Dashboard (GEMINI.md)
 
-이 문서는 AI 어시스턴트(Gemini)가 프로젝트의 컨텍스트를 이해하고 가이드라인을 준수하기 위한 메인 허브입니다.
+This document is the main hub for the AI assistant (Gemini) to understand the project context and follow guidelines.
 
 ---
 
-## 🚀 프로젝트 기획 및 방향성
-**상태**: 📝 기획 중
-- **관련 문서**: [where-we-go-v1.md](docs/goals/where-we-go-v1.md)
-- **컴포넌트 명세**: [overview.md](docs/development/specification/components/overview.md)
-- **제품 명세 (Tabs)**: [editor-tab-system.md](docs/product/editor-tab-system.md)
-- **제품 명세 (Explorer)**: [file-explorer-interaction.md](docs/product/file-explorer-interaction.md)
-- **제품 명세 (Split View)**: [split-view.md](docs/product/split-view.md)
-- **제품 명세 (Plugin)**: [plugin-system.md](docs/product/plugin-system.md)
-- **제품 명세 (Template)**: [template-system.md](docs/product/template-system.md)
-- **제품 명세 (AI & MCP)**: [ai-integration.md](docs/product/ai-integration.md)
-- **제품 명세 (Nextra Export)**: [export-to-nextra.md](docs/product/new-feature/export-to-nextra.md)
-- **핵심 목표**: 사용자 친화적인 로컬 마크다운 탐색 및 편집 환경 제공.
+## 🚀 Project Planning and Direction
+**Status**: 📝 Planning
+- **Related Documents**: [where-we-go-v1.md](docs/goals/where-we-go-v1.md), [deployment.md](docs/plan/ci-cd/deployment.md) (Deployment and dev setup per platform)
+- **Component Specification**: [overview.md](docs/development/specification/components/overview.md)
+- **Product Specification (Tabs)**: [editor-tab-system.md](docs/product/editor-tab-system.md)
+- **Product Specification (Explorer)**: [file-explorer-interaction.md](docs/product/file-explorer-interaction.md)
+- **Product Specification (Split View)**: [split-view.md](docs/product/split-view.md)
+- **Product Specification (Plugin)**: [plugin-system.md](docs/product/plugin-system.md)
+- **Product Specification (Template)**: [template-system.md](docs/product/template-system.md)
+- **Product Specification (AI & MCP)**: [ai-integration.md](docs/product/ai-integration.md)
+- **Product Specification (Nextra Export)**: [export-to-nextra.md](docs/product/new-feature/export-to-nextra.md)
+- **Mobile Planning (Device Size)**: [GOAL1.md](docs/plan/mobile/device-size-support/GOAL1.md), [PLAN1.md](docs/plan/mobile/device-size-support/PLAN1.md)
+- **Mobile Planning (System Explorer)**: [GOAL1.md](docs/plan/mobile/system-explorer-support/GOAL1.md), [PLAN1.md](docs/plan/mobile/system-explorer-support/PLAN1.md)
+- **Mobile Planning (Test Support)**: [GOAL1.md](docs/plan/mobile/test-support/GOAL1.md), [PLAN1.md](docs/plan/mobile/test-support/PLAN1.md)
+- **Core Goal**: Provide a user-friendly local markdown exploration and editing environment.
 
-- **Nextra Export 기능 안정화**:
-  - **타입 호환성 해결**: `FileSystemItem`(`kind`)과 `ExportNode` 간의 속성 불일치 해결 및 트래버스 로직 정상화.
-  - **파일 누락 방지**: 내보내기 시 자동 재귀 스캔(`loadDirectoryRecursive`) 로직 추가로 전체 구조 보존.
-  - **호환성 강화**: 한글 파일명 Hex 인코딩(ASCII safe) 적용 및 MDX 컴파일 에러 방지를 위한 기본 포맷(`.md`) 최적화.
-  - **메타데이터 필터링**: 실제 페이지가 아닌 파일들을 `_meta.js`에서 제외하여 Nextra 검증 오류 해결.
-- **알려진 이슈**: [TOC 하이라이트 떨림 현상](docs/product/errors/scroll-bar-and-toc-highlighting/issue-20260422.md) 기록 완료.
+- **iOS/Android UI/UX Optimization**:
+  - **Safe Area Support**: Implement `SafeAreaProvider` to avoid overlaps with the Dynamic Island and Home Indicator.
+  - **Mobile Drawer**: Convert the fixed sidebar to a mobile drawer for small screens.
+  - **Layout Responsiveness**: Disable Split View on iPhone/Android and optimize component density for touch interaction.
 
-## 🎨 디자인 시스템 및 UX 스타일
-**상태**: 🎨 정의 중
-- **관련 문서**: [design-ux-style-v1.md](docs/goals/design-ux-style-v1.md)
-- **스타일 가이드**: 현대적이고 깔끔한 UI, 다크/라이트 모드 지원, 반응형 레이아웃.
+- **Mobile System Explorer**:
+  - **Native Integration**: Bridge Web Directory Picker with Native Document Picker.
+  - **Permission Persistency**: Handle Scoped Storage and recursive file scanning.
 
-## 🛠 Coding Style 가이드
-**상태**: ✅ **기본 가이드라인 수립 완료** (업데이트 중)
-- **관련 문서**: [coding-style.md](docs/rules/coding-style.md)
-- **핵심 원칙**:
-  1. **Modularization & DRY**: 중복 제거 및 모듈화.
-  2. **Testability**: 순수 함수 위주의 테스트 가능한 코드.
-  3. **Wrapper Components**: 공통 UI의 컴포넌트화.
-  4. **Directory Structure**: 도메인/기능 기반 디렉터리 구조.
-  5. **Naming Convention**: React 컴포넌트 및 파일명 `PascalCase` 통일.
-  6. **Separation of Concerns**: UI, 로직(Utils), 상태(Hooks)의 분리.
-  7. **Granularity**: 작고 명확한 책임을 가진 함수 설계.
-  8. **Testing Strategy**: 피라미드 구조 및 사용자 중심 테스트.
-  9. **Constants & Configuration**: 매직 넘버 제거 및 상수화.
-  10. **Styling & Design System**: StyleSheet 활용 및 디자인 토큰화.
-  11. **JSX & Semantic DOM**: 시맨틱 태그 및 효율적인 리스트 렌더링.
-  12. **Async & Error Handling**: 비동기 예외 처리 및 병렬 실행 최적화.
+- **Stabilize Nextra Export**:
+  - **Resolve Type Compatibility**: Fix property mismatches between `FileSystemItem`(`kind`) and `ExportNode` and normalize traverse logic.
+  - **Prevent Missing Files**: Add automatic recursive scanning (`loadDirectoryRecursive`) to preserve the entire structure during export.
+  - **Enhance Compatibility**: Apply Hex encoding (ASCII safe) for Korean filenames and optimize default format (`.md`) to prevent MDX compilation errors.
+  - **Metadata Filtering**: Exclude non-page files from `_meta.js` to resolve Nextra validation errors.
+- **Known Issues**: [TOC Highlight Shaking Issue](docs/product/errors/scroll-bar-and-toc-highlighting/issue-20260422.md) recorded.
+
+## 🎨 Design System and UX Style
+**Status**: 🎨 Defining
+- **Related Documents**: [design-ux-style-v1.md](docs/goals/design-ux-style-v1.md)
+- **Style Guide**: Modern and clean UI, Dark/Light mode support, Responsive layout.
+
+## 🛠 Coding Style Guide
+**Status**: ✅ **Base guidelines established** (Updating)
+- **Related Documents**: [coding-style.md](docs/rules/coding-style.md)
+- **Core Principles**:
+  1. **Modularization & DRY**: Remove duplication and modularize.
+  2. **Testability**: Pure function-based testable code.
+  3. **Wrapper Components**: Componentize common UI.
+  4. **Directory Structure**: Domain/feature-based directory structure.
+  5. **Naming Convention**: Unified `PascalCase` for React components and filenames.
+  6. **Separation of Concerns**: Separate UI, Logic (Utils), and State (Hooks).
+  7. **Granularity**: Design functions with small, clear responsibilities.
+  8. **Testing Strategy**: Pyramid structure and user-centric testing.
+  9. **Constants & Configuration**: Remove magic numbers and use constants.
+  10. **Styling & Design System**: Use StyleSheet and design tokens.
+  11. **JSX & Semantic DOM**: Use semantic tags and efficient list rendering.
+  12. **Async & Error Handling**: Handle async exceptions and optimize parallel execution.
 
 ---
 
 > [!NOTE]
-> 이 문서는 프로젝트의 진행 상황에 따라 주기적으로 업데이트됩니다. AI 어시스턴트는 작업을 시작하기 전 항상 이 문서를 참조하여 최신 가이드라인을 확인해야 합니다.
+> This document is updated periodically based on project progress. The AI assistant should always refer to this document for the latest guidelines before starting work.

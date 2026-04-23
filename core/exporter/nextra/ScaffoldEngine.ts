@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
+import { Platform } from 'react-native';
 import { NextraConfig, FileEntry, ExportNode } from './types';
 import { TemplateProvider } from './TemplateProvider';
 import { SlugService } from './SlugService';
@@ -47,7 +47,19 @@ export class ScaffoldEngine {
    */
   public async exportAsZip(filename: string = 'nextra-export.zip'): Promise<Blob> {
     const content = await this.zip.generateAsync({ type: 'blob' });
-    saveAs(content, filename);
+    
+    if (Platform.OS === 'web') {
+      // Dynamic import to avoid crash on native platforms
+      try {
+        const { saveAs } = await import('file-saver');
+        saveAs(content, filename);
+      } catch (e) {
+        console.error('Failed to load file-saver:', e);
+      }
+    } else {
+      console.warn('ZIP export is only supported on Web/Desktop platforms.');
+    }
+    
     return content;
   }
 

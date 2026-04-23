@@ -49,8 +49,8 @@ describe('Header', () => {
     const pressables = testRenderer.root.findAllByType(Pressable);
     
     // On the current implementation:
-    // Tab 1: '탐색기'
-    // Tab 2: '에디터'
+    // Tab 1: 'Explorer'
+    // Tab 2: 'Editor'
     // Tab 3: 'Theme Toggle'
 
     // Click '에디터' tab (should be the second pressable under tabs section)

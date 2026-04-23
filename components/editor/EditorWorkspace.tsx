@@ -218,13 +218,13 @@ export function EditorWorkspace({
 
   return (
     <View 
-      accessibilityRole="main"
+      accessibilityRole={Platform.OS === 'web' ? 'main' : 'none'}
       style={{ flex: 1, flexDirection: 'row', minHeight: 0, height: '100%' }}>
       {renderPane(1)}
       {isSplitMode && (
         <>
           <View 
-            accessibilityRole="separator"
+            accessibilityRole={Platform.OS === 'web' ? 'separator' : 'none'}
             accessibilityLabel="Resize panes"
             {...middlePaneResponder.panHandlers} 
             style={{ width: 14, marginLeft: -7, marginRight: -7, cursor: 'col-resize', zIndex: 10 } as any} 

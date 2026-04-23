@@ -18,7 +18,7 @@ export const Header = memo(({
 
   return (
     <View 
-      accessibilityRole="header"
+      accessibilityRole={Platform.OS === 'web' ? 'header' : 'none'}
       nativeID="app-header"
       style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
       <View style={styles.headerLeft}>

@@ -19,7 +19,7 @@ export const Footer = memo(({ height, responder, selectedFile, editorContent, on
     <View 
       nativeID="gemini-footer" 
       id="gemini-footer" 
-      accessibilityRole="contentinfo"
+      accessibilityRole={Platform.OS === 'web' ? 'contentinfo' : 'none'}
       style={[styles.footer, { height, borderTopColor: colors.border, backgroundColor: colors.surface }]}
     >
       {/* Resize Handle for Footer */}

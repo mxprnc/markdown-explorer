@@ -98,7 +98,7 @@ export const TabBar = memo(({
 
   return (
     <View 
-      accessibilityRole="tablist"
+      accessibilityRole={Platform.OS === 'web' ? 'tablist' : 'none'}
       style={[styles.tabBar, { borderBottomColor: colors.border }]}
       testID="tab-bar-container"
       {...({
