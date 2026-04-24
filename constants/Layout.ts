@@ -3,7 +3,7 @@ export const LAYOUT = {
   tocWidth: 220,
   middlePaneWidth: 300,
   footerHeight: 250,
-  minPaneWidth: 150,
+  minPaneWidth: 120,
   maxPaneWidth: 800,
   minFooterHeight: 100,
   maxFooterHeight: 800,

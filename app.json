@@ -3,7 +3,7 @@
     "name": "project-markdown-explorer",
     "slug": "project-markdown-explorer",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "projectmarkdownexplorer",
     "userInterfaceStyle": "automatic",

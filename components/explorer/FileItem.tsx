@@ -165,10 +165,11 @@ export function FileItem({
 
 const styles = StyleSheet.create({
   itemContainer: {
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingRight: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 40,
   },
   selectedItem: {
     borderLeftWidth: 3,

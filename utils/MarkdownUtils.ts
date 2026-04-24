@@ -21,9 +21,7 @@ export function extractTOC(content: string): TOCItem[] {
 
   // Regular expression to match headings.
   // Standard Markdown allows up to 3 spaces of indentation.
-  // Group 1: The actual heading levels (###)
-  // Group 2: The heading text
-  const headingRegex = /^ {0,3}(#{1,6})\s+(.*)$/;
+  const headingRegex = /^\s*(#{1,6})\s+(.*)/;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -38,7 +36,7 @@ export function extractTOC(content: string): TOCItem[] {
     const match = line.match(headingRegex);
     if (match) {
       const level = match[1].length;
-      const rawText = match[2];
+      const rawText = match[2].replace(/\r$/, '').trim(); // Remove trailing CR and trim
       
       // Clean up markdown formatting from the text (links, bold, etc.)
       const cleanText = rawText
@@ -56,6 +54,7 @@ export function extractTOC(content: string): TOCItem[] {
     }
   }
   
+  console.log(`[extractTOC] Extracted ${toc.length} items from content of length ${content.length}`);
   return toc;
 }
 

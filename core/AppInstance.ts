@@ -16,6 +16,7 @@ export class AppInstance implements App {
   // 인스턴스 생성을 위해 필요한 외부 주입 (나중에 React 레이어와 연결)
   public vault: Vault = {} as Vault;
   public workspace: Workspace = {} as Workspace;
+  public anims: any = {};
 
   constructor() {
     this.commands = new CommandManager();

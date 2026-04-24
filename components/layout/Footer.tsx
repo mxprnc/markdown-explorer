@@ -1,53 +1,79 @@
 import React, { memo } from 'react';
-import { View, StyleSheet, Platform, Text } from 'react-native';
+import { View, StyleSheet, Platform, Text, Pressable } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import GeminiChat from '@/components/GeminiChat';
 import { useTheme } from '@/contexts/ThemeContext';
+import { decodePath } from '@/utils/TabUtils';
 
 interface FooterProps {
-  height: number;
+  height: any; // Reanimated SharedValue
   responder: any;
   selectedFile: string;
   editorContent: string;
   onSaveChatToFile: (filename: string, content: string) => Promise<boolean>;
   fileList: string[];
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export const Footer = memo(({ height, responder, selectedFile, editorContent, onSaveChatToFile, fileList }: FooterProps) => {
+export const Footer = memo(({ height, responder, selectedFile, editorContent, onSaveChatToFile, fileList, isCollapsed, onToggleCollapse }: FooterProps) => {
   const { colors, fontFamilyCode } = useTheme();
+  
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: height.value,
+  }));
+
   return (
-    <View 
+    <Animated.View 
       nativeID="gemini-footer" 
       id="gemini-footer" 
       accessibilityRole={Platform.OS === 'web' ? 'contentinfo' : 'none'}
-      style={[styles.footer, { height, borderTopColor: colors.border, backgroundColor: colors.surface }]}
+      style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.surface }, animatedStyle]}
     >
       {/* Resize Handle for Footer */}
-      {Platform.OS === 'web' && (
+      {Platform.OS === 'web' && !isCollapsed && (
         <View 
           {...responder.panHandlers} 
           style={styles.resizeHandle}
         />
       )}
       
-      <GeminiChat 
-        currentContent={editorContent} 
-        onSaveChatToFile={onSaveChatToFile}
-        fileList={fileList}
-      />
+      {!isCollapsed && (
+        <View style={{ flex: 1 }}>
+          <GeminiChat 
+            currentContent={editorContent} 
+            onSaveChatToFile={onSaveChatToFile}
+            fileList={fileList}
+          />
+        </View>
+      )}
 
       {/* Path Display Bar */}
       <View style={[styles.footerPath, { backgroundColor: colors.primary }]}>
+        <Pressable 
+          onPress={() => {
+            console.log('[Footer] Toggle button pressed');
+            onToggleCollapse?.();
+          }} 
+          style={styles.toggleBtn}
+        >
+          <Ionicons name={isCollapsed ? "chevron-up" : "chevron-down"} size={14} color="#FFF" />
+        </Pressable>
         <Ionicons name="link-outline" size={12} color="#FFF" style={{ marginRight: 6 }} />
-        <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode }]}>
-          {selectedFile || 'No file selected'}
+        <Text 
+          numberOfLines={1} 
+          ellipsizeMode="middle" 
+          style={[styles.footerPathText, { fontFamily: fontFamilyCode, flex: 1 }]}
+        >
+          {selectedFile ? decodePath(selectedFile) : 'No file selected'}
         </Text>
         <View style={{ marginLeft: 'auto', flexDirection: 'row', gap: 12 }}>
           <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode }]}>UTF-8</Text>
           <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode }]}>Markdown</Text>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 });
 
@@ -67,10 +93,6 @@ const styles = StyleSheet.create({
     zIndex: 100,
   } as any,
   footerPath: {
-    position: 'absolute',
-    bottom: 0, 
-    left: 0, 
-    right: 0,
     height: 24,
     flexDirection: 'row',
     alignItems: 'center',
@@ -81,4 +103,11 @@ const styles = StyleSheet.create({
     fontSize: 11, 
     fontWeight: 'bold',
   },
+  toggleBtn: {
+    paddingHorizontal: 8,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 4,
+  }
 });

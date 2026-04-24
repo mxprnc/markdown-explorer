@@ -80,3 +80,43 @@ export function handleTabSelection(
     newPreviewFile: newPath
   };
 }
+/**
+ * Decodes URI component safely.
+ */
+export function decodePath(path: string): string {
+  try {
+    return decodeURIComponent(path);
+  } catch (e) {
+    return path;
+  }
+}
+
+/**
+ * Gets a display title for a tab, showing parent folder if there are duplicate filenames.
+ */
+export function getTabTitle(targetPath: string, allOpenedFiles: string[]): string {
+  const decodedPath = decodePath(targetPath);
+  const fileName = decodedPath.split('/').pop() || decodedPath;
+  
+  // Check for duplicates in the rest of the opened files
+  const hasDuplicate = allOpenedFiles.some(f => {
+    if (f === targetPath) return false;
+    const d = decodePath(f);
+    const otherFileName = d.split('/').pop() || d;
+    return otherFileName === fileName;
+  });
+  
+  if (!hasDuplicate) {
+    return fileName;
+  }
+  
+  // If duplicates exist, show the parent folder for context (VSCode style)
+  const parts = decodedPath.split('/');
+  if (parts.length > 1) {
+    const parent = parts[parts.length - 2];
+    // If parent is also encoded or long, we might want to clean it, but decoding handled it
+    return `${fileName} • ${parent}`;
+  }
+  
+  return decodedPath;
+}

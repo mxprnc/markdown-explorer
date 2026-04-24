@@ -47,6 +47,9 @@ interface EditorWorkspaceProps {
   onHeadingVisible?: (index: number) => void;
   onOpenDirectory?: () => void;
   selectedFolder: string;
+  onSelectionChange1?: (selection: { start: number, end: number }) => void;
+  onSelectionChange2?: (selection: { start: number, end: number }) => void;
+  forcePaneModes?: { [key: number]: 'files' | 'editor' };
 }
 
 export function EditorWorkspace({
@@ -59,7 +62,9 @@ export function EditorWorkspace({
   previewFile1, previewFile2,
   previewRef1, previewRef2, editorRef1, editorRef2,
   onTabContextMenu, isDark, onDropTab, onHeadingVisible,
-  onOpenDirectory, selectedFolder
+  onOpenDirectory, selectedFolder,
+  onSelectionChange1, onSelectionChange2,
+  forcePaneModes
 }: EditorWorkspaceProps) {
   const { colors, fontFamilyUI } = useTheme();
   const [dragOverPane, setDragOverPane] = React.useState<number | null>(null);
@@ -90,6 +95,7 @@ export function EditorWorkspace({
     const selFile = paneId === 1 ? selectedFile : selectedFile2;
     const content = paneId === 1 ? editorContent : editorContent2;
     const setContent = paneId === 1 ? setEditorContent : setEditorContent2;
+    const paneMode = forcePaneModes?.[paneId] || activeTab;
 
     if (!selFile) {
       return (
@@ -146,7 +152,7 @@ export function EditorWorkspace({
       return <ImageViewer uri={localFiles[selFile]} name={selFile} fontFamilyCode={fontFamilyCode} />;
     }
 
-    if (activeTab === 'files') {
+    if (paneMode === 'files') {
       return (
         <MarkdownPreview 
           ref={paneId === 1 ? previewRef1 : previewRef2}
@@ -169,6 +175,7 @@ export function EditorWorkspace({
         onPasteImage={onPasteImage} 
         onRenameImage={onRenameImage}
         onSave={(val: string) => onSaveFile(val, selFile)}
+        onSelectionChange={paneId === 1 ? onSelectionChange1 : onSelectionChange2}
         isDark={isDark}
         onHeadingVisible={paneId === activePane ? onHeadingVisible : undefined}
       />
@@ -187,12 +194,19 @@ export function EditorWorkspace({
       paneOpenedFiles.push(panePreviewFile);
     }
 
+    const allOpenedFiles = Array.from(new Set([
+      ...openedFiles, 
+      ...openedFiles2, 
+      ...(previewFile1 ? [previewFile1] : []), 
+      ...(previewFile2 ? [previewFile2] : [])
+    ]));
+
     return (
       <View 
         key={`pane-${paneId}`}
         id={`pane-${paneId}`}
         style={[
-          { flex, width: paneWidth, position: 'relative', minHeight: 0, height: '100%' },
+          { flex, width: paneWidth, position: 'relative' },
           styles.pane, 
           { borderRightWidth: isSplitMode && paneId === 1 ? 1 : 0, borderRightColor: colors.border },
           dragOverPane === paneId && { backgroundColor: colors.surface }
@@ -229,6 +243,7 @@ export function EditorWorkspace({
       >
         <TabBar 
           files={paneOpenedFiles} 
+          allFiles={allOpenedFiles}
           previewFile={paneId === 1 ? previewFile1 : previewFile2}
           selectedFile={paneId === 1 ? selectedFile : selectedFile2}
           onSelect={(f) => onSelectFile(f, false, paneId as 1 | 2)}
@@ -240,7 +255,7 @@ export function EditorWorkspace({
           onDropTab={onDropTab}
           isDraggingOver={dragOverPane === paneId}
         />
-        <View style={{ flex: 1, minHeight: 0, height: '100%' }}>
+        <View style={{ flex: 1 }}>
           {renderContent(paneId)}
         </View>
       </View>
@@ -250,7 +265,7 @@ export function EditorWorkspace({
   return (
     <View 
       accessibilityRole={Platform.OS === 'web' ? 'main' : 'none'}
-      style={{ flex: 1, flexDirection: 'row', minHeight: 0, height: '100%' }}>
+      style={{ flex: 1, flexDirection: 'row' }}>
       {renderPane(1)}
       {isSplitMode && (
         <>
@@ -270,8 +285,6 @@ export function EditorWorkspace({
 const styles = StyleSheet.create({
   pane: {
     flex: 1,
-    minHeight: 0,
-    height: '100%',
     overflow: 'hidden',
   },
 });

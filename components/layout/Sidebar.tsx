@@ -1,25 +1,25 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, Text } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { ViewEntry } from '@/core/workspace/ViewRegistry';
-import { App } from '@/core/App';
+import { AppInstance } from '@/core/AppInstance';
+import { ViewEntry } from '@/core/ViewRegistry';
 
 interface SidebarProps {
-  app: App;
-  width: number;
+  app: AppInstance;
+  width: any;
   activeViewId: string;
   setActiveViewId: (id: string) => void;
   registeredViews: ViewEntry[];
-  // File Explorer specific props (passed down to FileExplorer if active)
   renderFileExplorer: () => React.ReactNode;
+  isMobile?: boolean;
 }
 
-export function Sidebar({
-  app, width, activeViewId, setActiveViewId, registeredViews,
-  renderFileExplorer
+export function Sidebar({ 
+  app, width, activeViewId, setActiveViewId, registeredViews, renderFileExplorer, isMobile 
 }: SidebarProps) {
   const { colors, isDark } = useTheme();
+  const iconBarWidth = isMobile ? 44 : 48;
 
   const allSidebarViews = [
     { id: 'files', name: 'Explorer', icon: 'folder-outline' },
@@ -32,9 +32,8 @@ export function Sidebar({
     }
     
     const view = registeredViews.find(v => v.id === activeViewId);
-    if (view && view.component) {
-      const Component = view.component;
-      return <Component app={app} />;
+    if (view) {
+      return app.viewRegistry.renderView(view.id);
     }
     
     return null;
@@ -43,18 +42,21 @@ export function Sidebar({
   return (
     <View style={[styles.container, { width, borderRightColor: colors.border }]}>
       {/* Sidebar Icon Bar (Left) */}
-      <View style={[styles.iconBar, { backgroundColor: colors.background, borderRightColor: colors.border }]}>
+      <View style={[styles.iconBar, { width: iconBarWidth, backgroundColor: colors.background, borderRightColor: colors.border }]}>
         {allSidebarViews.map(view => (
           <Pressable
             key={view.id}
             onPress={() => setActiveViewId(view.id)}
             style={[
               styles.iconBtn,
-              activeViewId === view.id && { borderLeftColor: colors.primary }
+              activeViewId === view.id && { 
+                borderLeftColor: colors.primary,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+              }
             ]}
           >
             <Ionicons 
-              name={view.icon as any} 
+              name={view.id === activeViewId ? (view.icon.replace('-outline', '') as any) : (view.icon as any)} 
               size={24} 
               color={activeViewId === view.id ? colors.primary : colors.textMuted} 
             />
@@ -77,20 +79,20 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
   },
   iconBar: {
-    width: 48,
-    borderRightWidth: 1,
-    alignItems: 'center',
     paddingVertical: 12,
-    gap: 16,
+    alignItems: 'center',
+    borderRightWidth: 1,
   },
   iconBtn: {
     width: '100%',
+    height: 48,
     alignItems: 'center',
-    paddingVertical: 8,
-    borderLeftWidth: 2,
+    justifyContent: 'center',
+    borderLeftWidth: 3,
     borderLeftColor: 'transparent',
+    marginBottom: 8,
   },
   content: {
     flex: 1,
-  },
+  }
 });

@@ -42,8 +42,11 @@ export function FileExplorer({
 }: FileExplorerProps) {
   const { colors, isDark, fontFamilyUI } = useTheme();
   
+  React.useEffect(() => {
+    console.log('[FileExplorer] Rendering with items:', fileSystemData.length);
+  }, [fileSystemData]);
   return (
-    <View nativeID="explorer-pane" id="explorer-pane" style={[styles.paneLeft, { width: leftPaneWidth, backgroundColor: colors.surface, borderRightColor: colors.border }]}>
+    <View nativeID="explorer-pane" id="explorer-pane" style={[styles.paneLeft, { backgroundColor: colors.surface, borderRightColor: colors.border, flex: 1 }]}>
       <View style={[styles.paneHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <Text style={[styles.paneTitle, { color: colors.textMuted }]}>Explorer</Text>
         <Pressable onPress={onOpenDirectory} style={styles.headerBtn}>

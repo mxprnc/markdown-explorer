@@ -1,6 +1,7 @@
 // Updated TOC Logic - 2026-04-20
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Platform, Alert, PanResponder, useWindowDimensions } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Platform, Alert, PanResponder, useWindowDimensions, KeyboardAvoidingView, Modal, TextInput } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system';
@@ -16,6 +17,7 @@ import { makeRedirectUri } from 'expo-auth-session';
 import Editor from '@/components/Editor';
 import GeminiChat from '@/components/GeminiChat';
 import MarkdownPreview from '@/components/preview/MarkdownPreview';
+import { MobileToolbar } from '@/components/editor/MobileToolbar';
 
 import { useGemini } from '@/hooks/useGemini';
 import { usePaneResize } from '@/hooks/usePaneResize';
@@ -49,9 +51,14 @@ import { QuickPicker } from '@/components/ui/QuickPicker';
 const appInstance = new AppInstance();
 
 function MainScreen() {
+  "use no-memo";
   const { themeMode, isDark, toggleTheme, colors, fontFamilyUI, fontFamilyCode } = useTheme();
+  const s = React.useMemo(() => getStyles(colors), [colors]);
   const gemini = useSettings();
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  useEffect(() => {
+    console.log(`[App] Window Dimensions: ${windowWidth}x${windowHeight}`);
+  }, [windowWidth, windowHeight]);
   const isMobile = windowWidth < 768;
   const [isSidebarVisible, setIsSidebarVisible] = useState(!isMobile);
 
@@ -66,6 +73,68 @@ function MainScreen() {
     middlePaneResponder,
     footerResponder,
   } = usePaneResize();
+
+  const sidebarWidth = windowWidth * 0.85;
+  
+  // Reanimated Shared Values
+  const svSidebar = useSharedValue(isSidebarVisible ? 0 : -sidebarWidth);
+  const svTocSidebar = useSharedValue(windowWidth);
+  const svScrim = useSharedValue(isSidebarVisible ? 1 : 0);
+  const svWidth = useSharedValue(isSidebarVisible ? Number(leftPaneWidth) : 0);
+
+  const isMounted = React.useRef(false);
+  React.useEffect(() => {
+    isMounted.current = true;
+    if (isMounted.current) {
+      setSidebarViews(appInstance.views.getSidebarViews());
+    }
+    return () => { isMounted.current = false; };
+  }, []);
+
+  React.useEffect(() => {
+    const targetSidebar = isSidebarVisible ? 0 : -sidebarWidth;
+    const targetScrim = isSidebarVisible ? 1 : 0;
+    const targetWidth = isSidebarVisible ? Number(leftPaneWidth) : 0;
+
+    svSidebar.value = withTiming(targetSidebar, { duration: 250 });
+    svScrim.value = withTiming(targetScrim, { duration: 250 });
+    svWidth.value = withTiming(targetWidth, { duration: 250 });
+  }, [isSidebarVisible, leftPaneWidth, sidebarWidth, windowWidth]);
+
+  const animatedSidebarStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: svSidebar.value }]
+  }));
+
+  const animatedScrimStyle = useAnimatedStyle(() => ({
+    opacity: svScrim.value
+  }));
+
+  const animatedWidthStyle = useAnimatedStyle(() => ({
+    width: svWidth.value
+  }));
+
+  const animatedTocStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: svTocSidebar.value }]
+  }));
+
+  const [isTocVisible, setIsTocVisible] = useState(false);
+  const [isTocPinned, setIsTocPinned] = useState(false);
+  const [isFileManagerVisible, setIsFileManagerVisible] = useState(false);
+  const [newFileName, setNewFileName] = useState('');
+
+  const toggleSidebar = (show: boolean) => {
+    setIsSidebarVisible(show);
+  };
+
+  const toggleToc = (show: boolean) => {
+    if (show) setIsTocVisible(true);
+    svTocSidebar.value = withTiming(show ? windowWidth * 0.2 : windowWidth, { duration: 300 });
+    if (!show) {
+      setTimeout(() => {
+        if (!show) setIsTocVisible(false);
+      }, 300);
+    }
+  };
 
   const {
     dirHandle, setDirHandle,
@@ -118,6 +187,17 @@ function MainScreen() {
   // Pane 2 State
   const [isSplitMode, setIsSplitMode] = useState(false);
   const [activePane, setActivePane] = useState<1 | 2>(1);
+
+  // Sync Pane 2 with Pane 1 in Split Mode for Live Preview
+  useEffect(() => {
+    if (isSplitMode && selectedFile && !selectedFile2) {
+      setSelectedFile2(selectedFile);
+      setEditorContent2(editorContent);
+      if (!openedFiles2.includes(selectedFile)) {
+        setOpenedFiles2([...openedFiles2, selectedFile]);
+      }
+    }
+  }, [isSplitMode, selectedFile]);
   const [editorContent2, setEditorContent2] = useState('');
   
   // Context Menu & Hover State
@@ -149,11 +229,66 @@ function MainScreen() {
   const previewRef2 = useRef(null);
   const editorRef1 = useRef(null);
   const editorRef2 = useRef(null);
+  const [selection1, setSelection1] = useState({ start: 0, end: 0 });
+  const [selection2, setSelection2] = useState({ start: 0, end: 0 });
 
   const { pluginManager } = usePlugins();
   const [templatePicker, setTemplatePicker] = useState<{ visible: boolean, items: any[] }>({ visible: false, items: [] });
   const [activeSidebarViewId, setActiveSidebarViewId] = useState('files');
+  const [isSaving, setIsSaving] = useState(false);
+  const [toast, setToast] = useState<{ visible: boolean, message: string }>({ visible: false, message: '' });
+  const [history, setHistory] = useState<{ content: string, file: string }[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isFooterVisible, setIsFooterVisible] = React.useState(true);
+  const svFooterHeight = useSharedValue(250);
+
+  React.useEffect(() => {
+    console.log(`[App] Animating footer height. Visible: ${isFooterVisible}`);
+    svFooterHeight.value = withSpring(isFooterVisible ? 250 : 24, {
+      damping: 15,
+      stiffness: 100,
+    });
+  }, [isFooterVisible]);
+
+  const toggleFooter = useCallback(() => {
+    console.log(`[App] Toggle Footer from ${isFooterVisible} to ${!isFooterVisible}`);
+    setIsFooterVisible(prev => !prev);
+  }, [isFooterVisible]);
   const [sidebarViews, setSidebarViews] = useState<any[]>([]);
+  const [lastSavedContent, setLastSavedContent] = useState<string>('');
+
+  const stateRefs = useRef({
+    fileSystemData,
+    localFiles,
+    selectedFile,
+    selectedFile2,
+    activePane,
+    activeTab,
+    openedFiles,
+    openedFiles2,
+    previewFile1,
+    previewFile2,
+    editorContent,
+    editorContent2,
+  });
+
+  useEffect(() => {
+    stateRefs.current = {
+      fileSystemData,
+      localFiles,
+      selectedFile,
+      selectedFile2,
+      activePane,
+      activeTab,
+      openedFiles,
+      openedFiles2,
+      previewFile1,
+      previewFile2,
+      editorContent,
+      editorContent2,
+    };
+  }, [fileSystemData, localFiles, selectedFile, selectedFile2, activePane, activeTab, openedFiles, openedFiles2, previewFile1, previewFile2, editorContent, editorContent2]);
+
 
   // ViewRegistry 변화 감지 (등록된 사이드바 뷰 목록 동기화)
   useEffect(() => {
@@ -161,17 +296,15 @@ function MainScreen() {
       setSidebarViews(appInstance.views.getSidebarViews());
     };
     updateViews();
-    // registerView 시점에 이벤트를 발생시키도록 core를 수정하거나, 
-    // 여기서는 간단히 setInterval로 체크하거나 plugin 로드 후 직접 호출할 수도 있지만
-    // 일단 registerView 시점에 로깅만 하니, pluginManager 로드 후 한번 더 업데이트하도록 합니다.
     const timer = setInterval(updateViews, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    // Vault implementation
+  // Stable Vault/Workspace for Plugins
+  React.useLayoutEffect(() => {
     const vault = {
       read: async (path: string) => {
+        const { localFiles, fileSystemData, dirHandle } = stateRefs.current;
         if (localFiles[path]) return localFiles[path];
         const findHandleRec = (items: any[], p: string): any => {
           for (const item of items) {
@@ -184,23 +317,20 @@ function MainScreen() {
           return null;
         };
         let handle = findHandleRec(fileSystemData, path);
-        
-        // Fallback: Try to find handle directly via dirHandle
         if (!handle && dirHandle) {
           try {
             const parts = path.split('/').filter(Boolean);
             let current = dirHandle;
             for (let i = 0; i < parts.length - 1; i++) {
-              current = await current.getDirectoryHandle(parts[i]);
+              current = await (current as any).getDirectoryHandle(parts[i]);
             }
-            handle = await current.getFileHandle(parts[parts.length - 1]);
+            handle = await (current as any).getFileHandle(parts[parts.length - 1]);
           } catch (e) {}
         }
-
         if (handle) {
           try {
             if (Platform.OS === 'web') {
-              const f = await handle.getFile();
+              const f = await (handle as any).getFile();
               return await f.text();
             } else {
               return await readAsStringAsync(handle);
@@ -209,6 +339,7 @@ function MainScreen() {
         }
       },
       readBinary: async (path: string) => {
+        const { fileSystemData } = stateRefs.current;
         const findHandleRec = (items: any[], p: string): any => {
           for (const item of items) {
             if (item.path === p) return item.handle;
@@ -222,7 +353,7 @@ function MainScreen() {
         let handle = findHandleRec(fileSystemData, path);
         if (handle) {
           try {
-            const f = await handle.getFile();
+            const f = await (handle as any).getFile();
             const buffer = await f.arrayBuffer();
             return new Uint8Array(buffer);
           } catch (e) {}
@@ -234,6 +365,7 @@ function MainScreen() {
         appInstance.emit('vault:changed');
       },
       exists: async (path: string) => {
+        const { fileSystemData, dirHandle } = stateRefs.current;
         const findItemRec = (items: any[], p: string): boolean => {
           for (const item of items) {
             if (item.path === p) return true;
@@ -242,22 +374,21 @@ function MainScreen() {
           return false;
         };
         if (findItemRec(fileSystemData, path)) return true;
-        
-        // Fallback: Check disk directly
         if (dirHandle) {
           try {
             const parts = path.split('/').filter(Boolean);
             let current = dirHandle;
             for (let i = 0; i < parts.length - 1; i++) {
-              current = await current.getDirectoryHandle(parts[i]);
+              current = await (current as any).getDirectoryHandle(parts[i]);
             }
-            await current.getFileHandle(parts[parts.length - 1]);
+            await (current as any).getFileHandle(parts[parts.length - 1]);
             return true;
           } catch (e) {}
         }
         return false;
       },
       delete: async (path: string) => {
+        const { fileSystemData } = stateRefs.current;
         const findItem = (items: any[], p: string): any => {
           for (const item of items) {
             if (item.path === p) return item;
@@ -277,6 +408,7 @@ function MainScreen() {
         return false;
       },
       getAllFiles: () => {
+        const { fileSystemData } = stateRefs.current;
         const list: string[] = [];
         const collect = (items: any[]) => {
           for (const it of items) {
@@ -288,6 +420,7 @@ function MainScreen() {
         return list;
       },
       listFiles: async (path: string) => {
+        const { fileSystemData } = stateRefs.current;
         const findItems = (items: any[], p: string): any[] | null => {
           if (p === '' || p === '.') return items;
           const parts = p.split('/');
@@ -316,9 +449,8 @@ function MainScreen() {
       }
     };
 
-    // Workspace implementation
     const workspace = {
-      getActiveFile: () => activePane === 1 ? selectedFile : selectedFile2,
+      getActiveFile: () => stateRefs.current.activePane === 1 ? stateRefs.current.selectedFile : stateRefs.current.selectedFile2,
       openFile: async (path: string, options?: { leaf?: 'left' | 'right' | 'main' }) => {
         const pane = options?.leaf === 'right' ? 2 : 1;
         await handleSelectFile(path, false, pane as 1 | 2);
@@ -326,17 +458,26 @@ function MainScreen() {
       addSidebarView: (id: string, name: string, icon: string, component: any) => {
         appInstance.views.registerView({ id, name, icon, component });
         appInstance.views.addToSidebar(id);
-        setSidebarViews(appInstance.views.getSidebarViews());
+        // Delay to avoid "state update on unmounted component"
+        setTimeout(() => {
+          if (isMounted.current) {
+            setSidebarViews(appInstance.views.getSidebarViews());
+          }
+        }, 0);
       },
       removeSidebarView: (id: string) => {
         appInstance.views.removeFromSidebar(id);
-        setSidebarViews(appInstance.views.getSidebarViews());
+        setTimeout(() => {
+          if (isMounted.current) {
+            setSidebarViews(appInstance.views.getSidebarViews());
+          }
+        }, 0);
       }
     };
 
     appInstance.setVault(vault);
     appInstance.setWorkspace(workspace);
-  }, [fileSystemData, localFiles, selectedFile, selectedFile2, activePane]);
+  }, []);
 
   useEffect(() => {
     const onShowTemplatePicker = (templates: string[]) => {
@@ -556,6 +697,10 @@ function MainScreen() {
     
     // Reset active heading when switching files
     setActiveHeadingIndex(-1);
+
+    // Reset history for the new file
+    setHistory([]);
+    setHistoryIndex(-1);
   };
 
   const handleDropTab = (fileFromDrop: string, _sourcePane: 1 | 2, targetPane: 1 | 2, targetIndex: number) => {
@@ -864,7 +1009,7 @@ function MainScreen() {
       
       // On mobile, automatically show the sidebar so the user can see the file list
       if (isMobile) {
-        setIsSidebarVisible(true);
+        toggleSidebar(true);
       }
 
       // Auto-open first markdown file if exists
@@ -880,6 +1025,7 @@ function MainScreen() {
         setLocalFiles({ [firstMd.path]: text });
         setSelectedFile(firstMd.path);
         setEditorContent(text);
+        setLastSavedContent(text); // Initialize last saved content
         setOpenedFiles([firstMd.path]);
       } else {
         setSelectedFile('');
@@ -900,6 +1046,35 @@ function MainScreen() {
     }
   };
 
+  const handleRenameFile = async () => {
+    if (!selectedFile || !newFileName || newFileName === selectedFile.split('/').pop()) {
+      setIsFileManagerVisible(false);
+      return;
+    }
+    
+    try {
+      const parts = selectedFile.split('/');
+      parts[parts.length - 1] = newFileName.endsWith('.md') ? newFileName : `${newFileName}.md`;
+      const newPath = parts.join('/');
+      
+      // In a real app, we would use appInstance.vault.rename
+      // For now, let's simulate by updating states
+      setLocalFiles(prev => {
+        const next = { ...prev };
+        next[newPath] = next[selectedFile];
+        delete next[selectedFile];
+        return next;
+      });
+      
+      setOpenedFiles(prev => prev.map(f => f === selectedFile ? newPath : f));
+      setSelectedFile(newPath);
+      setIsFileManagerVisible(false);
+      Alert.alert("Success", "File renamed successfully");
+    } catch (e) {
+      Alert.alert("Error", "Failed to rename file");
+    }
+  };
+
   const handlePasteImage = async (file: File) => {
     return await pasteImage(file, activePane === 1 ? selectedFile : selectedFile2);
   };
@@ -908,22 +1083,141 @@ function MainScreen() {
     return await handleRenameImageInHook(old, name, activePane === 1 ? selectedFile : selectedFile2);
   };
 
-  const handleSaveToDisk = async (content: string, file: string) => {
-    const success = await handleSaveToDiskInHook(file, content);
-    if (success) {
-      if (Platform.OS === 'web') {
-        window.alert('Successfully saved.');
-        // Update IndexedDB cache
-        await setFileCache(file, content);
-      }
-    }
-    return success;
+  // Undo/Redo Handlers
+  const addToHistory = (content: string, file: string) => {
+    setHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      // Avoid duplicate states
+      if (newHistory.length > 0 && newHistory[newHistory.length - 1].content === content) return prev;
+      
+      const updated = [...newHistory, { content, file }];
+      // Keep last 50 states
+      if (updated.length > 50) updated.shift();
+      setHistoryIndex(updated.length - 1);
+      return updated;
+    });
   };
 
-  const s = StyleSheet.create({
-    container: { flex: 1, height: Platform.OS === 'web' ? '100vh' : '100%', backgroundColor: colors.background, flexDirection: 'column', overflow: 'hidden' },
-    body: { flex: 1, flexDirection: 'row', minHeight: 0 },
-  });
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const prevState = history[historyIndex - 1];
+      if (prevState.file === selectedFile) {
+        setEditorContent(prevState.content);
+        setHistoryIndex(historyIndex - 1);
+      }
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextState = history[historyIndex + 1];
+      if (nextState.file === selectedFile) {
+        setEditorContent(nextState.content);
+        setHistoryIndex(historyIndex + 1);
+      }
+    }
+  };
+
+  // Track content changes for history
+  useEffect(() => {
+    if (!selectedFile || /\.(png|jpe?g|gif|webp)$/i.test(selectedFile)) return;
+    
+    const timer = setTimeout(() => {
+      addToHistory(editorContent, selectedFile);
+    }, 500); // 500ms debounce for history recording
+    
+    return () => clearTimeout(timer);
+  }, [editorContent, selectedFile]);
+
+  const handleToolbarAction = (action: string) => {
+    if (action === 'undo') return handleUndo();
+    if (action === 'redo') return handleRedo();
+
+    const pane = activePane;
+    const content = pane === 1 ? editorContent : editorContent2;
+    const setContent = pane === 1 ? setEditorContent : setEditorContent2;
+    const selection = pane === 1 ? selection1 : selection2;
+    
+    const start = selection.start;
+    const end = selection.end;
+    const selectedText = content.substring(start, end);
+    
+    let replacement = '';
+    switch(action) {
+      case 'bold': replacement = `**${selectedText}**`; break;
+      case 'italic': replacement = `*${selectedText}*`; break;
+      case 'code': replacement = `\`${selectedText}\``; break;
+      case 'h1': replacement = `\n# ${selectedText}`; break;
+      case 'h2': replacement = `\n## ${selectedText}`; break;
+      case 'list': replacement = `\n- ${selectedText}`; break;
+      case 'checkbox': replacement = `\n- [ ] ${selectedText}`; break;
+      case 'quote': replacement = `\n> ${selectedText}`; break;
+      case 'link': replacement = `[${selectedText}](url)`; break;
+      default: return;
+    }
+    
+    const newContent = content.substring(0, start) + replacement + content.substring(end);
+    setContent(newContent);
+  };
+
+  const handleSaveToDisk = async (content: string, file: string, silent = false) => {
+    setIsSaving(true);
+    try {
+      const success = await handleSaveToDiskInHook(file, content);
+      if (success) {
+        if (!silent) {
+          if (Platform.OS === 'web') {
+            window.alert('Successfully saved.');
+          } else {
+            showToast('Saved');
+          }
+        } else {
+          showToast('Auto-saved');
+        }
+        
+        // Update IndexedDB cache
+        if (Platform.OS === 'web') {
+          await setFileCache(file, content);
+        }
+        setLastSavedContent(content); // Update last saved content after success
+      }
+      return success;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const showToast = (message: string) => {
+    setToast({ visible: true, message });
+    // Duration 2s
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, visible: false }));
+    }, 2000);
+  };
+
+  // Auto-save logic
+  useEffect(() => {
+    if (activeTab !== 'editor' || !selectedFile || /\.(png|jpe?g|gif|webp)$/i.test(selectedFile)) return;
+    
+    // Only trigger if content actually changed from the last known saved state
+    if (editorContent === lastSavedContent) return;
+
+    const timer = setTimeout(() => {
+      handleSaveToDisk(editorContent, selectedFile, true);
+    }, 2000); // 2 second debounce for auto-save
+    
+    return () => clearTimeout(timer);
+  }, [editorContent, selectedFile, lastSavedContent]);
+
+  useEffect(() => {
+    if (!selectedFile2 || /\.(png|jpe?g|gif|webp)$/i.test(selectedFile2)) return;
+    
+    const timer = setTimeout(() => {
+      handleSaveToDisk(editorContent2, selectedFile2, true);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, [editorContent2, selectedFile2]);
 
   const handleTOCClick = (text: string, index: number) => {
     setActiveHeadingIndex(index);
@@ -970,138 +1264,323 @@ function MainScreen() {
           isSplitMode={isSplitMode}
           onSplitToggle={() => setIsSplitMode(!isSplitMode)}
           isMobile={isMobile}
-          onMenuPress={() => setIsSidebarVisible(!isSidebarVisible)}
+          isSidebarOpen={isSidebarVisible}
+          onMenuPress={() => {
+            // Hamburger menu always toggles File Explorer
+            toggleSidebar(!isSidebarVisible);
+          }}
+          isTocOpen={isTocVisible || isTocPinned}
+          onTocPress={() => {
+            if (isMobile) {
+              toggleToc(!isTocVisible);
+            } else {
+              setIsTocPinned(!isTocPinned);
+            }
+          }}
           onOpenDirectory={handleOpenDirectory}
+          onSave={() => handleSaveToDisk(activePane === 1 ? editorContent : editorContent2, activePane === 1 ? selectedFile : selectedFile2)}
+          isSaving={isSaving}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={historyIndex > 0}
+          canRedo={historyIndex < history.length - 1}
+          activeFile={activePane === 1 ? selectedFile : selectedFile2}
+          onFileTitlePress={() => {
+            if (selectedFile) {
+              const decoded = decodeURIComponent(selectedFile);
+              const name = decoded.split('/').pop() || '';
+              setNewFileName(name);
+              setIsFileManagerVisible(true);
+            }
+          }}
+          isGeminiOpen={isFooterVisible}
+          onGeminiPress={toggleFooter}
         />
 
         {/* BODY */}
-        <View style={s.body}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={s.body}
+        >
+          {/* Sidebar (Overlay on mobile, Static on desktop) */}
           {isSidebarVisible && (
-            <View style={isMobile ? {
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              bottom: 0,
-              zIndex: 1000,
-              width: windowWidth * 0.7,
-              backgroundColor: colors.background + 'EE', // Semi-transparent
-              borderRightWidth: 1,
-              borderRightColor: colors.border,
-              shadowColor: '#000',
-              shadowOffset: { width: 4, height: 0 },
-              shadowOpacity: 0.3,
-              shadowRadius: 10,
-              elevation: 10,
-            } : { width: leftPaneWidth }}>
+            <Animated.View 
+              style={[
+                isMobile ? {
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  width: sidebarWidth,
+                  zIndex: 2000,
+                  backgroundColor: colors.background,
+                  borderRightWidth: 1,
+                  borderRightColor: colors.border,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 4, height: 0 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 10,
+                  elevation: 10,
+                } : {
+                  height: '100%',
+                  backgroundColor: colors.background,
+                  borderRightWidth: 1,
+                  borderRightColor: colors.border,
+                  overflow: 'hidden'
+                },
+                isMobile ? animatedSidebarStyle : animatedWidthStyle
+              ]}
+            >
               <Sidebar
                 app={appInstance}
-                width={isMobile ? windowWidth * 0.7 : leftPaneWidth}
+                isMobile={isMobile}
+                width={isMobile ? sidebarWidth : leftPaneWidth}
                 activeViewId={activeSidebarViewId}
                 setActiveViewId={setActiveSidebarViewId}
                 registeredViews={sidebarViews}
                 renderFileExplorer={() => (
                   <FileExplorer 
-                    leftPaneWidth={(isMobile ? windowWidth * 0.7 : leftPaneWidth) - 48}
-                  leftPaneResponder={{ panHandlers: {} }} 
-                  fileSystemData={fileSystemData}
-                selectedFile={selectedFile}
-                selectedFile2={selectedFile2}
-                expandedFolders={expandedFolders}
-                hoveredItemPath={hoveredItemPath}
-                onSelect={handleSelectFile}
-                onToggle={toggleFolder}
-                onMouseEnter={setHoveredItemPath}
-                onMouseLeave={() => setHoveredItemPath(null)}
-                onOpenDirectory={handleOpenDirectory}
-                contextMenu={contextMenu}
-                setContextMenu={setContextMenu}
-                onDelete={handleDeleteFileSystem}
-                onRenameRequest={(item) => { setRenamingItem(item); setNewName(item.name); }}
-                onCreateRequest={(parentPath, kind) => setCreatingItem({ parentPath, kind })}
-                creatingItem={creatingItem}
-                creationName={creationName}
-                setCreationName={setCreationName}
-                onConfirmCreation={handleConfirmCreation}
-                onCancelCreation={() => setCreatingItem(null)}
-                setDraggingTab={setDraggingTab}
-                onExportToNextra={async (item) => {
-                  if (item.kind === 'directory') {
-                    await loadDirectoryRecursive(item.path);
-                  }
-                  setNextraExportTarget(item);
-                  setNextraExportModalVisible(true);
-                }}
+                    leftPaneWidth={(isMobile ? sidebarWidth : leftPaneWidth) - 48}
+                    leftPaneResponder={{ panHandlers: {} }} 
+                    fileSystemData={fileSystemData}
+                    selectedFile={selectedFile}
+                    selectedFile2={selectedFile2}
+                    expandedFolders={expandedFolders}
+                    hoveredItemPath={hoveredItemPath}
+                    onSelect={(file, preview, pane) => {
+                      handleSelectFile(file, preview, pane);
+                      if (isMobile) toggleSidebar(false);
+                    }}
+                    onToggle={toggleFolder}
+                    onMouseEnter={setHoveredItemPath}
+                    onMouseLeave={() => setHoveredItemPath(null)}
+                    onOpenDirectory={handleOpenDirectory}
+                    contextMenu={contextMenu}
+                    setContextMenu={setContextMenu}
+                    onDelete={handleDeleteFileSystem}
+                    onRenameRequest={(item) => { setRenamingItem(item); setNewName(item.name); }}
+                    onCreateRequest={(parentPath, kind) => setCreatingItem({ parentPath, kind })}
+                    creatingItem={creatingItem}
+                    creationName={creationName}
+                    setCreationName={setCreationName}
+                    onConfirmCreation={handleConfirmCreation}
+                    onCancelCreation={() => setCreatingItem(null)}
+                    setDraggingTab={setDraggingTab}
+                    onExportToNextra={async (item) => {
+                      if (item.kind === 'directory') {
+                        await loadDirectoryRecursive(item.path);
+                      }
+                      setNextraExportTarget(item);
+                      setNextraExportModalVisible(true);
+                    }}
+                  />
+                )}
               />
-            )}
-          />
-          </View>
+            </Animated.View>
           )}
 
-          {/* Resizing Area */}
-          <View 
-            {...leftPaneResponder.panHandlers} 
-            style={{ width: 14, marginLeft: -7, marginRight: -7, cursor: 'col-resize', zIndex: 10 } as any}
-          />
+          {/* Main Content Area (Workspace + Pinned TOC + Toolbar) */}
+          <View style={{ flex: 1, flexDirection: 'column' }}>
+            <View style={{ flex: 1, flexDirection: 'row' }}>
+              <EditorWorkspace 
+                activeTab={activeTab}
+                isSplitMode={isSplitMode}
+                middlePaneWidth={isMobile && isTocPinned ? windowWidth * 0.6 : middlePaneWidth}
+                activePane={activePane}
+                setActivePane={setActivePane}
+                openedFiles={openedFiles}
+                openedFiles2={openedFiles2}
+                previewFile1={previewFile1}
+                previewFile2={previewFile2}
+                selectedFile={selectedFile}
+                selectedFile2={selectedFile2}
+                editorContent={editorContent || ''}
+                editorContent2={editorContent2 || ''}
+                setEditorContent={(val) => {
+                  setEditorContent(val);
+                  if (selectedFile2 === selectedFile) {
+                    setEditorContent2(val);
+                  }
+                  if (previewFile1 === selectedFile) {
+                    const { newOpenedFiles, newPreviewFile } = pinTab(openedFiles, previewFile1);
+                    setOpenedFiles(newOpenedFiles);
+                    setPreviewFile1(newPreviewFile);
+                  }
+                }}
+                setEditorContent2={(val) => {
+                  setEditorContent2(val);
+                  if (selectedFile === selectedFile2) {
+                    setEditorContent(val);
+                  }
+                  if (previewFile2 === selectedFile2) {
+                    const { newOpenedFiles, newPreviewFile } = pinTab(openedFiles2, previewFile2);
+                    setOpenedFiles2(newOpenedFiles);
+                    setPreviewFile2(newPreviewFile);
+                  }
+                }}
+                localFiles={localFiles}
+                onSelectFile={handleSelectFile}
+                onCloseTab={closeTab}
+                onPinTab={pinTabHandler}
+                onSaveFile={handleSaveToDisk}
+                resolveImage={resolveImage}
+                onPasteImage={handlePasteImage}
+                onRenameImage={handleRenameImage}
+                draggingTab={draggingTab}
+                setDraggingTab={setDraggingTab}
+                middlePaneResponder={middlePaneResponder}
+                fontFamilyCode={fontFamilyCode}
+                previewRef1={previewRef1}
+                previewRef2={previewRef2}
+                editorRef1={editorRef1}
+                editorRef2={editorRef2}
+                isDark={isDark}
+                onTabContextMenu={handleTabContextMenu}
+                onDropTab={handleDropTab}
+                onHeadingVisible={setActiveHeadingIndex}
+                onOpenDirectory={handleOpenDirectory}
+                selectedFolder={selectedFolder}
+                onSelectionChange1={setSelection1}
+                onSelectionChange2={setSelection2}
+                forcePaneModes={isSplitMode ? { 1: 'editor', 2: 'files' } : undefined}
+              />
 
-          <EditorWorkspace 
-            activeTab={activeTab}
-            isSplitMode={isSplitMode}
-            middlePaneWidth={middlePaneWidth}
-            activePane={activePane}
-            setActivePane={setActivePane}
-            openedFiles={openedFiles}
-            openedFiles2={openedFiles2}
-            previewFile1={previewFile1}
-            previewFile2={previewFile2}
-            selectedFile={selectedFile}
-            selectedFile2={selectedFile2}
-            editorContent={editorContent}
-            editorContent2={editorContent2}
-            setEditorContent={(val) => {
-               setEditorContent(val);
-               if (previewFile1 === selectedFile) {
-                  const { newOpenedFiles, newPreviewFile } = pinTab(openedFiles, previewFile1);
-                  setOpenedFiles(newOpenedFiles);
-                  setPreviewFile1(newPreviewFile);
-               }
-            }}
-            setEditorContent2={(val) => {
-               setEditorContent2(val);
-               if (previewFile2 === selectedFile2) {
-                  const { newOpenedFiles, newPreviewFile } = pinTab(openedFiles2, previewFile2);
-                  setOpenedFiles2(newOpenedFiles);
-                  setPreviewFile2(newPreviewFile);
-               }
-            }}
-            localFiles={localFiles}
-            onSelectFile={handleSelectFile}
-            onCloseTab={closeTab}
-            onPinTab={pinTabHandler}
-            onSaveFile={handleSaveToDisk}
-            resolveImage={resolveImage}
-            onPasteImage={handlePasteImage}
-            onRenameImage={handleRenameImage}
-            draggingTab={draggingTab}
-            setDraggingTab={setDraggingTab}
-            middlePaneResponder={middlePaneResponder}
-            fontFamilyCode={fontFamilyCode}
-            previewRef1={previewRef1}
-            previewRef2={previewRef2}
-            editorRef1={editorRef1}
-            editorRef2={editorRef2}
-            isDark={isDark}
-            onTabContextMenu={handleTabContextMenu}
-            onDropTab={handleDropTab}
-            onHeadingVisible={setActiveHeadingIndex}
-            onOpenDirectory={handleOpenDirectory}
-            selectedFolder={selectedFolder}
-          />
+              {/* Pinned TOC for Mobile */}
+              {isMobile && isTocPinned && ((activePane === 1 ? selectedFile : selectedFile2) && !/\.(png|jpe?g|gif|webp)$/i.test(activePane === 1 ? selectedFile : selectedFile2)) && (
+                <View style={{ width: windowWidth * 0.4, borderLeftWidth: 1, borderLeftColor: colors.border, backgroundColor: colors.surface }}>
+                  <View style={{ paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 11 }}>TOC</Text>
+                    <Pressable onPress={() => setIsTocPinned(false)}>
+                      <Ionicons name="pin" size={16} color={colors.primary} />
+                    </Pressable>
+                  </View>
+                  <TOCPane 
+                    content={activePane === 1 ? deferredContent : deferredContent2} 
+                    width={windowWidth * 0.4} 
+                    onTOCClick={handleTOCClick}
+                    activeIndex={activeHeadingIndex}
+                    responder={{ panHandlers: {} }}
+                  />
+                </View>
+              )}
 
+              {/* Desktop TOC Fixed */}
+              {!isMobile && isTocPinned && ((activePane === 1 ? selectedFile : selectedFile2) && !/\.(png|jpe?g|gif|webp)$/i.test(activePane === 1 ? selectedFile : selectedFile2)) && (
+                <>
+                  {/* Resize Handle (Standalone) */}
+                  <View 
+                    {...tocPaneResponder.panHandlers}
+                    style={{
+                      width: 10,
+                      height: '100%',
+                      backgroundColor: isResizing ? colors.primary + '44' : 'transparent',
+                      zIndex: 1000,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                    hitSlop={{ left: 20, right: 20 }}
+                    testID="toc-resize-handle-standalone"
+                  >
+                    <View style={{ width: 1, height: '100%', backgroundColor: colors.border, opacity: 0.3 }} />
+                  </View>
+                  
+                  <TOCPane 
+                    content={activePane === 1 ? deferredContent : deferredContent2} 
+                    width={tocPaneWidth} 
+                    onTOCClick={handleTOCClick} 
+                    responder={{ panHandlers: {} }} // No longer needed inside
+                    activeIndex={activeHeadingIndex}
+                    isPinned={true}
+                    onTogglePin={() => setIsTocPinned(false)}
+                    onClose={() => {
+                      setIsTocPinned(false);
+                      setIsTocVisible(false);
+                    }}
+                    isResizing={isResizing}
+                  />
+                </>
+              )}
+            </View>
+
+            {/* Mobile Toolbar */}
+            {isMobile && activeTab === 'editor' && (selectedFile || selectedFile2) && (
+              <MobileToolbar 
+                onAction={handleToolbarAction} 
+                canUndo={historyIndex > 0}
+                canRedo={historyIndex < history.length - 1}
+              />
+            )}
+          </View>
+
+          {/* MOBILE SIDEBAR SCRIM */}
+          {isMobile && isSidebarVisible && (
+            <Animated.View 
+              style={[
+                {
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  zIndex: 100,
+                }, 
+                animatedScrimStyle
+              ]}
+            >
+              <Pressable style={{ flex: 1 }} onPress={() => setIsSidebarVisible(false)} />
+            </Animated.View>
+          )}
+
+          {/* TOC Overlay (Floating mode) */}
+          {isTocVisible && !isTocPinned && ((activePane === 1 ? selectedFile : selectedFile2) && !/\.(png|jpe?g|gif|webp)$/i.test(activePane === 1 ? selectedFile : selectedFile2)) && (
+            <View style={[StyleSheet.absoluteFill, { zIndex: 3000 }]} pointerEvents="box-none">
+              {!isMobile && (
+                <Pressable 
+                  style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.1)' }]} 
+                  onPress={() => setIsTocVisible(false)} 
+                />
+              )}
+              <Animated.View style={[
+                 {
+                   position: 'absolute',
+                   right: 0,
+                   width: isMobile ? '80%' : 300,
+                   height: '100%',
+                   backgroundColor: colors.surface,
+                   elevation: 10,
+                   shadowColor: '#000',
+                   shadowOffset: { width: -4, height: 0 },
+                   shadowOpacity: 0.3,
+                   shadowRadius: 10,
+                 },
+                 animatedTocStyle
+               ]}>
+                <TOCPane 
+                  content={activePane === 1 ? deferredContent : deferredContent2} 
+                  width="100%" 
+                  onTOCClick={(text, idx) => {
+                    handleTOCClick(text, idx);
+                    if (isMobile) setIsTocVisible(false);
+                  }}
+                  activeIndex={activeHeadingIndex}
+                  responder={{ panHandlers: {} }}
+                  isPinned={false}
+                  onTogglePin={() => {
+                    setIsTocPinned(true);
+                    // On desktop, keep it visible when pinned
+                  }}
+                  onClose={() => setIsTocVisible(false)}
+                />
+              </Animated.View>
+            </View>
+          )}
+
+          {/* Tab Context Menu */}
           {tabContextMenu && (
             <View 
               style={[
                 styles.contextMenu, 
-                { top: tabContextMenu.y, left: tabContextMenu.x, backgroundColor: colors.surface, borderColor: colors.border, zIndex: 1000 }
+                { top: tabContextMenu.y, left: tabContextMenu.x, backgroundColor: colors.surface, borderColor: colors.border, zIndex: 4000 }
               ]}
             >
               <Pressable style={styles.menuItem} onPress={() => handleTabAction('close')}>
@@ -1117,33 +1596,88 @@ function MainScreen() {
               <Pressable style={styles.menuItem} onPress={() => handleTabAction('closeAll')}>
                 <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Close All</Text>
               </Pressable>
-              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
-              <Pressable style={styles.menuItem} onPress={() => handleTabAction('copyPath')}>
-                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Copy Relative Path</Text>
-              </Pressable>
-              <Pressable style={styles.menuItem} onPress={() => handleTabAction('reveal')}>
-                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Reveal in Finder</Text>
-              </Pressable>
             </View>
           )}
 
-          {/* TOC Pane */}
-          {((activePane === 1 ? selectedFile : selectedFile2) && !/\.(png|jpe?g|gif|webp)$/i.test(activePane === 1 ? selectedFile : selectedFile2)) ? (
-            <TOCPane 
-               content={activePane === 1 ? deferredContent : deferredContent2} 
-               width={tocPaneWidth} onTOCClick={handleTOCClick} responder={tocPaneResponder}
-               activeIndex={activeHeadingIndex}
-            />
-          ) : null}
-        </View>
+          {/* File Manager Modal (Mobile) */}
+          {isMobile && isFileManagerVisible && (
+            <Modal
+              transparent
+              visible={isFileManagerVisible}
+              animationType="fade"
+              onRequestClose={() => setIsFileManagerVisible(false)}
+            >
+              <Pressable 
+                style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }]} 
+                onPress={() => setIsFileManagerVisible(false)}
+              >
+                <Pressable 
+                  style={{ width: '100%', backgroundColor: colors.surface, borderRadius: 16, padding: 20, elevation: 5 }}
+                  onPress={(e) => e.stopPropagation()}
+                >
+                  <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 20, fontFamily: fontFamilyUI }}>File Info</Text>
+                  
+                  <View style={{ marginBottom: 16 }}>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontFamily: fontFamilyUI }}>NAME</Text>
+                    <TextInput 
+                      style={{ 
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', 
+                        color: colors.text, 
+                        padding: 12, 
+                        borderRadius: 8,
+                        fontSize: 14,
+                        fontFamily: fontFamilyCode
+                      }}
+                      value={newFileName}
+                      onChangeText={setNewFileName}
+                      placeholder="Filename.md"
+                      placeholderTextColor={colors.textMuted}
+                    />
+                  </View>
 
-        {/* FOOTER */}
+                  <View style={{ marginBottom: 24 }}>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontFamily: fontFamilyUI }}>LOCATION</Text>
+                    <View style={{ 
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', 
+                      padding: 12, 
+                      borderRadius: 8,
+                    }}>
+                      <Text style={{ color: colors.text, fontSize: 14 }}>{(() => {
+                        const decoded = decodeURIComponent(selectedFile || '');
+                        const parts = decoded.split('/');
+                        return parts.slice(0, -1).join('/') || 'Root';
+                      })()}</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+                    <Pressable 
+                      onPress={() => setIsFileManagerVisible(false)} 
+                      style={{ paddingHorizontal: 16, paddingVertical: 10, marginRight: 8 }}
+                    >
+                      <Text style={{ color: colors.textMuted, fontWeight: 'bold' }}>Cancel</Text>
+                    </Pressable>
+                    <Pressable 
+                      onPress={handleRenameFile} 
+                      style={{ backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 }}
+                    >
+                      <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Apply</Text>
+                    </Pressable>
+                  </View>
+                </Pressable>
+              </Pressable>
+            </Modal>
+          )}
+        </KeyboardAvoidingView>
+
         <Footer 
-          height={footerHeight} 
+          height={svFooterHeight} 
           responder={footerResponder}
           selectedFile={activePane === 1 ? selectedFile : selectedFile2}
           editorContent={activePane === 1 ? editorContent : editorContent2}
           onSaveChatToFile={handleSaveChatToFile}
+          isCollapsed={!isFooterVisible}
+          onToggleCollapse={toggleFooter}
           fileList={(() => {
             const list: string[] = [];
             const collect = (items: any[]) => {
@@ -1218,24 +1752,64 @@ function MainScreen() {
           onClose={() => setTemplatePicker(prev => ({ ...prev, visible: false }))}
         />
       </Pressable>
-    </SafeAreaView>
+        {/* Toast Notification */}
+        {toast.visible && (
+          <View style={{
+            position: 'absolute',
+            top: 70,
+            left: 20,
+            right: 20,
+            alignItems: 'center',
+            zIndex: 1000,
+          }} pointerEvents="none">
+            <View style={{
+              backgroundColor: 'rgba(0,0,0,0.8)',
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              borderRadius: 20,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}>
+              <Ionicons name="checkmark-circle" size={16} color="#4ADE80" style={{ marginRight: 8 }} />
+              <Text style={{ color: '#FFF', fontSize: 13, fontWeight: 'bold' }}>{toast.message}</Text>
+            </View>
+          </View>
+        )}
+      </SafeAreaView>
     </ErrorBoundary>
   );
 }
 
 export default function App() {
+  "use no-memo";
   return (
-    <ThemeProvider>
-      <SettingsProvider>
-        <PluginProvider app={appInstance}>
-          <MainScreen />
-        </PluginProvider>
-      </SettingsProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <SettingsProvider>
+          <PluginProvider app={appInstance}>
+            <MainScreen />
+          </PluginProvider>
+        </SettingsProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { 
+    flex: 1, 
+    width: '100%', 
+    height: Platform.OS === 'web' ? '100vh' : '100%', 
+    backgroundColor: colors.background, 
+    flexDirection: 'column', 
+    overflow: 'hidden' 
+  },
+  body: { 
+    flex: 1, 
+    width: '100%', 
+    flexDirection: 'row', 
+    minHeight: 0 
+  },
   contextMenu: {
     position: 'fixed',
     width: 180,
@@ -1252,6 +1826,14 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 13,
   },
+  tabBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginHorizontal: 4,
+    minWidth: 48,
+    justifyContent: 'center',
+  },
 });
-
-

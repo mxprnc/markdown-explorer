@@ -1,6 +1,7 @@
 import React, { memo, useRef } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getTabTitle } from '@/utils/TabUtils';
 
 interface TabBarProps {
   paneId: 1 | 2;
@@ -14,10 +15,11 @@ interface TabBarProps {
   onSetDraggingTab: (val: any) => void;
   onDropTab?: (file: string, sourcePane: 1 | 2, targetPane: 1 | 2, targetIndex: number) => void;
   isDraggingOver?: boolean;
+  allFiles?: string[]; // New prop for duplicate checking
 }
 
 export const TabBar = memo(({
-  paneId, files, previewFile, selectedFile, onSelect, onClose, onPin, onContextMenu, onSetDraggingTab, onDropTab, isDraggingOver
+  paneId, files, previewFile, selectedFile, onSelect, onClose, onPin, onContextMenu, onSetDraggingTab, onDropTab, isDraggingOver, allFiles = []
 }: TabBarProps) => {
   const { colors, fontFamilyUI } = useTheme();
   const lastClickRef = useRef<{ time: number, file: string } | null>(null);
@@ -111,7 +113,7 @@ export const TabBar = memo(({
         {files.map((file, index) => {
           const isActive = file === selectedFile;
           const isPreview = file === previewFile;
-          const fileName = file.split('/').pop() || file;
+          const displayTitle = getTabTitle(file, allFiles.length > 0 ? allFiles : files);
           const isDraggedOver = dragOverIndex === index;
 
           const tabContent = (
@@ -136,7 +138,7 @@ export const TabBar = memo(({
                   isPreview && { fontStyle: 'italic' }
                 ]}
               >
-                {fileName}
+                {displayTitle}
               </Text>
               <Pressable 
                 onPress={(e) => { 

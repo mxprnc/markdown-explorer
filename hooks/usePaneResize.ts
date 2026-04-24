@@ -71,7 +71,10 @@ export function usePaneResize() {
 
   const tocPaneResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (e, gestureState) => {
+      // Avoid triggering for very small movements to reduce lag/jitter
+      return Math.abs(gestureState.dx) > 2;
+    },
     onPanResponderGrant: () => {
       startTocWidthRef.current = tocPaneWidthRef.current;
       if (Platform.OS === 'web') {
@@ -89,6 +92,11 @@ export function usePaneResize() {
           tocPaneRafRef.current = requestAnimationFrame(() => {
             const el = document.getElementById('toc-pane');
             if (el) el.style.width = newWidth + 'px';
+          });
+        } else {
+          if (tocPaneRafRef.current) cancelAnimationFrame(tocPaneRafRef.current);
+          tocPaneRafRef.current = requestAnimationFrame(() => {
+            setTocPaneWidth(newWidth);
           });
         }
       }

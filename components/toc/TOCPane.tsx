@@ -11,30 +11,49 @@ interface TOCItem {
 
 interface TOCPaneProps {
   content: string;
-  width: number;
+  width: number | string;
   onTOCClick: (text: string, index: number) => void;
   responder: any;
   activeIndex?: number;
+  isPinned?: boolean;
+  onTogglePin?: () => void;
+  onClose?: () => void;
+  isResizing?: boolean;
 }
 
-export const TOCPane = memo(({ content, width, onTOCClick, responder, activeIndex }: TOCPaneProps) => {
+const TOCPaneComponent = ({ 
+  content, width, onTOCClick, responder, activeIndex, isPinned, onTogglePin, onClose, isResizing 
+}: TOCPaneProps) => {
   const { colors, isDark, fontFamilyUI } = useTheme();
+  const { Ionicons } = require('@expo/vector-icons');
   const tocList = useMemo(() => extractTOC(content), [content]);
 
   return (
-    <View nativeID="toc-pane" id="toc-pane" accessibilityRole={Platform.OS === 'web' ? 'complementary' : 'none'} style={[styles.paneTOC, { width, borderLeftColor: colors.border, backgroundColor: colors.surface }]}>
-      {/* Resize Handle for TOC Pane */}
-      {Platform.OS === 'web' && (
-        <View 
-          {...responder.panHandlers} 
-          style={styles.resizeHandle}
-          testID="toc-resize-handle"
-        />
-      )}
-      <View style={[styles.paneHeader, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
-        <Text style={[styles.paneTitle, { color: colors.textMuted }]}>Table of Contents</Text>
+    <View 
+      nativeID="toc-pane" 
+      accessibilityRole={Platform.OS === 'web' ? 'complementary' : 'none'} 
+      style={[
+        styles.paneTOC, 
+        { 
+          width: width, 
+          minWidth: typeof width === 'number' ? 50 : undefined,
+          maxWidth: typeof width === 'number' ? 800 : undefined,
+          borderLeftColor: colors.border, 
+          backgroundColor: colors.surface 
+        }
+      ]}
+    >
+      <View style={[styles.paneHeader, { borderBottomColor: colors.border, backgroundColor: colors.background, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+        <Text style={[styles.paneTitle, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>Table of Contents</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {onClose && (
+            <Pressable onPress={onClose} style={{ padding: 4 }}>
+              <Ionicons name="close" size={18} color={colors.textMuted} />
+            </Pressable>
+          )}
+        </View>
       </View>
-      <ScrollView style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
         {tocList.length === 0 ? (
           <View style={{ padding: 16 }} testID="toc-empty-msg">
             <Text style={{ color: colors.textMuted, fontSize: 12 }}>No headings found.</Text>
@@ -72,7 +91,9 @@ export const TOCPane = memo(({ content, width, onTOCClick, responder, activeInde
       </ScrollView>
     </View>
   );
-});
+};
+
+export const TOCPane = memo(TOCPaneComponent);
 
 const styles = StyleSheet.create({
   paneTOC: {
@@ -88,13 +109,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textTransform: 'uppercase',
   },
-  resizeHandle: {
-    position: 'absolute',
-    left: -5,
-    top: 0,
-    bottom: 0,
-    width: 10,
-    cursor: 'col-resize',
-    zIndex: 10,
-  } as any,
 });
