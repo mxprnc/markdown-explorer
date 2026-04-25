@@ -10,17 +10,24 @@
 3.  **플랫폼 최적화**: YouTube와 같은 주요 서비스는 전용 API 또는 최적화된 경로를 통해 빠르게 렌더링.
 4.  **에디터 내 직관적 토글**: 마크다운 문법을 직접 수정하지 않고도 UI를 통해 모드를 변경할 수 있는 UX 제공.
 
-## 📝 지원 문법 (Proposed Syntax)
-사용자가 지정한 모드는 마크다운 문서 내에 다음과 같은 형식으로 저장됩니다.
+## 📝 지원 문법 및 타입 (Supported Types)
+사용자가 링크를 추가하거나 파일을 불러올 때 다음과 같은 세 가지 타입을 지원합니다.
 
-- **Thumbnail 모드**: `[marxplorer-thumbnail#{alter text}](url)`
-- **Text Link 모드**: `[marxplorer-text-link#{alter text}](url)`
-- **일반 텍스트 모드**: `{{url}}` (또는 표준 마크다운 링크)
+1.  **Plain Type**: `https://example.com`
+    - 표준 텍스트 형태의 URL. 공백이 나타나기 전까지의 `http://` 또는 `https://` 시작 문자열을 URL 노드로 인식합니다.
+2.  **Link Type**: `[mx-link#{alt}](url)`
+    - 별칭(alt text)이 있는 하이퍼링크 형태.
+3.  **Thumbnail 모드**: `[mx-thumb#{alt}](url)`
+    - 시각적인 썸네일 카드가 표시되는 형태.
 
-## ✅ 주요 체크리스트
-- [ ] YouTube 동영상 ID 추출 및 전용 썸네일 URL 활용 로직.
-- [ ] 일반 사이트의 Open Graph(OG) 태그 파싱 기능.
-- [ ] 에디터(Tiptap/CodeMirror 등) 내에서의 커스텀 노드 또는 데코레이터 구현.
-- [ ] `marxplorer-` 접두사 기반의 링크 파싱 및 렌더링 로직.
-- [ ] 모드 전환을 위한 플로팅 툴바(Floating Toolbar) UI.
-- [ ] 네트워크 지연 및 오프라인 상황에서의 플레이스홀더 처리.
+## ✅ 주요 체크리스트 및 기능 요구사항
+- [ ] **자동 URL 감지**: 붙여넣기 또는 입력 시 `http(s)://`로 시작하는 문자열을 자동으로 URL 노드로 변환.
+- [ ] **타입 전환 UI**: URL 노드 마우스 오버 시 우측 상단에 Thumbnail, Link, Plain 타입을 선택할 수 있는 아이콘/버튼 표시.
+- [ ] **Link Type 전용 메뉴**:
+    - 마우스 오버 시 링크 주소 표시, 복사 버튼, 편집 버튼이 포함된 메뉴 노출 (Notion 스타일).
+    - 편집 버튼 클릭 시 `alt text`와 `link`를 수정할 수 있는 팝업 표시.
+    - `alt text` 수정 시에도 `mx-link#` 또는 `mx-thumb#` 접두사는 내부적으로 유지.
+- [ ] **파일 로드 시 타입 판별**:
+    - `[]()` 형식이 아닌 일반 텍스트 URL은 Plain Type으로 인식.
+    - `mx-thumb#` 접두사가 있으면 Thumbnail Type, `mx-link#`가 있으면 Link Type으로 자동 렌더링.
+- [ ] **YouTube 특화**: YouTube 링크의 경우 ID를 추출하여 즉시 썸네일 로드 지원.
