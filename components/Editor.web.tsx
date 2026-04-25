@@ -18,6 +18,8 @@ import mermaid from 'mermaid';
 
 mermaid.initialize({ startOnLoad: false, theme: 'default' });
 
+import { LinkCardExtension } from './editor/LinkCardExtension';
+
 const ThemeContext = React.createContext({ isDark: false });
 
 function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {
@@ -422,9 +424,11 @@ const LiveMarkdownExtension = Extension.create({
           }
         },
         appendTransaction(transactions, oldState, newState) {
-          if (!transactions.some(tr => tr.docChanged || tr.selectionSet || tr.getMeta('evalMarkdown'))) return;
+          if (transactions.some(tr => tr.getMeta('evalMarkdown'))) return;
+          if (!transactions.some(tr => tr.docChanged || tr.selectionSet)) return;
 
           let tr = newState.tr;
+          tr.setMeta('evalMarkdown', true);
           const markSymbols: Record<string, string> = {
             bold: '**',
             italic: '*',
@@ -488,7 +492,7 @@ const LiveMarkdownExtension = Extension.create({
             let found = false;
             newState.doc.descendants((node, pos) => {
               if (found) return false;
-              if (node.type.name === 'image' || node.type.name === 'customImage' || node.type.name === 'customYoutube') {
+              if (node.type.name === 'image' || node.type.name === 'customImage' || node.type.name === 'customYoutube' || node.type.name === 'linkCard') {
                 const isTouchingFromBefore = newState.selection.$from.pos === pos;
                 const isTouchingFromAfter = newState.selection.$from.pos === pos + node.nodeSize;
                 const isSelected = newState.selection.from <= pos && newState.selection.to >= pos + node.nodeSize;
@@ -498,6 +502,17 @@ const LiveMarkdownExtension = Extension.create({
                   let textStr = '';
                   if (node.type.name === 'customYoutube') {
                     textStr = node.attrs.originalUrl || node.attrs.src;
+                  } else if (node.type.name === 'linkCard') {
+                    const { type, url, alt } = node.attrs;
+                    if (type === 'thumb') {
+                      textStr = `[mx-thumb#${alt}](${url})`;
+                    } else if (type === 'link') {
+                      textStr = `[mx-link#${alt}](${url})`;
+                    } else if (type === 'video') {
+                      textStr = `[mx-video#${alt}](${url})`;
+                    } else {
+                      textStr = url;
+                    }
                   } else {
                     const alt = node.attrs.alt || '';
                     const src = node.attrs.src || '';
@@ -521,12 +536,11 @@ const LiveMarkdownExtension = Extension.create({
           };
 
           const collapseText = () => {
-            let found = false;
+            let changes: { start: number, end: number, node?: any, markType?: any, symLength?: number }[] = [];
             newState.doc.descendants((node, pos) => {
-              if (found) return false;
               if (node.isTextblock) {
                 const text = node.textContent;
-                if (!text.includes('*') && !text.includes('~') && !text.includes('`') && !text.includes('![') && !text.includes('youtu')) return;
+                if (!text.includes('*') && !text.includes('~') && !text.includes('`') && !text.includes('![') && !text.includes('youtu') && !text.includes('mx-') && !text.includes('http')) return;
 
                 const regexes = [
                   { name: 'bold', regex: /\*\*([^\*]+)\*\*/g, symLength: 2 },
@@ -538,30 +552,25 @@ const LiveMarkdownExtension = Extension.create({
                 for (const { name, regex, symLength, isComplex } of regexes) {
                   let match;
                   const markType = newState.schema.marks[name];
-                  if (!markType) continue;
-
                   while ((match = regex.exec(text)) !== null) {
-                    const offset = isComplex ? match[1].length : 0;
-                    const innerText = match[isComplex ? 2 : 1];
-                    const start = pos + 1 + match.index + offset;
-                    const end = start + innerText.length + symLength * 2;
-
-                    const isTouching = 
-                      (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) ||
-                      (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
+                    const start = pos + 1 + match.index + (isComplex ? match[1].length : 0);
+                    const end = start + match[0].length - (isComplex ? match[1].length : 0);
+                    const isTouching = (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) || (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
 
                     if (!isTouching) {
-                      tr.delete(start, end);
-                      tr.insertText(innerText, start);
-                      tr.addMark(start, start + innerText.length, markType.create());
-                      found = true;
-                      break;
+                      const type = newState.schema.marks[name];
+                      if (type) {
+                        changes.push({
+                          start, end,
+                          node: null, // Mark change
+                          markType: type,
+                          symLength
+                        });
+                      }
                     }
                   }
-                  if (found) break;
                 }
 
-                if (found) return false;
                 if ((window as any).pmIsMousingDown) return false;
 
                 // Handle Image Markdown text matching
@@ -569,52 +578,82 @@ const LiveMarkdownExtension = Extension.create({
                 let imgMatch;
                 while ((imgMatch = imgRegex.exec(text)) !== null) {
                   const start = pos + 1 + imgMatch.index;
-                   const end = start + imgMatch[0].length;
-                  
-                  const isTouching = 
-                    (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) ||
-                    (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
+                  const end = start + imgMatch[0].length;
+                  const isTouching = (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) || (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
                     
                   if (!isTouching) {
                     const imageType = newState.schema.nodes.image || newState.schema.nodes.customImage;
                     if (imageType) {
-                       const src = imgMatch[2] || imgMatch[3];
-                       const imgNode = imageType.create({ alt: imgMatch[1], src });
-                       tr.replaceWith(start, end, imgNode);
+                      const src = imgMatch[2] || imgMatch[3];
+                      changes.push({
+                        start, end,
+                        node: imageType.create({ alt: imgMatch[1], src })
+                      });
                     }
-                    found = true;
-                    break;
                   }
                 }
 
-                if (found) return false;
 
-                // Handle Youtube Markdown text matching
-                const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s<)]*)?/g;
-                let ytMatch;
-                while ((ytMatch = ytRegex.exec(text)) !== null) {
-                  const start = pos + 1 + ytMatch.index;
-                  const end = start + ytMatch[0].length;
-                  
-                  const isTouching = 
-                    (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) ||
-                    (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
-                    
+                // Handle LinkCard (mx-thumb, mx-link, mx-video)
+                const mxRegex = /\[mx-(thumb|link|video)#([^\]]*)\]\(([^)]+)\)/g;
+                let mxMatch;
+                while ((mxMatch = mxRegex.exec(text)) !== null) {
+                  const start = pos + 1 + mxMatch.index;
+                  const end = start + mxMatch[0].length;
+                  const isTouching = (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) || (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
                   if (!isTouching) {
-                    const ytType = newState.schema.nodes.customYoutube;
-                    if (ytType) {
-                       const src = `https://www.youtube.com/embed/${ytMatch[1]}`;
-                       const ytNode = ytType.create({ src, originalUrl: ytMatch[0] });
-                       tr.replaceWith(start, end, ytNode);
+                    const linkCardType = newState.schema.nodes.linkCard;
+                    if (linkCardType) {
+                      changes.push({ 
+                        start, end, 
+                        node: linkCardType.create({ type: mxMatch[1], alt: mxMatch[2], url: mxMatch[3] }) 
+                      });
                     }
-                    found = true;
-                    break;
                   }
                 }
 
+                // Handle Plain URL detection
+                const plainUrlRegex = /(https?:\/\/[^\s<)]+)/g;
+                let plainMatch;
+                while ((plainMatch = plainUrlRegex.exec(text)) !== null) {
+                  const start = pos + 1 + plainMatch.index;
+                  const end = start + plainMatch[0].length;
+                  const isTouching = (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) || (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
+                  
+                  const textBefore = text.slice(0, plainMatch.index);
+                  const isInsideLink = /\[[^\]]*\]\($/.test(textBefore) || /!\[[^\]]*\]\($/.test(textBefore);
+
+                  if (!isTouching && !isInsideLink) {
+                    const linkCardType = newState.schema.nodes.linkCard;
+                    if (linkCardType) {
+                      // Only push if this range doesn't overlap with already matched mx- or youtube patterns
+                      if (!changes.some(c => (start >= c.start && start < c.end) || (end > c.start && end <= c.end))) {
+                        changes.push({ 
+                          start, end, 
+                          node: linkCardType.create({ type: 'plain', url: plainMatch[1] }) 
+                        });
+                      }
+                    }
+                  }
+                }
               }
             });
-            return found;
+
+            if (changes.length > 0) {
+              // Apply changes from back to front to maintain positions
+              changes.sort((a, b) => b.start - a.start);
+              changes.forEach(change => {
+                if (change.node) {
+                  tr.replaceWith(change.start, change.end, change.node);
+                } else if (change.markType && change.symLength) {
+                  tr.addMark(change.start + change.symLength, change.end - change.symLength, change.markType.create());
+                  tr.delete(change.end - change.symLength, change.end);
+                  tr.delete(change.start, change.start + change.symLength);
+                }
+              });
+              return true;
+            }
+            return false;
           };
 
           if (expandMark()) return tr;
@@ -1187,12 +1226,19 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
       Markdown,
       MathExtension.configure({ evaluation: false }),
       SaveShortcut,
+      LinkCardExtension,
     ],
     content: preprocessMarkdown(value),
     onUpdate: ({ editor }) => {
-      // Get the markdown content whenever the user types
-      const markdown = postprocessMarkdown((editor.storage as any).markdown.getMarkdown());
-      onChange(markdown);
+      // Use a debounce to prevent excessive parent re-renders and flashing in the Explorer
+      if ((window as any).onUpdateTimer) {
+        clearTimeout((window as any).onUpdateTimer);
+      }
+      
+      (window as any).onUpdateTimer = setTimeout(() => {
+        const markdown = postprocessMarkdown((editor.storage as any).markdown.getMarkdown());
+        onChange(markdown);
+      }, 300);
     },
     editorProps: {
       attributes: {
@@ -1204,11 +1250,19 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
 
   useEffect(() => {
     if (editor && value !== undefined && !editor.isFocused) {
-      // Check if content actually changed to avoid unnecessary updates
+      // Get current markdown from editor
       const currentMarkdown = (editor.storage as any).markdown.getMarkdown();
-      const newMarkdown = preprocessMarkdown(value);
-      if (preprocessMarkdown(currentMarkdown) !== newMarkdown) {
-        editor.commands.setContent(newMarkdown);
+      
+      // If the prop value is different from current editor content, update it
+      // We compare the raw values first to avoid unnecessary processing
+      if (currentMarkdown !== value) {
+        // Double check after preprocessing to be sure
+        const processedNew = preprocessMarkdown(value);
+        const processedCurrent = preprocessMarkdown(currentMarkdown);
+        
+        if (processedCurrent !== processedNew) {
+          editor.commands.setContent(processedNew);
+        }
       }
     }
   }, [value, editor]);

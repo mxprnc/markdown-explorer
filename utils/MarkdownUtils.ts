@@ -87,11 +87,19 @@ export function findBestHeadingMatch<T extends { index: number }>(
  */
 export function preprocessMarkdown(md: string): string {
   if (!md) return '';
-  return md
+  
+  let processed = md
     .replace(/^\\#/gm, '#')      // Restore headings
     .replace(/^\\-/gm, '-')      // Restore lists
     .replace(/\\\[/g, '[')      // Restore links [
     .replace(/\\\]/g, ']');     // Restore links ]
+
+  // Convert [mx-...] syntax to HTML span for LinkCardExtension to parse correctly on load
+  processed = processed.replace(/\[mx-(thumb|link|video)#([^\]]*)\]\(([^)]+)\)/g, (match, type, alt, url) => {
+    return `<span data-mx-link-card="true" data-type="${type}" data-alt="${alt}" data-url="${url}"></span>`;
+  });
+
+  return processed;
 }
 
 /**
@@ -113,6 +121,18 @@ export function postprocessMarkdown(md: string): string {
   // Convert custom Youtube iframe HTML from tiptap-markdown back to its original text URL.
   // This is specific to our current implementation of YouTube node.
   processed = processed.replace(/<iframe[^>]*originalurl="([^"]+)"[^>]*><\/iframe>/gi, '$1');
+
+  // Convert LinkCard HTML back to [mx-...] syntax (Attribute-order agnostic)
+  processed = processed.replace(/<span[^>]*data-mx-link-card="true"[^>]*>(.*?)<\/span>/gi, (match) => {
+    const url = match.match(/data-url="([^"]*)"/)?.[1] || '';
+    const alt = match.match(/data-alt="([^"]*)"/)?.[1] || '';
+    const type = match.match(/data-type="([^"]*)"/)?.[1] || 'plain';
+    
+    if (type === 'thumb') return `[mx-thumb#${alt}](${url})`;
+    if (type === 'link') return `[mx-link#${alt}](${url})`;
+    if (type === 'video') return `[mx-video#${alt}](${url})`;
+    return url;
+  });
   
   return processed;
 }

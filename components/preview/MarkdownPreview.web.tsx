@@ -78,7 +78,7 @@ const HastRenderer = ({ node, components, isDark, resolveImage }: any): any => {
       return <Component {...props} isDark={isDark} children={codeString} />;
     }
 
-    const extraProps: any = {};
+    const extraProps: any = { node };
     if (tagName === 'a' || tagName === 'img') { extraProps.isDark = isDark; extraProps.resolveImage = resolveImage; }
 
     return (
@@ -172,16 +172,69 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
 
   const components = useMemo(() => ({
     a: (props: any) => {
-      const { href, children, ...rest } = props;
-      const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-      const match = href ? ytRegex.exec(href) : null;
-      if (match) {
+      const { href, children, node, ...rest } = props;
+      
+      // Extract text content from HAST node children for reliable matching
+      let text = '';
+      if (node && node.children) {
+        text = node.children
+          .map((c: any) => c.type === 'text' ? c.value : '')
+          .join('');
+      } else {
+        // Fallback to children processing if node is missing
+        if (typeof children === 'string') {
+          text = children;
+        } else if (Array.isArray(children)) {
+          text = children.map(c => typeof c === 'string' ? c : '').join('');
+        }
+      }
+
+      text = text.trim();
+      
+      // Handle LinkCard (mx-thumb, mx-link, mx-video)
+      // Lenient regex to handle case-insensitivity and empty titles
+      const mxMatch = text.match(/^mx-(thumb|link|video)#(.*)$/i);
+      
+      if (mxMatch) {
+        const type = mxMatch[1].toLowerCase();
+        const alt = mxMatch[2].trim();
+        
+        if (type === 'video') {
+          const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+          const ytMatch = href ? ytRegex.exec(href) : null;
+          if (ytMatch) {
+            return (
+              <span data-testid="preview-youtube" style={{ position: 'relative', margin: '16px 0', width: '100%', maxWidth: '600px', display: 'block', aspectRatio: '16 / 9', backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden' }}>
+                <iframe title="YouTube" src={`https://www.youtube.com/embed/${ytMatch[1]}`} width="100%" height="100%" style={{ border: 'none' }} allowFullScreen loading="lazy" />
+              </span>
+            );
+          }
+        }
+        
+        if (type === 'thumb') {
+          return (
+            <a href={href} target="_blank" rel="noopener noreferrer" style={{ 
+              display: 'flex', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', 
+              textDecoration: 'none', margin: '12px 0', maxWidth: '600px', backgroundColor: isDark ? '#1f2937' : '#fff' 
+            }}>
+              <div style={{ flex: 1, padding: '12px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#111827' }}>{alt || 'Link Card'}</div>
+                <div style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{href}</div>
+              </div>
+            </a>
+          );
+        }
+
+        // Default for 'link'
         return (
-          <span data-testid="preview-youtube" style={{ position: 'relative', margin: '16px 0', width: '100%', maxWidth: '560px', display: 'block' }}>
-            <iframe title="YouTube" src={`https://www.youtube.com/embed/${match[1]}`} width="100%" height="315" style={{ borderRadius: '8px', border: 'none' }} allowFullScreen loading="lazy" />
-          </span>
+          <a href={href} {...rest} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '500', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span>🔗</span>
+            <span>{alt || href}</span>
+          </a>
         );
       }
+
+      // Legacy plain YouTube link (no mx- prefix)
       return <a href={href} {...rest} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'none' }}>{children}</a>;
     },
     img: (props: any) => {
