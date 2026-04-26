@@ -13,7 +13,6 @@ interface TOCPaneProps {
   content: string;
   width: number | string;
   onTOCClick: (text: string, index: number) => void;
-  responder: any;
   activeIndex?: number;
   isPinned?: boolean;
   onTogglePin?: () => void;
@@ -22,7 +21,7 @@ interface TOCPaneProps {
 }
 
 const TOCPaneComponent = ({ 
-  content, width, onTOCClick, responder, activeIndex, isPinned, onTogglePin, onClose, isResizing 
+  content, width, onTOCClick, activeIndex, isPinned, onTogglePin, onClose, isResizing 
 }: TOCPaneProps) => {
   const { colors, isDark, fontFamilyUI } = useTheme();
   const { Ionicons } = require('@expo/vector-icons');

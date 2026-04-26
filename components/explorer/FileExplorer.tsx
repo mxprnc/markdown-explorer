@@ -7,7 +7,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 interface FileExplorerProps {
   leftPaneWidth: number;
-  leftPaneResponder: any;
   fileSystemData: any[];
   selectedFile: string;
   selectedFile2: string;
@@ -33,7 +32,7 @@ interface FileExplorerProps {
 }
 
 export function FileExplorer({
-  leftPaneWidth, leftPaneResponder, fileSystemData, 
+  leftPaneWidth, fileSystemData, 
   selectedFile, selectedFile2, expandedFolders, hoveredItemPath,
   onSelect, onToggle, onMouseEnter, onMouseLeave, onOpenDirectory,
   contextMenu, setContextMenu, onDelete, onRenameRequest, onCreateRequest,
@@ -46,7 +45,7 @@ export function FileExplorer({
     console.log('[FileExplorer] Rendering with items:', fileSystemData.length);
   }, [fileSystemData]);
   return (
-    <View nativeID="explorer-pane" id="explorer-pane" style={[styles.paneLeft, { backgroundColor: colors.surface, borderRightColor: colors.border, flex: 1 }]}>
+    <View style={[styles.paneLeft, { backgroundColor: colors.surface, borderRightColor: colors.border, flex: 1 }]}>
       <View style={[styles.paneHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <Text style={[styles.paneTitle, { color: colors.textMuted }]}>Explorer</Text>
         <Pressable onPress={onOpenDirectory} style={styles.headerBtn}>
@@ -95,13 +94,6 @@ export function FileExplorer({
         )}
       </ScrollView>
 
-      {/* Resize Handle */}
-      {Platform.OS === 'web' && (
-        <View 
-          {...leftPaneResponder.panHandlers} 
-          style={styles.resizeHandle}
-        />
-      )}
 
     </View>
   );

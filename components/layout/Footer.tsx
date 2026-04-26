@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import GeminiChat from '@/components/GeminiChat';
 import { useTheme } from '@/contexts/ThemeContext';
 import { decodePath } from '@/utils/TabUtils';
+import { Resizer } from '@/components/ui/Resizer';
 
 interface FooterProps {
   height: any; // Reanimated SharedValue
@@ -15,9 +16,10 @@ interface FooterProps {
   fileList: string[];
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  isResizing?: boolean;
 }
 
-export const Footer = memo(({ height, responder, selectedFile, editorContent, onSaveChatToFile, fileList, isCollapsed, onToggleCollapse }: FooterProps) => {
+export const Footer = memo(({ height, responder, selectedFile, editorContent, onSaveChatToFile, fileList, isCollapsed, onToggleCollapse, isResizing }: FooterProps) => {
   const { colors, fontFamilyCode } = useTheme();
   
   const animatedStyle = useAnimatedStyle(() => ({
@@ -33,8 +35,10 @@ export const Footer = memo(({ height, responder, selectedFile, editorContent, on
     >
       {/* Resize Handle for Footer */}
       {Platform.OS === 'web' && !isCollapsed && (
-        <View 
-          {...responder.panHandlers} 
+        <Resizer 
+          type="horizontal"
+          isResizing={!!isResizing}
+          responder={responder}
           style={styles.resizeHandle}
         />
       )}

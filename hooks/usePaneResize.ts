@@ -27,7 +27,9 @@ export function usePaneResize() {
 
   const leftPaneResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponderCapture: () => true,
     onMoveShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponderCapture: () => true,
     onPanResponderGrant: () => {
       startLeftWidthRef.current = leftPaneWidthRef.current;
       if (Platform.OS === 'web') {
@@ -45,6 +47,12 @@ export function usePaneResize() {
           leftPaneRafRef.current = requestAnimationFrame(() => {
             const el = document.getElementById('explorer-pane');
             if (el) el.style.width = newWidth + 'px';
+            setLeftPaneWidth(newWidth);
+          });
+        } else {
+          if (leftPaneRafRef.current) cancelAnimationFrame(leftPaneRafRef.current);
+          leftPaneRafRef.current = requestAnimationFrame(() => {
+            setLeftPaneWidth(newWidth);
           });
         }
       }
@@ -92,6 +100,7 @@ export function usePaneResize() {
           tocPaneRafRef.current = requestAnimationFrame(() => {
             const el = document.getElementById('toc-pane');
             if (el) el.style.width = newWidth + 'px';
+            setTocPaneWidth(newWidth);
           });
         } else {
           if (tocPaneRafRef.current) cancelAnimationFrame(tocPaneRafRef.current);
@@ -123,7 +132,9 @@ export function usePaneResize() {
 
   const middlePaneResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponderCapture: () => true,
     onMoveShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponderCapture: () => true,
     onPanResponderGrant: () => {
       startMiddleWidthRef.current = middlePaneWidthRef.current;
       if (Platform.OS === 'web') {
@@ -141,6 +152,12 @@ export function usePaneResize() {
           middlePaneRafRef.current = requestAnimationFrame(() => {
             const el = document.getElementById('pane-1');
             if (el) el.style.width = newWidth + 'px';
+            setMiddlePaneWidth(newWidth);
+          });
+        } else {
+          if (middlePaneRafRef.current) cancelAnimationFrame(middlePaneRafRef.current);
+          middlePaneRafRef.current = requestAnimationFrame(() => {
+            setMiddlePaneWidth(newWidth);
           });
         }
       }
@@ -167,7 +184,9 @@ export function usePaneResize() {
 
   const footerResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponderCapture: () => true,
     onMoveShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponderCapture: () => true,
     onPanResponderGrant: () => {
       startFooterHeightRef.current = footerHeightRef.current;
       if (Platform.OS === 'web') {

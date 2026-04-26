@@ -32,6 +32,7 @@ import { TabBar } from '@/components/layout/TabBar';
 import { GeminiSettingsModal } from '@/components/gemini/GeminiSettingsModal';
 import { RenameModal } from '@/components/explorer/RenameModal';
 import { EditorWorkspace } from '@/components/editor/EditorWorkspace';
+import { Resizer } from '@/components/ui/Resizer';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { NextraExportModal } from '@/components/exporter/nextra/NextraExportModal';
 import { ContextMenu } from '@/components/explorer/ContextMenu';
@@ -96,10 +97,16 @@ function MainScreen() {
     const targetScrim = isSidebarVisible ? 1 : 0;
     const targetWidth = isSidebarVisible ? Number(leftPaneWidth) : 0;
 
-    svSidebar.value = withTiming(targetSidebar, { duration: 250 });
-    svScrim.value = withTiming(targetScrim, { duration: 250 });
-    svWidth.value = withTiming(targetWidth, { duration: 250 });
-  }, [isSidebarVisible, leftPaneWidth, sidebarWidth, windowWidth]);
+    if (isResizing) {
+      svWidth.value = targetWidth;
+      svSidebar.value = targetSidebar;
+      svScrim.value = targetScrim;
+    } else {
+      svSidebar.value = withTiming(targetSidebar, { duration: 250 });
+      svScrim.value = withTiming(targetScrim, { duration: 250 });
+      svWidth.value = withTiming(targetWidth, { duration: 250 });
+    }
+  }, [isSidebarVisible, leftPaneWidth, sidebarWidth, windowWidth, isResizing]);
 
   const animatedSidebarStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: svSidebar.value }]
@@ -1305,6 +1312,7 @@ function MainScreen() {
           {/* Sidebar (Overlay on mobile, Static on desktop) */}
           {isSidebarVisible && (
             <Animated.View 
+              nativeID="explorer-pane"
               style={[
                 isMobile ? {
                   position: 'absolute',
@@ -1340,7 +1348,6 @@ function MainScreen() {
                 renderFileExplorer={useCallback(() => (
                   <FileExplorer 
                     leftPaneWidth={(isMobile ? sidebarWidth : leftPaneWidth) - 48}
-                    leftPaneResponder={{ panHandlers: {} }} 
                     fileSystemData={fileSystemData}
                     selectedFile={selectedFile}
                     selectedFile2={selectedFile2}
@@ -1376,6 +1383,16 @@ function MainScreen() {
                 ), [isMobile, sidebarWidth, leftPaneWidth, fileSystemData, selectedFile, selectedFile2, expandedFolders, hoveredItemPath, handleSelectFile, toggleFolder, handleOpenDirectory, contextMenu, handleDeleteFileSystem, renamingItem, creatingItem, creationName, handleConfirmCreation, loadDirectoryRecursive])}
               />
             </Animated.View>
+          )}
+
+          {/* Vertical Resizer for Sidebar (Desktop only) */}
+          {isSidebarVisible && !isMobile && (
+            <Resizer 
+              type="vertical"
+              isResizing={isResizing}
+              responder={leftPaneResponder}
+              style={{ marginLeft: -5, marginRight: -5 }}
+            />
           )}
 
           {/* Main Content Area (Workspace + Pinned TOC + Toolbar) */}
@@ -1458,7 +1475,6 @@ function MainScreen() {
                     width={windowWidth * 0.4} 
                     onTOCClick={handleTOCClick}
                     activeIndex={activeHeadingIndex}
-                    responder={{ panHandlers: {} }}
                   />
                 </View>
               )}
@@ -1466,28 +1482,17 @@ function MainScreen() {
               {/* Desktop TOC Fixed */}
               {!isMobile && isTocPinned && ((activePane === 1 ? selectedFile : selectedFile2) && !/\.(png|jpe?g|gif|webp)$/i.test(activePane === 1 ? selectedFile : selectedFile2)) && (
                 <>
-                  {/* Resize Handle (Standalone) */}
-                  <View 
-                    {...tocPaneResponder.panHandlers}
-                    style={{
-                      width: 10,
-                      height: '100%',
-                      backgroundColor: isResizing ? colors.primary + '44' : 'transparent',
-                      zIndex: 1000,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                    hitSlop={{ left: 20, right: 20 }}
-                    testID="toc-resize-handle-standalone"
-                  >
-                    <View style={{ width: 1, height: '100%', backgroundColor: colors.border, opacity: 0.3 }} />
-                  </View>
+                  <Resizer 
+                    type="vertical"
+                    isResizing={isResizing}
+                    responder={tocPaneResponder}
+                    style={{ marginLeft: -5, marginRight: -5 }}
+                  />
                   
                   <TOCPane 
                     content={activePane === 1 ? deferredContent : deferredContent2} 
                     width={tocPaneWidth} 
                     onTOCClick={handleTOCClick} 
-                    responder={{ panHandlers: {} }} // No longer needed inside
                     activeIndex={activeHeadingIndex}
                     isPinned={true}
                     onTogglePin={() => setIsTocPinned(false)}
@@ -1563,7 +1568,6 @@ function MainScreen() {
                     if (isMobile) setIsTocVisible(false);
                   }}
                   activeIndex={activeHeadingIndex}
-                  responder={{ panHandlers: {} }}
                   isPinned={false}
                   onTogglePin={() => {
                     setIsTocPinned(true);
@@ -1678,6 +1682,7 @@ function MainScreen() {
           onSaveChatToFile={handleSaveChatToFile}
           isCollapsed={!isFooterVisible}
           onToggleCollapse={toggleFooter}
+          isResizing={isResizing}
           fileList={(() => {
             const list: string[] = [];
             const collect = (items: any[]) => {
