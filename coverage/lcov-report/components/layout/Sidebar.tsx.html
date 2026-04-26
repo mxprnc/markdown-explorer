@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/15</span>
+                <span class='fraction'>0/16</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>0/14</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>0/15</span>
             </div>
         
             
@@ -159,7 +159,10 @@
 <a name='L94'></a><a href='#L94'>94</a>
 <a name='L95'></a><a href='#L95'>95</a>
 <a name='L96'></a><a href='#L96'>96</a>
-<a name='L97'></a><a href='#L97'>97</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -179,7 +182,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -231,6 +234,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -255,28 +261,28 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, Text } from 'react-native';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React from 'react';
+import { View, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { ViewEntry } from '@/core/workspace/ViewRegistry';
-import { App } from '@/core/App';
+import { AppInstance } from '@/core/AppInstance';
+import { ViewEntry } from '@/core/ViewRegistry';
 &nbsp;
 interface SidebarProps {
-  app: App;
-  width: number;
+  app: AppInstance;
+  width: any;
   activeViewId: string;
   setActiveViewId: (id: string) =&gt; void;
   registeredViews: ViewEntry[];
-  // File Explorer specific props (passed down to FileExplorer if active)
   renderFileExplorer: () =&gt; React.ReactNode;
+  isMobile?: boolean;
 }
 &nbsp;
-export function <span class="fstat-no" title="function not covered" >Sidebar(</span>{
-  app, width, activeViewId, setActiveViewId, registeredViews,
-  renderFileExplorer
+export function <span class="fstat-no" title="function not covered" >Sidebar(</span>{ 
+  app, width, activeViewId, setActiveViewId, registeredViews, renderFileExplorer, isMobile 
 }: SidebarProps) {
   const { colors, isDark } = <span class="cstat-no" title="statement not covered" >useTheme();</span>
+  const iconBarWidth = <span class="cstat-no" title="statement not covered" >isMobile ? 44 : 48;</span>
 &nbsp;
   const allSidebarViews = <span class="cstat-no" title="statement not covered" >[</span>
     { id: 'files', name: 'Explorer', icon: 'folder-outline' },
@@ -289,9 +295,9 @@ export function <span class="fstat-no" title="function not covered" >Sidebar(</s
     }
     
     const view = <span class="cstat-no" title="statement not covered" >registeredViews.find(<span class="fstat-no" title="function not covered" >v </span>=&gt; <span class="cstat-no" title="statement not covered" >v.id === activeViewId)</span>;</span>
-<span class="cstat-no" title="statement not covered" >    if (view &amp;&amp; view.component) {</span>
-      const Component = <span class="cstat-no" title="statement not covered" >view.component;</span>
-<span class="cstat-no" title="statement not covered" >      return &lt;Component app={app} /&gt;;</span>
+<span class="cstat-no" title="statement not covered" >    if (view) {</span>
+      const ViewComponent = <span class="cstat-no" title="statement not covered" >view.component;</span>
+<span class="cstat-no" title="statement not covered" >      return &lt;ViewComponent app={app} /&gt;;</span>
     }
     
 <span class="cstat-no" title="statement not covered" >    return null;</span>
@@ -300,18 +306,21 @@ export function <span class="fstat-no" title="function not covered" >Sidebar(</s
 <span class="cstat-no" title="statement not covered" >  return (</span>
     &lt;View style={[styles.container, { width, borderRightColor: colors.border }]}&gt;
       {/* Sidebar Icon Bar (Left) */}
-      &lt;View style={[styles.iconBar, { backgroundColor: colors.background, borderRightColor: colors.border }]}&gt;
+      &lt;View style={[styles.iconBar, { width: iconBarWidth, backgroundColor: colors.background, borderRightColor: colors.border }]}&gt;
         {allSidebarViews.map(<span class="fstat-no" title="function not covered" >vi</span>ew =&gt; (
 <span class="cstat-no" title="statement not covered" >          &lt;Pressable</span>
             key={view.id}
             onPress={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setActiveViewId(view.id)}</span>
             style={[
               styles.iconBtn,
-              activeViewId === view.id &amp;&amp; { borderLeftColor: colors.primary }
+              activeViewId === view.id &amp;&amp; { 
+                borderLeftColor: colors.primary,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+              }
             ]}
           &gt;
             &lt;Ionicons 
-              name={view.icon as any} 
+              name={view.id === activeViewId ? (view.icon.replace('-outline', '') as any) : (view.icon as any)} 
               size={24} 
               color={activeViewId === view.id ? colors.primary : colors.textMuted} 
             /&gt;
@@ -334,22 +343,22 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
     borderRightWidth: 1,
   },
   iconBar: {
-    width: 48,
-    borderRightWidth: 1,
-    alignItems: 'center',
     paddingVertical: 12,
-    gap: 16,
+    alignItems: 'center',
+    borderRightWidth: 1,
   },
   iconBtn: {
     width: '100%',
+    height: 48,
     alignItems: 'center',
-    paddingVertical: 8,
-    borderLeftWidth: 2,
+    justifyContent: 'center',
+    borderLeftWidth: 3,
     borderLeftColor: 'transparent',
+    marginBottom: 8,
   },
   content: {
     flex: 1,
-  },
+  }
 });
 &nbsp;</pre></td></tr></table></pre>
 
@@ -358,7 +367,7 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-22T05:29:53.781Z
+                at 2026-04-26T05:19:17.726Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

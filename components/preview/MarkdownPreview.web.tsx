@@ -293,11 +293,12 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
           resolveImage(src).then(url => {
             if (url && url !== src) {
               setResolvedSrc(url);
-              isResolvedRef.current = true;
             }
-          }); 
-        } 
-      }, [src]);
+          }).catch(err => console.warn('Failed to resolve preview image:', src, err));
+        } else {
+          setResolvedSrc(src);
+        }
+      }, [src, resolveImage]);
       
       return <img src={resolvedSrc} alt={alt} data-testid="preview-image" style={{ maxWidth: '100%', borderRadius: '8px', display: 'block', margin: '16px 0' }} {...rest} />;
     },

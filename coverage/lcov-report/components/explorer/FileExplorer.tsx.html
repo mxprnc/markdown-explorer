@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>0/9</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>0/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>0/9</span>
             </div>
         
             
@@ -227,10 +227,7 @@
 <a name='L162'></a><a href='#L162'>162</a>
 <a name='L163'></a><a href='#L163'>163</a>
 <a name='L164'></a><a href='#L164'>164</a>
-<a name='L165'></a><a href='#L165'>165</a>
-<a name='L166'></a><a href='#L166'>166</a>
-<a name='L167'></a><a href='#L167'>167</a>
-<a name='L168'></a><a href='#L168'>168</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L165'></a><a href='#L165'>165</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -271,6 +268,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -333,17 +334,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -428,6 +422,7 @@ interface FileExplorerProps {
   onConfirmCreation: () =&gt; void;
   onCancelCreation: () =&gt; void;
   setDraggingTab: (val: any) =&gt; void;
+  onExportToNextra: (item: any) =&gt; void;
 }
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >FileExplorer(</span>{
@@ -436,12 +431,15 @@ export function <span class="fstat-no" title="function not covered" >FileExplore
   onSelect, onToggle, onMouseEnter, onMouseLeave, onOpenDirectory,
   contextMenu, setContextMenu, onDelete, onRenameRequest, onCreateRequest,
   creatingItem, creationName, setCreationName, onConfirmCreation, onCancelCreation,
-  setDraggingTab
+  setDraggingTab, onExportToNextra
 }: FileExplorerProps) {
   const { colors, isDark, fontFamilyUI } = <span class="cstat-no" title="statement not covered" >useTheme();</span>
   
+<span class="cstat-no" title="statement not covered" >  React.useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    console.log('[FileExplorer] Rendering with items:', fileSystemData.length);</span>
+  }, [fileSystemData]);
 <span class="cstat-no" title="statement not covered" >  return (</span>
-    &lt;View nativeID="explorer-pane" id="explorer-pane" style={[styles.paneLeft, { width: leftPaneWidth, backgroundColor: colors.surface, borderRightColor: colors.border }]}&gt;
+    &lt;View nativeID="explorer-pane" id="explorer-pane" style={[styles.paneLeft, { backgroundColor: colors.surface, borderRightColor: colors.border, flex: 1 }]}&gt;
       &lt;View style={[styles.paneHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}&gt;
         &lt;Text style={[styles.paneTitle, { color: colors.textMuted }]}&gt;Explorer&lt;/Text&gt;
         &lt;Pressable onPress={onOpenDirectory} style={styles.headerBtn}&gt;
@@ -498,14 +496,6 @@ export function <span class="fstat-no" title="function not covered" >FileExplore
         /&gt;
       )}
 &nbsp;
-      &lt;ContextMenu 
-        {...contextMenu}
-        onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setContextMenu({ ...contextMenu, visible: false })}</span>
-        onRename={onRenameRequest}
-        onDelete={onDelete}
-        onCreateFile={<span class="fstat-no" title="function not covered" >(p</span>ath) =&gt; <span class="cstat-no" title="statement not covered" >onCreateRequest(path, 'file')}</span>
-        onCreateFolder={<span class="fstat-no" title="function not covered" >(p</span>ath) =&gt; <span class="cstat-no" title="statement not covered" >onCreateRequest(path, 'directory')}</span>
-      /&gt;
     &lt;/View&gt;
   );
 }
@@ -544,10 +534,11 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
     textAlign: 'center',
   },
   openBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
     cursor: 'pointer',
+    marginTop: 10,
   } as any,
   openBtnText: {
     color: '#FFF',
@@ -571,7 +562,7 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-22T05:29:53.781Z
+                at 2026-04-26T05:19:17.726Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

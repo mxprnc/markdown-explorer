@@ -24,7 +24,7 @@ const getDirectoryAPI = () => {
 };
 
 const getSAF = () => (FileSystem as any).StorageAccessFramework;
-import { isImageFile, getParentPath, joinPaths, normalizePath } from '@/utils/FileSystemUtils';
+import { isImageFile, getParentPath, joinPaths, normalizePath, resolveImagePath } from '@/utils/FileSystemUtils';
 
 export interface FileSystemItem {
   name: string;
@@ -329,7 +329,7 @@ export function useFileSystem() {
             console.error('saveToDisk: File handle not found for SAF path', path);
             return false;
           }
-          fileUri = dirHandle.endsWith('/') ? dirHandle + path : dirHandle + '/' + path;
+          fileUri = joinPaths(dirHandle, path);
         }
 
         await writeAsStringAsync(fileUri, typeof content === 'string' ? content : '');
@@ -592,7 +592,7 @@ export function useFileSystem() {
               newHandle = await StorageAccessFramework.makeDirectoryAsync(parentHandle, name);
             }
           } else {
-            newHandle = parentHandle.endsWith('/') ? parentHandle + name : parentHandle + '/' + name;
+            newHandle = joinPaths(parentHandle, name);
             if (kind === 'file') {
               await writeAsStringAsync(newHandle, '');
             } else {
@@ -664,33 +664,19 @@ export function useFileSystem() {
     resolveImage: useCallback(async (relativePath: string, currentFilePath?: string) => {
       if (!dirHandle) return relativePath;
       try {
-        if (relativePath.startsWith('http') || relativePath.startsWith('data:') || relativePath.startsWith('blob:')) {
-          return relativePath;
-        }
-        
-        let fullPath = relativePath;
-        if (relativePath.startsWith('/')) {
-          fullPath = relativePath.slice(1);
-        } else if (relativePath.startsWith('img/')) {
-          fullPath = relativePath;
-        } else if (currentFilePath) {
-          const fileDir = getParentPath(currentFilePath);
-          if (fileDir) {
-            fullPath = joinPaths(fileDir, relativePath);
-          }
+        const resolvedPath = resolveImagePath(relativePath, currentFilePath);
+        if (resolvedPath.startsWith('http') || resolvedPath.startsWith('data:') || resolvedPath.startsWith('blob:')) {
+          return resolvedPath;
         }
 
-        const normalized = normalizePath(fullPath);
-        if (!normalized) return relativePath;
-
-        const stack = normalized.split('/');
+        const stack = resolvedPath.split('/').filter(Boolean);
         let currentHandle = dirHandle;
         for (let i = 0; i < stack.length - 1; i++) {
           currentHandle = await currentHandle.getDirectoryHandle(stack[i]);
         }
         const fileHandle = await currentHandle.getFileHandle(stack[stack.length - 1]);
         const file = await fileHandle.getFile();
-        return Platform.OS === 'web' ? URL.createObjectURL(file) : fileHandle; // fileHandle is already the URI on native
+        return Platform.OS === 'web' ? URL.createObjectURL(file) : fileHandle;
       } catch (err) {
         return relativePath;
       }

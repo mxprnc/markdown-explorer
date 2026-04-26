@@ -4,58 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { ThemeContext } from './ThemeContext';
 
-// Global cache to persist metadata across component re-mounts
-const metadataCache = new Map<string, any>();
-
-// Helper to extract YouTube ID
-const getYoutubeId = (url: string) => {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
-};
-
-// Memoized Video Player with Thumbnail Fallback to prevent black screen during reload/flicker
-const VideoPlayer = React.memo(({ youtubeId }: { youtubeId: string }) => {
-  const thumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
-  
-  return (
-    <div style={{ 
-      margin: '20px 0', 
-      width: '100%', 
-      maxWidth: '700px',
-      aspectRatio: '16 / 9',
-      backgroundColor: '#000',
-      borderRadius: '12px',
-      overflow: 'hidden',
-      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
-      position: 'relative'
-    }}>
-      {/* Thumbnail shown behind iframe to prevent black flicker on reload */}
-      <img 
-        src={thumbnailUrl} 
-        style={{ 
-          position: 'absolute', 
-          top: 0, 
-          left: 0, 
-          width: '100%', 
-          height: '100%', 
-          objectFit: 'cover',
-          opacity: 0.4,
-          filter: 'blur(4px)'
-        }} 
-        alt=""
-      />
-      <iframe 
-        key={youtubeId}
-        src={`https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`}
-        width="100%" 
-        height="100%" 
-        style={{ border: 'none', position: 'relative', zIndex: 1 }}
-        allowFullScreen
-      />
-    </div>
-  );
-});
+import { getYoutubeId, deriveMetadata } from '@/utils/LinkCardUtils';
+import { VideoPlayer } from './VideoPlayer';
 
 const LinkCardComponent: React.FC<NodeViewProps> = ({ node, updateAttributes, editor, getPos }) => {
   const { url, alt, type } = node.attrs;
@@ -85,41 +35,14 @@ const LinkCardComponent: React.FC<NodeViewProps> = ({ node, updateAttributes, ed
 
   const isYoutube = useMemo(() => getYoutubeId(url), [url]);
 
-  // Derived metadata to prevent flickering on first render
-  const getDerivedMetadata = () => {
-    const cacheKey = `${url}-${type}-${alt}`;
-    if (metadataCache.has(cacheKey)) {
-      return metadataCache.get(cacheKey);
-    }
-
-    let nextMetadata: any = {};
-    if (type === 'thumb' || type === 'video') {
-      if (isYoutube) {
-        nextMetadata = {
-          image: `https://img.youtube.com/vi/${isYoutube}/mqdefault.jpg`,
-          siteName: 'YouTube',
-          title: alt || ''
-        };
-      } else {
-        nextMetadata = {
-          title: alt || '',
-          siteName: url.split('//')[1]?.split('/')[0] || ''
-        };
-      }
-    }
-    
-    metadataCache.set(cacheKey, nextMetadata);
-    return nextMetadata;
-  };
-
-  const [metadata, setMetadata] = useState(getDerivedMetadata());
+  const [metadata, setMetadata] = useState(deriveMetadata(url, type, alt));
 
   useEffect(() => {
-    const nextMetadata = getDerivedMetadata();
+    const nextMetadata = deriveMetadata(url, type, alt);
     if (JSON.stringify(nextMetadata) !== JSON.stringify(metadata)) {
       setMetadata(nextMetadata);
     }
-  }, [url, type, alt, isYoutube]);
+  }, [url, type, alt]);
 
   const handleMouseEnter = () => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);

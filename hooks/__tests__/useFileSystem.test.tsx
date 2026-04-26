@@ -1,6 +1,25 @@
 import React from 'react';
 import TestRenderer from 'react-test-renderer';
 import { useFileSystem, FileSystemItem } from '../useFileSystem';
+import { Platform } from 'react-native';
+
+jest.mock('react-native', () => ({
+  Platform: {
+    OS: 'web',
+    select: jest.fn((obj) => obj.web || obj.default),
+  },
+  Alert: {
+    alert: jest.fn(),
+  },
+  StyleSheet: {
+    create: (s: any) => s,
+  },
+}));
+
+jest.mock('expo-file-system', () => ({}));
+jest.mock('expo-file-system/legacy', () => ({}));
+jest.mock('expo-document-picker', () => ({}));
+jest.mock('expo-clipboard', () => ({}));
 
 // Mock FileSystemHandle factories
 const createMockFileHandle = (name: string, content: string = '') => ({

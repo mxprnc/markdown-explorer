@@ -29,6 +29,29 @@ describe('MarkdownUtils', () => {
       const input = '<iframe src="https://www.youtube.com/embed/123" originalurl="https://youtube.com/watch?v=123"></iframe>';
       expect(postprocessMarkdown(input)).toBe('https://youtube.com/watch?v=123');
     });
+
+    test('should convert LinkCard HTML back to mx- syntax', () => {
+      const input = '<span data-mx-link-card="true" data-type="thumb" data-alt="My Card" data-url="https://example.com"></span>';
+      expect(postprocessMarkdown(input)).toBe('[mx-thumb#My Card](https://example.com)');
+    });
+
+    test('should handle multiple LinkCards and other text', () => {
+      const input = 'Check this: <span data-mx-link-card="true" data-type="link" data-alt="Link" data-url="https://link.com"></span> and <span data-mx-link-card="true" data-type="video" data-alt="Video" data-url="https://video.com"></span>';
+      const output = postprocessMarkdown(input);
+      expect(output).toBe('Check this: [mx-link#Link](https://link.com) and [mx-video#Video](https://video.com)');
+    });
+  });
+
+  describe('LinkCard Preprocessing', () => {
+    test('should convert mx- syntax to HTML span', () => {
+      const input = '[mx-thumb#Title](https://url.com)';
+      expect(preprocessMarkdown(input)).toBe('<span data-mx-link-card="true" data-type="thumb" data-alt="Title" data-url="https://url.com"></span>');
+    });
+
+    test('should handle mx- syntax without alt text', () => {
+      const input = '[mx-plain](https://url.com)';
+      expect(preprocessMarkdown(input)).toBe('<span data-mx-link-card="true" data-type="plain" data-alt="" data-url="https://url.com"></span>');
+    });
   });
 
   describe('processTemplateVariables', () => {

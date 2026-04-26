@@ -92,8 +92,9 @@ export function EditorWorkspace({
   };
 
     // Memoize resolveImage handlers to prevent unnecessary re-renders in Preview/Editor
-    const resolveImage1 = React.useMemo(() => (src: string) => resolveImage(src, selectedFile), [resolveImage, selectedFile]);
-    const resolveImage2 = React.useMemo(() => (src: string) => resolveImage(src, selectedFile2), [resolveImage, selectedFile2]);
+    // Include localFiles in dependencies so that handlers update when file system state changes (e.g. after upload)
+    const resolveImage1 = React.useMemo(() => (src: string) => resolveImage(src, selectedFile), [resolveImage, selectedFile, localFiles]);
+    const resolveImage2 = React.useMemo(() => (src: string) => resolveImage(src, selectedFile2), [resolveImage, selectedFile2, localFiles]);
 
     const renderContent = (paneId: 1 | 2) => {
       const isPane1 = paneId === 1;

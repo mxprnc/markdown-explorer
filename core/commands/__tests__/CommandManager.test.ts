@@ -25,6 +25,6 @@ describe('CommandManager', () => {
       callback: () => {}
     });
     manager.removeCommand('test-command');
-    expect(manager.getCommands()).toHaveLength(0);
+    expect(manager.listCommands()).toHaveLength(0);
   });
 });
