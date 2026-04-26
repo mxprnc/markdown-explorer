@@ -95,7 +95,7 @@ export function preprocessMarkdown(md: string): string {
     .replace(/\\\]/g, ']');     // Restore links ]
 
   // Convert [mx-...] syntax to HTML span for LinkCardExtension to parse correctly on load
-  processed = processed.replace(/\[mx-(thumb|link|video)#([^\]]*)\]\(([^)]+)\)/g, (match, type, alt, url) => {
+  processed = processed.replace(/\[mx-(thumb|link|video|plain)#?([^\]]*)\]\(([^)]+)\)/g, (match, type, alt, url) => {
     return `<span data-mx-link-card="true" data-type="${type}" data-alt="${alt}" data-url="${url}"></span>`;
   });
 
@@ -131,6 +131,7 @@ export function postprocessMarkdown(md: string): string {
     if (type === 'thumb') return `[mx-thumb#${alt}](${url})`;
     if (type === 'link') return `[mx-link#${alt}](${url})`;
     if (type === 'video') return `[mx-video#${alt}](${url})`;
+    if (type === 'plain') return `[mx-plain#${alt}](${url})`;
     return url;
   });
   

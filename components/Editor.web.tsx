@@ -595,16 +595,23 @@ const LiveMarkdownExtension = Extension.create({
 
 
                 // Handle LinkCard (mx-thumb, mx-link, mx-video)
-                const mxRegex = /\[mx-(thumb|link|video)#([^\]]*)\]\(([^)]+)\)/g;
+                const mxRegex = /\[mx-(thumb|link|video|plain)#?([^\]]*)\]\(([^)]+)\)/g;
                 let mxMatch;
                 while ((mxMatch = mxRegex.exec(text)) !== null) {
-                  const start = pos + 1 + mxMatch.index;
-                  const end = start + mxMatch[0].length;
+                  const matchStart = mxMatch.index;
+                  const matchEnd = matchStart + mxMatch[0].length;
+                  
+                  // Accurate position calculation within the textblock
+                  const start = pos + 1 + matchStart;
+                  const end = pos + 1 + matchEnd;
+                  
                   const isTouching = (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) || (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
                   
-                  // Check if already a linkCard node at this position
-                  const existingNode = newState.doc.nodeAt(start);
-                  const isAlreadyLinkCard = existingNode && existingNode.type.name === 'linkCard';
+                  // More robust check for existing linkCard node in this range
+                  let isAlreadyLinkCard = false;
+                  newState.doc.nodesBetween(start, end, (node) => {
+                    if (node.type.name === 'linkCard') isAlreadyLinkCard = true;
+                  });
 
                   if (!isTouching && !isAlreadyLinkCard) {
                     const linkCardType = newState.schema.nodes.linkCard;
