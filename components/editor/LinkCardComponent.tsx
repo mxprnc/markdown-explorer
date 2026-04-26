@@ -98,12 +98,12 @@ const LinkCardComponent: React.FC<NodeViewProps> = ({ node, updateAttributes, ed
         nextMetadata = {
           image: `https://img.youtube.com/vi/${isYoutube}/mqdefault.jpg`,
           siteName: 'YouTube',
-          title: alt || 'YouTube Video'
+          title: alt || ''
         };
       } else {
         nextMetadata = {
-          title: alt || url.split('//')[1]?.split('/')[0] || url,
-          siteName: url.split('//')[1]?.split('/')[0] || 'Website'
+          title: alt || '',
+          siteName: url.split('//')[1]?.split('/')[0] || ''
         };
       }
     }

@@ -264,7 +264,7 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
               textDecoration: 'none', margin: '12px 0', maxWidth: '600px', backgroundColor: isDark ? '#1f2937' : '#fff' 
             }}>
               <div style={{ flex: 1, padding: '12px' }}>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#111827' }}>{alt || 'Link Card'}</div>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#111827' }}>{alt}</div>
                 <div style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{href}</div>
               </div>
             </a>
