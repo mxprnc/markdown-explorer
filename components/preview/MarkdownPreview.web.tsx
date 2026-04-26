@@ -50,7 +50,7 @@ const Mermaid = React.memo(({ chart, isDark }: { chart: string, isDark: boolean 
 /**
  * HAST Node Renderer
  */
-const HastRenderer = ({ node, components, isDark, resolveImage }: any): any => {
+const HastRenderer = React.memo(({ node, components, isDark, resolveImage }: any): any => {
   if (!node) return null;
   if (node.type === 'text') return node.value;
   
@@ -83,18 +83,68 @@ const HastRenderer = ({ node, components, isDark, resolveImage }: any): any => {
 
     return (
       <Component {...props} {...extraProps}>
-        {filteredChildren?.map((child: any, i: number) => (
-          <HastRenderer key={i} node={child} components={components} isDark={isDark} resolveImage={resolveImage} />
-        ))}
+        {filteredChildren?.map((child: any, i: number) => {
+          const key = child.position?.start?.offset !== undefined 
+            ? `${child.type}-${child.tagName || ''}-${child.position.start.offset}`
+            : `${child.type}-${child.tagName || ''}-${i}`;
+          return <HastRenderer key={key} node={child} components={components} isDark={isDark} resolveImage={resolveImage} />;
+        })}
       </Component>
     );
   }
   return null;
-};
+}, (prev, next) => prev.isDark === next.isDark && prev.resolveImage === next.resolveImage && equal(prev.node, next.node));
 
 const MarkdownBlock = React.memo(({ node, components, isDark, resolveImage }: any) => {
   return <HastRenderer node={node} components={components} isDark={isDark} resolveImage={resolveImage} />;
 }, (prev, next) => prev.isDark === next.isDark && prev.resolveImage === next.resolveImage && equal(prev.node, next.node));
+
+/**
+ * Preview Video Player (Memoized)
+ */
+const PreviewVideoPlayer = React.memo(({ youtubeId }: { youtubeId: string }) => {
+  const thumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
+  
+  return (
+    <span data-testid="preview-youtube" style={{ 
+      position: 'relative', 
+      margin: '16px 0', 
+      width: '100%', 
+      maxWidth: '600px', 
+      display: 'block', 
+      aspectRatio: '16 / 9', 
+      backgroundColor: '#000', 
+      borderRadius: '12px', 
+      overflow: 'hidden',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+    }}>
+      {/* Thumbnail Fallback */}
+      <img 
+        src={thumbnailUrl} 
+        style={{ 
+          position: 'absolute', 
+          top: 0, 
+          left: 0, 
+          width: '100%', 
+          height: '100%', 
+          objectFit: 'cover',
+          opacity: 0.5,
+          filter: 'blur(4px)'
+        }} 
+        alt=""
+      />
+      <iframe 
+        title="YouTube" 
+        src={`https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`} 
+        width="100%" 
+        height="100%" 
+        style={{ border: 'none', position: 'relative', zIndex: 1 }} 
+        allowFullScreen 
+        loading="lazy" 
+      />
+    </span>
+  );
+});
 
 const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVisible }: { content: string, isDark: boolean, resolveImage?: (src: string) => Promise<string>, onHeadingVisible?: (index: number) => void }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -203,11 +253,7 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
           const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
           const ytMatch = href ? ytRegex.exec(href) : null;
           if (ytMatch) {
-            return (
-              <span data-testid="preview-youtube" style={{ position: 'relative', margin: '16px 0', width: '100%', maxWidth: '600px', display: 'block', aspectRatio: '16 / 9', backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden' }}>
-                <iframe title="YouTube" src={`https://www.youtube.com/embed/${ytMatch[1]}`} width="100%" height="100%" style={{ border: 'none' }} allowFullScreen loading="lazy" />
-              </span>
-            );
+            return <PreviewVideoPlayer key={ytMatch[1]} youtubeId={ytMatch[1]} />;
           }
         }
         
@@ -240,7 +286,19 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
     img: (props: any) => {
       const { src, alt, ...rest } = props;
       const [resolvedSrc, setResolvedSrc] = useState(src);
-      useEffect(() => { if (src && resolveImage) resolveImage(src).then(url => url && setResolvedSrc(url)); }, [src]);
+      const isResolvedRef = useRef(false);
+
+      useEffect(() => { 
+        if (src && resolveImage && !src.startsWith('data:') && !src.startsWith('blob:') && !src.startsWith('http')) {
+          resolveImage(src).then(url => {
+            if (url && url !== src) {
+              setResolvedSrc(url);
+              isResolvedRef.current = true;
+            }
+          }); 
+        } 
+      }, [src]);
+      
       return <img src={resolvedSrc} alt={alt} data-testid="preview-image" style={{ maxWidth: '100%', borderRadius: '8px', display: 'block', margin: '16px 0' }} {...rest} />;
     },
     code: (props: any) => {
@@ -307,7 +365,12 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
         .markdown-preview th { background-color: ${isDark ? '#1F2937' : '#F9FAFB'}; font-weight: bold; }
       `}</style>
       {isParsing && !hast ? <span style={{ display: 'flex', justifyContent: 'center', padding: '20px', color: '#9CA3AF' }}>Parsing...</span> : null}
-      {!workerError && hast ? hast.children.map((child: any, i: number) => <MarkdownBlock key={i} node={child} components={components} isDark={isDark} resolveImage={resolveImage} />) : <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]} components={components as any}>{content}</ReactMarkdown>}
+      {!workerError && hast ? hast.children.map((child: any, i: number) => {
+        const key = child.position?.start?.offset !== undefined 
+          ? `${child.type}-${child.tagName || ''}-${child.position.start.offset}`
+          : `${child.type}-${child.tagName || ''}-${i}`;
+        return <MarkdownBlock key={key} node={child} components={components} isDark={isDark} resolveImage={resolveImage} />;
+      }) : <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]} components={components as any}>{content}</ReactMarkdown>}
     </div>
   );
 });

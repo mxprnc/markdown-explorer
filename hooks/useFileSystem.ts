@@ -432,7 +432,7 @@ export function useFileSystem() {
     updateFileSystemData,
     removeItemFromData,
     copyDirectoryRecursive,
-    deleteItem: async (item: FileSystemItem) => {
+    deleteItem: useCallback(async (item: FileSystemItem) => {
       if (!dirHandle) return;
       
       try {
@@ -475,8 +475,8 @@ export function useFileSystem() {
         console.error('Delete failed', e);
         return false;
       }
-    },
-    renameItem: async (item: FileSystemItem, newName: string) => {
+    }, [dirHandle, selectedFile, selectedFile2, removeItemFromData]),
+    renameItem: useCallback(async (item: FileSystemItem, newName: string) => {
       if (!item || !newName || !dirHandle) return false;
 
       const oldPath = item.path;
@@ -549,8 +549,8 @@ export function useFileSystem() {
         console.error('Rename failed', e);
         return false;
       }
-    },
-    createItem: async (parentPath: string, name: string, kind: 'file' | 'directory') => {
+    }, [dirHandle, copyDirectoryRecursive, updateFileSystemData]),
+    createItem: useCallback(async (parentPath: string, name: string, kind: 'file' | 'directory') => {
       if (!name || !dirHandle) return null;
 
       try {
@@ -629,8 +629,8 @@ export function useFileSystem() {
         console.error('Creation failed', e);
         return null;
       }
-    },
-    pasteImage: async (file: File, targetMarkdownFile: string) => {
+    }, [dirHandle, fileSystemData]),
+    pasteImage: useCallback(async (file: File, targetMarkdownFile: string) => {
       if (!dirHandle || !targetMarkdownFile) return '';
       try {
         if (!hasWritePermission) {
@@ -660,8 +660,8 @@ export function useFileSystem() {
         console.error('Failed to save pasted image', err);
         return '';
       }
-    },
-    resolveImage: async (relativePath: string, currentFilePath?: string) => {
+    }, [dirHandle, hasWritePermission, requestWritePermission]),
+    resolveImage: useCallback(async (relativePath: string, currentFilePath?: string) => {
       if (!dirHandle) return relativePath;
       try {
         if (relativePath.startsWith('http') || relativePath.startsWith('data:') || relativePath.startsWith('blob:')) {
@@ -694,8 +694,8 @@ export function useFileSystem() {
       } catch (err) {
         return relativePath;
       }
-    },
-    handleRenameImage: async (oldRelativePath: string, newFileName: string, selectedFile: string) => {
+    }, [dirHandle]),
+    handleRenameImage: useCallback(async (oldRelativePath: string, newFileName: string, selectedFile: string) => {
       if (!dirHandle || !selectedFile) return '';
       try {
         const parts = oldRelativePath.split('/');
@@ -732,8 +732,8 @@ export function useFileSystem() {
         console.error('Rename image failed', err);
         return '';
       }
-    },
-    handleSaveChatToFile: async (filename: string, content: string) => {
+    }, [dirHandle]),
+    handleSaveChatToFile: useCallback(async (filename: string, content: string) => {
       if (!dirHandle) return false;
       try {
         let targetPath = filename;
@@ -760,7 +760,7 @@ export function useFileSystem() {
         console.error('Save chat to file failed', err);
         return false;
       }
-    }
+    }, [dirHandle, localFiles])
   };
 }
 

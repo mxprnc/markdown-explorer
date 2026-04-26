@@ -33,7 +33,8 @@ export function Sidebar({
     
     const view = registeredViews.find(v => v.id === activeViewId);
     if (view) {
-      return app.viewRegistry.renderView(view.id);
+      const ViewComponent = view.component;
+      return <ViewComponent app={app} />;
     }
     
     return null;

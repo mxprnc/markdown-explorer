@@ -1060,194 +1060,69 @@ const CustomImage = Image.extend<any>({
   }
 });
 
-const CustomYoutube = Node.create<any>({
-  name: 'customYoutube',
-  group: 'inline',
-  inline: true,
-  atom: true,
-  addAttributes() {
+const SaveShortcut = Extension.create({
+  name: 'saveShortcut',
+  addKeyboardShortcuts() {
     return {
-      src: { default: null },
-      originalUrl: { default: null }
-    }
-  },
-  parseHTML() {
-    return [{ tag: 'iframe[data-youtube]' }]
-  },
-  renderHTML({ HTMLAttributes }) {
-    return ['iframe', { ...HTMLAttributes, 'data-youtube': 'true' }]
-  },
-  addNodeView() {
-    return ({ node, getPos, editor }: any) => {
-      const dom = document.createElement('span')
-      dom.style.position = 'relative'
-      dom.style.margin = '16px 0'
-      dom.style.width = '100%'
-      dom.style.maxWidth = '560px'
-      dom.style.display = 'inline-block'
-      
-      const iframe = document.createElement('iframe')
-      iframe.src = node.attrs.src
-      iframe.width = '100%'
-      iframe.height = '315'
-      iframe.style.borderRadius = '8px'
-      iframe.setAttribute('frameborder', '0')
-      iframe.setAttribute('allowfullscreen', 'true')
-      
-      // Top overlay for clicking
-      const overlay = document.createElement('div')
-      overlay.style.position = 'absolute'
-      overlay.style.top = '0'
-      overlay.style.left = '0'
-      overlay.style.right = '0'
-      overlay.style.height = '40px'
-      overlay.style.zIndex = '10'
-      overlay.style.cursor = 'pointer'
-      overlay.title = 'Click to edit link'
-      overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2), transparent)'
-      overlay.style.borderTopLeftRadius = '8px'
-      overlay.style.borderTopRightRadius = '8px'
-
-      dom.appendChild(iframe)
-      dom.appendChild(overlay)
-
-      const linkContainer = document.createElement('div')
-      linkContainer.style.display = 'flex'
-      linkContainer.style.alignItems = 'center'
-      linkContainer.style.marginTop = '8px'
-      linkContainer.style.gap = '8px'
-
-      const link = document.createElement('a')
-      link.href = node.attrs.originalUrl || node.attrs.src
-      link.target = '_blank'
-      link.rel = 'noopener noreferrer'
-      link.innerText = node.attrs.originalUrl || node.attrs.src
-      link.style.fontSize = '14px'
-      link.style.color = '#3b82f6' // text-blue-500
-      link.style.textDecoration = 'none'
-      link.style.wordBreak = 'break-all'
-      link.style.whiteSpace = 'nowrap'
-      link.style.overflow = 'hidden'
-      link.style.textOverflow = 'ellipsis'
-      link.style.flex = '1'
-      
-      link.addEventListener('mouseover', () => {
-        link.style.textDecoration = 'underline'
-      })
-      link.addEventListener('mouseout', () => {
-        link.style.textDecoration = 'none'
-      })
-      link.addEventListener('mousedown', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-      })
-
-      const copyButton = document.createElement('button')
-      copyButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`
-      copyButton.style.display = 'flex'
-      copyButton.style.alignItems = 'center'
-      copyButton.style.justifyContent = 'center'
-      copyButton.style.padding = '4px'
-      copyButton.style.background = 'transparent'
-      copyButton.style.border = 'none'
-      copyButton.style.cursor = 'pointer'
-      copyButton.style.color = '#6b7280' // text-gray-500
-      copyButton.style.borderRadius = '4px'
-      copyButton.title = 'Copy address'
-      
-      copyButton.addEventListener('mouseover', () => {
-        copyButton.style.background = 'rgba(0,0,0,0.05)'
-      })
-      copyButton.addEventListener('mouseout', () => {
-        copyButton.style.background = 'transparent'
-      })
-      copyButton.addEventListener('mousedown', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-      })
-      
-      copyButton.addEventListener('click', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(node.attrs.originalUrl || node.attrs.src)
-            .then(() => {
-              const originalHtml = copyButton.innerHTML;
-              copyButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
-              setTimeout(() => {
-                copyButton.innerHTML = originalHtml;
-              }, 2000)
-            })
+      'Mod-s': () => {
+        if (this.options.onSave) {
+          const markdown = postprocessMarkdown((this.editor.storage as any).markdown.getMarkdown());
+          this.options.onSave(markdown);
         }
-      })
-
-      linkContainer.appendChild(link)
-      linkContainer.appendChild(copyButton)
-      dom.appendChild(linkContainer)
-
-      overlay.addEventListener('click', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        if (typeof getPos === 'function') {
-          editor.commands.setTextSelection(getPos())
-        }
-      })
-
-      return { dom }
-    }
-  }
+        return true;
+      },
+    };
+  },
+  addOptions() {
+    return {
+      onSave: null,
+    };
+  },
 });
 
-export default forwardRef(function Editor({ value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, isDark, onHeadingVisible }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean, onHeadingVisible?: (index: number) => void }, ref: any) {
+export default forwardRef(function Editor({ value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, isDark, onHeadingVisible, onSelectionChange }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean, onHeadingVisible?: (index: number) => void, onSelectionChange?: (selection: { start: number, end: number }) => void }, ref: any) {
   const wrapperRef = React.useRef<HTMLDivElement>(null);
 
-  const SaveShortcut = Extension.create({
-    name: 'saveShortcut',
-    addKeyboardShortcuts() {
-      return {
-        'Mod-s': () => {
-          if (onSave) {
-            let md = (this.editor.storage as any).markdown.getMarkdown();
-            onSave(postprocessMarkdown(md));
-          }
-          return true; // prevent default
-        },
-        // Alt-t (Option-t on Mac) for templates
-        'Alt-t': () => {
-          // This will be caught by the AppInstance or handled via event bus
-          window.dispatchEvent(new CustomEvent('command:execute', { detail: { id: 'insert-template' } }));
-          return true;
-        }
-      }
-    },
-  });
+  const themeValue = React.useMemo(() => ({ isDark }), [isDark]);
+
+  const extensions = React.useMemo(() => [
+    StarterKit.configure({ codeBlock: false, heading: false, blockquote: false }),
+    CustomCodeBlock,
+    CustomHeading,
+    CustomBlockquote,
+    ImagePastingExtension.configure({ onPasteImage }),
+    LiveMarkdownExtension,
+    CustomImage.configure({ resolveImage, onRenameImage }),
+    Markdown,
+    MathExtension.configure({ evaluation: false }),
+    SaveShortcut.configure({ onSave }),
+    LinkCardExtension,
+  ], [onPasteImage, resolveImage, onRenameImage, onSave, onSelectionChange]);
+
+  const lastSentValueRef = React.useRef(value);
 
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({ codeBlock: false, heading: false, blockquote: false }),
-      CustomCodeBlock,
-      CustomHeading,
-      CustomBlockquote,
-      ImagePastingExtension.configure({ onPasteImage }),
-      LiveMarkdownExtension,
-      CustomImage.configure({ resolveImage, onRenameImage }),
-      CustomYoutube,
-      Markdown,
-      MathExtension.configure({ evaluation: false }),
-      SaveShortcut,
-      LinkCardExtension,
-    ],
+    extensions,
     content: preprocessMarkdown(value),
     onUpdate: ({ editor }) => {
-      // Use a debounce to prevent excessive parent re-renders and flashing in the Explorer
       if ((window as any).onUpdateTimer) {
         clearTimeout((window as any).onUpdateTimer);
       }
       
       (window as any).onUpdateTimer = setTimeout(() => {
+        if (editor.isDestroyed) return;
         const markdown = postprocessMarkdown((editor.storage as any).markdown.getMarkdown());
+        lastSentValueRef.current = markdown;
         onChange(markdown);
       }, 300);
+    },
+    onSelectionUpdate: ({ editor }) => {
+      if (onSelectionChange) {
+        onSelectionChange({
+          start: editor.state.selection.from,
+          end: editor.state.selection.to
+        });
+      }
     },
     editorProps: {
       attributes: {
@@ -1259,18 +1134,16 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
 
   useEffect(() => {
     if (editor && value !== undefined && !editor.isFocused) {
-      // Get current markdown from editor
+      // If the value is the same as what we just sent, or the same as current content, don't reset
+      if (value === lastSentValueRef.current) return;
+
       const currentMarkdown = (editor.storage as any).markdown.getMarkdown();
-      
-      // If the prop value is different from current editor content, update it
-      // We compare the raw values first to avoid unnecessary processing
       if (currentMarkdown !== value) {
-        // Double check after preprocessing to be sure
         const processedNew = preprocessMarkdown(value);
         const processedCurrent = preprocessMarkdown(currentMarkdown);
-        
         if (processedCurrent !== processedNew) {
-          editor.commands.setContent(processedNew);
+          editor.commands.setContent(processedNew, false);
+          lastSentValueRef.current = value;
         }
       }
     }
@@ -1310,6 +1183,7 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
     );
 
     const updateObservations = () => {
+      if (editor.isDestroyed) return;
       observer.disconnect();
       const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
       headings.forEach(h => observer.observe(h));
@@ -1321,14 +1195,16 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
 
     return () => {
       observer.disconnect();
-      editor.off('selectionUpdate', updateObservations);
-      editor.off('update', updateObservations);
+      if (!editor.isDestroyed) {
+        editor.off('selectionUpdate', updateObservations);
+        editor.off('update', updateObservations);
+      }
     };
   }, [editor, onHeadingVisible]);
 
   useImperativeHandle(ref, () => ({
     scrollToHeading: (index: number, text?: string) => {
-      if (!editor) return;
+      if (!editor || editor.isDestroyed) return;
 
       let targetPos = -1;
       let currentIndex = 0;
@@ -1381,7 +1257,7 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
       }
     },
     insertText: (text: string) => {
-      if (!editor) return;
+      if (!editor || editor.isDestroyed) return;
       editor.commands.insertContent(text);
       editor.commands.focus();
     }
@@ -1458,7 +1334,7 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
           color: inherit;
         }
       `}</style>
-      <ThemeContext.Provider value={{ isDark }}>
+      <ThemeContext.Provider value={themeValue}>
         <div data-testid="editor-input" style={{ height: '100%' }}>
           <EditorContent editor={editor} />
         </div>

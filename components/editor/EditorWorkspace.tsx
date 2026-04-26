@@ -91,96 +91,102 @@ export function EditorWorkspace({
     if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
   };
 
-  const renderContent = (paneId: 1 | 2) => {
-    const selFile = paneId === 1 ? selectedFile : selectedFile2;
-    const content = paneId === 1 ? editorContent : editorContent2;
-    const setContent = paneId === 1 ? setEditorContent : setEditorContent2;
-    const paneMode = forcePaneModes?.[paneId] || activeTab;
+    // Memoize resolveImage handlers to prevent unnecessary re-renders in Preview/Editor
+    const resolveImage1 = React.useMemo(() => (src: string) => resolveImage(src, selectedFile), [resolveImage, selectedFile]);
+    const resolveImage2 = React.useMemo(() => (src: string) => resolveImage(src, selectedFile2), [resolveImage, selectedFile2]);
 
-    if (!selFile) {
-      return (
-        <View 
-          style={{ 
-            flex: 1, 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            padding: 40, 
-            backgroundColor: dragOverPane === paneId ? (isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)') : 'transparent',
-            borderWidth: dragOverPane === paneId ? 2 : 0,
-            borderColor: colors.primary,
-            borderStyle: 'dashed'
-          }}
-          {...({
-            onDragOver: handleDragOver,
-            onDragEnter: (e: any) => handleDragEnter(e, paneId),
-            onDragLeave: (e: any) => handleDragLeave(e),
-          } as any)}
-        >
-          <Ionicons name="folder-open-outline" size={48} color={colors.primary} style={{ marginBottom: 16 }} />
-          {!selectedFolder ? (
-            <>
-              <Text style={{ color: colors.text, fontSize: 18, fontFamily: fontFamilyUI, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }}>
-                Welcome to Mark Explorer
-              </Text>
-              <Text style={{ color: colors.textMuted, fontSize: 14, fontFamily: fontFamilyUI, marginBottom: 24, textAlign: 'center' }}>
-                Open a local folder to start exploring and editing your Markdown files.
-              </Text>
-              <View 
-                style={{ 
-                  backgroundColor: colors.primary, 
-                  paddingHorizontal: 24, 
-                  paddingVertical: 12, 
-                  borderRadius: 8,
-                }}
-              >
-                <Text 
-                  onPress={onOpenDirectory}
-                  style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold', fontFamily: fontFamilyUI }}
-                >
-                  Open Folder
+    const renderContent = (paneId: 1 | 2) => {
+      const isPane1 = paneId === 1;
+      const selFile = isPane1 ? selectedFile : selectedFile2;
+      const content = isPane1 ? editorContent : editorContent2;
+      const setContent = isPane1 ? setEditorContent : setEditorContent2;
+      const paneMode = forcePaneModes?.[paneId] || activeTab;
+      const paneResolveImage = isPane1 ? resolveImage1 : resolveImage2;
+
+      if (!selFile) {
+        return (
+          <View 
+            style={{ 
+              flex: 1, 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              padding: 40, 
+              backgroundColor: dragOverPane === paneId ? (isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)') : 'transparent',
+              borderWidth: dragOverPane === paneId ? 2 : 0,
+              borderColor: colors.primary,
+              borderStyle: 'dashed'
+            }}
+            {...({
+              onDragOver: handleDragOver,
+              onDragEnter: (e: any) => handleDragEnter(e, paneId),
+              onDragLeave: (e: any) => handleDragLeave(e),
+            } as any)}
+          >
+            <Ionicons name="folder-open-outline" size={48} color={colors.primary} style={{ marginBottom: 16 }} />
+            {!selectedFolder ? (
+              <>
+                <Text style={{ color: colors.text, fontSize: 18, fontFamily: fontFamilyUI, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }}>
+                  Welcome to Mark Explorer
                 </Text>
-              </View>
-            </>
-          ) : (
-            <Text style={{ color: colors.textMuted, fontSize: 16, fontFamily: fontFamilyUI }}>Please select a file.</Text>
-          )}
-        </View>
-      );
-    }
+                <Text style={{ color: colors.textMuted, fontSize: 14, fontFamily: fontFamilyUI, marginBottom: 24, textAlign: 'center' }}>
+                  Open a local folder to start exploring and editing your Markdown files.
+                </Text>
+                <View 
+                  style={{ 
+                    backgroundColor: colors.primary, 
+                    paddingHorizontal: 24, 
+                    paddingVertical: 12, 
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text 
+                    onPress={onOpenDirectory}
+                    style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold', fontFamily: fontFamilyUI }}
+                  >
+                    Open Folder
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <Text style={{ color: colors.textMuted, fontSize: 16, fontFamily: fontFamilyUI }}>Please select a file.</Text>
+            )}
+          </View>
+        );
+      }
 
-    if (/\.(png|jpe?g|gif|webp)$/i.test(selFile)) {
-      return <ImageViewer uri={localFiles[selFile]} name={selFile} fontFamilyCode={fontFamilyCode} />;
-    }
+      if (/\.(png|jpe?g|gif|webp)$/i.test(selFile)) {
+        return <ImageViewer uri={localFiles[selFile]} name={selFile} fontFamilyCode={fontFamilyCode} />;
+      }
 
-    if (paneMode === 'files') {
+      if (paneMode === 'files') {
+        return (
+          <MarkdownPreview 
+            ref={isPane1 ? previewRef1 : previewRef2}
+            key={`preview-${paneId}-${selFile}`}
+            content={content} 
+            isDark={isDark}
+            resolveImage={paneResolveImage} 
+            onHeadingVisible={paneId === activePane ? onHeadingVisible : undefined}
+          />
+        );
+      }
+
       return (
-        <MarkdownPreview 
-          ref={paneId === 1 ? previewRef1 : previewRef2}
-          key={`preview-${paneId}-${selFile}`}
-          content={content} 
+        <Editor 
+          ref={isPane1 ? editorRef1 : editorRef2}
+          key={`${paneId}-${selFile}`}
+          value={content} 
+          onChange={setContent} 
+          resolveImage={paneResolveImage} 
+          onPasteImage={onPasteImage} 
+          onRenameImage={onRenameImage}
+          onSave={(val: string) => onSaveFile(val, selFile)}
+          onSelectionChange={isPane1 ? onSelectionChange1 : onSelectionChange2}
           isDark={isDark}
-          resolveImage={(src) => resolveImage(src, selFile)} 
           onHeadingVisible={paneId === activePane ? onHeadingVisible : undefined}
         />
       );
-    }
-
-    return (
-      <Editor 
-        ref={paneId === 1 ? editorRef1 : editorRef2}
-        key={`${paneId}-${selFile}`}
-        value={content} 
-        onChange={setContent} 
-        resolveImage={(src) => resolveImage(src, selFile)} 
-        onPasteImage={onPasteImage} 
-        onRenameImage={onRenameImage}
-        onSave={(val: string) => onSaveFile(val, selFile)}
-        onSelectionChange={paneId === 1 ? onSelectionChange1 : onSelectionChange2}
-        isDark={isDark}
-        onHeadingVisible={paneId === activePane ? onHeadingVisible : undefined}
-      />
-    );
-  };
+    };
 
   const renderPane = (paneId: 1 | 2) => {
     const isMain = paneId === 1;

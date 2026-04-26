@@ -1098,7 +1098,7 @@ function MainScreen() {
     });
   };
 
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
       const prevState = history[historyIndex - 1];
       if (prevState.file === selectedFile) {
@@ -1106,9 +1106,9 @@ function MainScreen() {
         setHistoryIndex(historyIndex - 1);
       }
     }
-  };
+  }, [history, historyIndex, selectedFile]);
 
-  const handleRedo = () => {
+  const handleRedo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       const nextState = history[historyIndex + 1];
       if (nextState.file === selectedFile) {
@@ -1116,7 +1116,7 @@ function MainScreen() {
         setHistoryIndex(historyIndex + 1);
       }
     }
-  };
+  }, [history, historyIndex, selectedFile]);
 
   // Track content changes for history
   useEffect(() => {
@@ -1129,7 +1129,7 @@ function MainScreen() {
     return () => clearTimeout(timer);
   }, [editorContent, selectedFile]);
 
-  const handleToolbarAction = (action: string) => {
+  const handleToolbarAction = useCallback((action: string) => {
     if (action === 'undo') return handleUndo();
     if (action === 'redo') return handleRedo();
 
@@ -1158,9 +1158,9 @@ function MainScreen() {
     
     const newContent = content.substring(0, start) + replacement + content.substring(end);
     setContent(newContent);
-  };
+  }, [handleUndo, handleRedo, activePane, editorContent, editorContent2, selection1, selection2]);
 
-  const handleSaveToDisk = async (content: string, file: string, silent = false) => {
+  const handleSaveToDisk = useCallback(async (content: string, file: string, silent = false) => {
     setIsSaving(true);
     try {
       const success = await handleSaveToDiskInHook(file, content);
@@ -1185,7 +1185,7 @@ function MainScreen() {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [handleSaveToDiskInHook]);
 
   const showToast = (message: string) => {
     setToast({ visible: true, message });
@@ -1337,7 +1337,7 @@ function MainScreen() {
                 activeViewId={activeSidebarViewId}
                 setActiveViewId={setActiveSidebarViewId}
                 registeredViews={sidebarViews}
-                renderFileExplorer={() => (
+                renderFileExplorer={useCallback(() => (
                   <FileExplorer 
                     leftPaneWidth={(isMobile ? sidebarWidth : leftPaneWidth) - 48}
                     leftPaneResponder={{ panHandlers: {} }} 
@@ -1373,7 +1373,7 @@ function MainScreen() {
                       setNextraExportModalVisible(true);
                     }}
                   />
-                )}
+                ), [isMobile, sidebarWidth, leftPaneWidth, fileSystemData, selectedFile, selectedFile2, expandedFolders, hoveredItemPath, handleSelectFile, toggleFolder, handleOpenDirectory, contextMenu, handleDeleteFileSystem, renamingItem, creatingItem, creationName, handleConfirmCreation, loadDirectoryRecursive])}
               />
             </Animated.View>
           )}

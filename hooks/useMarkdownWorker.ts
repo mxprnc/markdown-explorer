@@ -11,6 +11,7 @@ export function useMarkdownWorker(content: string) {
   const [isParsing, setIsParsing] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [workerError, setWorkerError] = useState(false);
   useEffect(() => {
     let workerUrl: string | null = null;
@@ -94,15 +95,20 @@ export function useMarkdownWorker(content: string) {
         name: 'markdown-worker'
       });
 
+
       workerRef.current.onmessage = (event) => {
         const { hast, id, success, error } = event.data;
         if (id === requestIdRef.current) {
           if (success) {
-            setHast(hast);
+            if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+            debounceTimerRef.current = setTimeout(() => {
+              setHast(hast);
+              setIsParsing(false);
+            }, 50); // 50ms debounce to batch rapid updates
           } else {
             console.error('Markdown worker parsing error:', error);
+            setIsParsing(false);
           }
-          setIsParsing(false);
         }
       };
 
@@ -117,6 +123,9 @@ export function useMarkdownWorker(content: string) {
     }
 
     return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       if (workerRef.current) {
         workerRef.current.terminate();
         workerRef.current = null;
@@ -136,7 +145,7 @@ export function useMarkdownWorker(content: string) {
 
     if (workerRef.current && !workerError) {
       setIsParsing(true);
-      setHast(null); // Clear stale data immediately
+      // setHast(null); // REMOVED: Do not clear stale data to prevent flickering during parsing
       requestIdRef.current += 1;
       workerRef.current.postMessage({
         content,
