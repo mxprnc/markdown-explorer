@@ -20,7 +20,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default' });
 
 import { LinkCardExtension } from './editor/LinkCardExtension';
 
-const ThemeContext = React.createContext({ isDark: false });
+import { ThemeContext } from './editor/ThemeContext';
 
 function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {
   const [svg, setSvg] = useState<string>('');
@@ -601,7 +601,12 @@ const LiveMarkdownExtension = Extension.create({
                   const start = pos + 1 + mxMatch.index;
                   const end = start + mxMatch[0].length;
                   const isTouching = (newState.selection.$from.pos >= start && newState.selection.$from.pos <= end) || (newState.selection.$to.pos >= start && newState.selection.$to.pos <= end);
-                  if (!isTouching) {
+                  
+                  // Check if already a linkCard node at this position
+                  const existingNode = newState.doc.nodeAt(start);
+                  const isAlreadyLinkCard = existingNode && existingNode.type.name === 'linkCard';
+
+                  if (!isTouching && !isAlreadyLinkCard) {
                     const linkCardType = newState.schema.nodes.linkCard;
                     if (linkCardType) {
                       changes.push({ 
@@ -623,10 +628,14 @@ const LiveMarkdownExtension = Extension.create({
                   const textBefore = text.slice(0, plainMatch.index);
                   const isInsideLink = /\[[^\]]*\]\($/.test(textBefore) || /!\[[^\]]*\]\($/.test(textBefore);
 
-                  if (!isTouching && !isInsideLink) {
+                  // Check if already a linkCard node at this position
+                  const existingNode = newState.doc.nodeAt(start);
+                  const isAlreadyLinkCard = existingNode && existingNode.type.name === 'linkCard';
+
+                  if (!isTouching && !isInsideLink && !isAlreadyLinkCard) {
                     const linkCardType = newState.schema.nodes.linkCard;
                     if (linkCardType) {
-                      // Only push if this range doesn't overlap with already matched mx- or youtube patterns
+                      // Only push if this range doesn't overlap with already matched patterns
                       if (!changes.some(c => (start >= c.start && start < c.end) || (end > c.start && end <= c.end))) {
                         changes.push({ 
                           start, end, 
