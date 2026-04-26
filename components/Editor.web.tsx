@@ -19,8 +19,8 @@ import mermaid from 'mermaid';
 mermaid.initialize({ startOnLoad: false, theme: 'default' });
 
 import { LinkCardExtension } from './editor/LinkCardExtension';
-
-import { ThemeContext } from './editor/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { CopyButton } from './ui/CopyButton';
 
 function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {
   const [svg, setSvg] = useState<string>('');
@@ -50,7 +50,7 @@ function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {
 }
 
 const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos }: any) => {
-  const { isDark } = React.useContext(ThemeContext);
+  const { isDark, colors } = useTheme();
   const [isEditing, setIsEditing] = useState(() => {
     if (typeof getPos !== 'function') return false;
     const pos = getPos();
@@ -79,7 +79,8 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
       // A safer check in Tiptap for NodeViews is just checking if we are within pos and pos + nodeSize.
       // Because node sizes jitter when typing newlines, we add a bit of leeway.
       const pos = getPos();
-      const isInside = $from.pos >= pos && $from.pos <= pos + node.nodeSize;
+    // Use editor.isFocused to ensure we only show editing mode when active
+    const isInside = editor.isFocused && $from.pos >= pos && $from.pos <= pos + node.nodeSize;
 
       if (isInside !== isEditing) {
         setIsEditing(isInside);
@@ -177,10 +178,7 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
               <div style={{ fontSize: 11, fontWeight: 'bold', fontFamily: 'Inter, sans-serif', color: isDark ? '#9CA3AF' : '#6B7280', textTransform: 'uppercase' }}>
                 {language || 'code'}
               </div>
-              <div onClick={(e) => { e.stopPropagation(); handleCopy(); }} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '4px 8px', borderRadius: 4 }}>
-                <Ionicons name="copy-outline" size={14} color={isDark ? '#9CA3AF' : '#6B7280'} style={{ marginRight: 4 }} />
-                <span style={{ fontSize: 12, color: isDark ? '#9CA3AF' : '#6B7280', fontWeight: 'bold' }}>Copy</span>
-              </div>
+                <CopyButton content={rawCodeContent} />
             </div>
 
             <SyntaxHighlighter
@@ -219,7 +217,7 @@ const CustomCodeBlock = CodeBlock.extend({
 });
 
 const HeadingComponent = ({ node, updateAttributes, editor, getPos }: any) => {
-  const { isDark } = React.useContext(ThemeContext);
+  const { isDark } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   const [isEditing, setIsEditing] = useState(() => {
     if (typeof getPos !== 'function') return false;
@@ -342,7 +340,7 @@ const CustomHeading = Heading.extend({
 });
 
 const BlockquoteComponent = ({ node, editor, getPos }: any) => {
-  const { isDark } = React.useContext(ThemeContext);
+  const { isDark } = useTheme();
   const [isEditing, setIsEditing] = useState(() => {
     if (typeof getPos !== 'function') return false;
     const { $from, $to } = editor.state.selection;
@@ -1090,17 +1088,16 @@ const SaveShortcut = Extension.create({
 export default forwardRef(function Editor({ value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, isDark, onHeadingVisible, onSelectionChange }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean, onHeadingVisible?: (index: number) => void, onSelectionChange?: (selection: { start: number, end: number }) => void }, ref: any) {
   const wrapperRef = React.useRef<HTMLDivElement>(null);
 
-  const themeValue = React.useMemo(() => ({ isDark }), [isDark]);
 
   const extensions = React.useMemo(() => [
     StarterKit.configure({ codeBlock: false, heading: false, blockquote: false }),
+    Markdown,
     CustomCodeBlock,
     CustomHeading,
     CustomBlockquote,
     ImagePastingExtension.configure({ onPasteImage }),
     LiveMarkdownExtension,
     CustomImage.configure({ resolveImage, onRenameImage }),
-    Markdown,
     MathExtension.configure({ evaluation: false }),
     SaveShortcut.configure({ onSave }),
     LinkCardExtension,
@@ -1341,11 +1338,9 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
           color: inherit;
         }
       `}</style>
-      <ThemeContext.Provider value={themeValue}>
         <div data-testid="editor-input" style={{ height: '100%' }}>
           <EditorContent editor={editor} />
         </div>
-      </ThemeContext.Provider>
     </div>
   );
 });

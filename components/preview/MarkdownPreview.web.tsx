@@ -10,6 +10,7 @@ import { useMarkdownWorker } from '../../hooks/useMarkdownWorker';
 import mermaid from 'mermaid';
 import equal from 'fast-deep-equal';
 import { findBestHeadingMatch } from '@/utils/MarkdownUtils';
+import { CopyButton } from '../ui/CopyButton';
 
 mermaid.initialize({ startOnLoad: false, theme: 'default' });
 
@@ -327,7 +328,32 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
       }
 
       return (
-        <span style={{ display: 'block', position: 'relative', margin: '16px 0' }}>
+        <div style={{ 
+          margin: '20px 0', 
+          borderRadius: '10px', 
+          overflow: 'hidden', 
+          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'}`,
+          backgroundColor: isDark ? '#0b0e14' : '#F9FAFB',
+          boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.05)',
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            padding: '8px 16px',
+            backgroundColor: isDark ? '#151921' : '#F8FAFC',
+            borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'}`
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#ff5f56', marginRight: 6 }} />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#ffbd2e', marginRight: 6 }} />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#27c93f', marginRight: 12 }} />
+              <span style={{ fontSize: '11px', fontWeight: '700', color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                {match[1]}
+              </span>
+            </div>
+            <CopyButton content={codeString} />
+          </div>
           <SyntaxHighlighter
             {...rest}
             PreTag="div"
@@ -336,15 +362,16 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
             style={isDark ? oneDark : oneLight}
             showLineNumbers={true}
             customStyle={{
-              borderRadius: '8px',
+              margin: 0,
               padding: '16px',
               fontSize: '13px',
-              backgroundColor: isDark ? '#111827' : '#F9FAFB',
-              border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
+              backgroundColor: 'transparent',
+              border: 'none',
             }}
           />
-        </span>
+        </div>
       );
+
     }
   }), [isDark, resolveImage]);
 
