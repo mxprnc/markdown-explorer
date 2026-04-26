@@ -30,9 +30,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">9.71% </span>
+                <span class="strong">9.28% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>17/175</span>
+                <span class='fraction'>17/183</span>
             </div>
         
             
@@ -442,7 +442,35 @@
 <a name='L377'></a><a href='#L377'>377</a>
 <a name='L378'></a><a href='#L378'>378</a>
 <a name='L379'></a><a href='#L379'>379</a>
-<a name='L380'></a><a href='#L380'>380</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L380'></a><a href='#L380'>380</a>
+<a name='L381'></a><a href='#L381'>381</a>
+<a name='L382'></a><a href='#L382'>382</a>
+<a name='L383'></a><a href='#L383'>383</a>
+<a name='L384'></a><a href='#L384'>384</a>
+<a name='L385'></a><a href='#L385'>385</a>
+<a name='L386'></a><a href='#L386'>386</a>
+<a name='L387'></a><a href='#L387'>387</a>
+<a name='L388'></a><a href='#L388'>388</a>
+<a name='L389'></a><a href='#L389'>389</a>
+<a name='L390'></a><a href='#L390'>390</a>
+<a name='L391'></a><a href='#L391'>391</a>
+<a name='L392'></a><a href='#L392'>392</a>
+<a name='L393'></a><a href='#L393'>393</a>
+<a name='L394'></a><a href='#L394'>394</a>
+<a name='L395'></a><a href='#L395'>395</a>
+<a name='L396'></a><a href='#L396'>396</a>
+<a name='L397'></a><a href='#L397'>397</a>
+<a name='L398'></a><a href='#L398'>398</a>
+<a name='L399'></a><a href='#L399'>399</a>
+<a name='L400'></a><a href='#L400'>400</a>
+<a name='L401'></a><a href='#L401'>401</a>
+<a name='L402'></a><a href='#L402'>402</a>
+<a name='L403'></a><a href='#L403'>403</a>
+<a name='L404'></a><a href='#L404'>404</a>
+<a name='L405'></a><a href='#L405'>405</a>
+<a name='L406'></a><a href='#L406'>406</a>
+<a name='L407'></a><a href='#L407'>407</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -771,6 +799,32 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -833,6 +887,7 @@ import { useMarkdownWorker } from '../../hooks/useMarkdownWorker';
 import mermaid from 'mermaid';
 import equal from 'fast-deep-equal';
 import { findBestHeadingMatch } from '@/utils/MarkdownUtils';
+import { CopyButton } from '../ui/CopyButton';
 &nbsp;
 mermaid.initialize({ startOnLoad: false, theme: 'default' });
 &nbsp;
@@ -1150,7 +1205,32 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
       }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      return (</span>
-        &lt;span style={{ display: 'block', position: 'relative', margin: '16px 0' }}&gt;
+        &lt;div style={{ 
+          margin: '20px 0', 
+          borderRadius: '10px', 
+          overflow: 'hidden', 
+          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'}`,
+          backgroundColor: isDark ? '#0b0e14' : '#F9FAFB',
+          boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.05)',
+        }}&gt;
+          &lt;div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            padding: '8px 16px',
+            backgroundColor: isDark ? '#151921' : '#F8FAFC',
+            borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'}`
+          }}&gt;
+            &lt;div style={{ display: 'flex', alignItems: 'center' }}&gt;
+              &lt;div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#ff5f56', marginRight: 6 }} /&gt;
+              &lt;div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#ffbd2e', marginRight: 6 }} /&gt;
+              &lt;div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#27c93f', marginRight: 12 }} /&gt;
+              &lt;span style={{ fontSize: '11px', fontWeight: '700', color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}&gt;
+                {match[1]}
+              &lt;/span&gt;
+            &lt;/div&gt;
+            &lt;CopyButton content={codeString} /&gt;
+          &lt;/div&gt;
           &lt;SyntaxHighlighter
             {...rest}
             PreTag="div"
@@ -1159,15 +1239,16 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
             style={isDark ? oneDark : oneLight}
             showLineNumbers={true}
             customStyle={{
-              borderRadius: '8px',
+              margin: 0,
               padding: '16px',
               fontSize: '13px',
-              backgroundColor: isDark ? '#111827' : '#F9FAFB',
-              border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
+              backgroundColor: 'transparent',
+              border: 'none',
             }}
           /&gt;
-        &lt;/span&gt;
+        &lt;/div&gt;
       );
+&nbsp;
     }
   }), [isDark, resolveImage]);
 &nbsp;
@@ -1207,7 +1288,7 @@ export default React.memo(MarkdownPreview);
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-26T05:19:17.726Z
+                at 2026-04-26T06:34:40.935Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

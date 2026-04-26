@@ -54,7 +54,7 @@ describe('ThemeContext', () => {
 
     expect(capturedTheme).toBeDefined();
     expect(capturedTheme.isDark).toBe(true);
-    expect(capturedTheme.colors.background).toBe('#121212');
+    expect(capturedTheme.colors.background).toBe('#0b0e14');
   });
 
   test('toggleTheme should switch between light and dark', () => {

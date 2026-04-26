@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, Text, StyleSheet, View, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
+import { copyToClipboard } from '@/utils/ClipboardUtils';
 import { useTheme } from '@/contexts/ThemeContext';
 
 interface CopyButtonProps {
@@ -15,22 +15,19 @@ export const CopyButton = ({ content, style }: CopyButtonProps) => {
 
   const handleCopy = async () => {
     try {
-      if (Platform.OS === 'web' && navigator.clipboard) {
-        await navigator.clipboard.writeText(content);
-      } else {
-        await Clipboard.setStringAsync(content);
-      }
-      
+      await copyToClipboard(content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy text: ', err);
+      // Error is handled in utility, but we could show a toast here
     }
   };
 
   return (
     <Pressable 
+      testID="copy-button"
       onPress={(e) => {
+
         // Prevent Tiptap or other parent interactions
         if (Platform.OS === 'web') {
           (e as any).stopPropagation();

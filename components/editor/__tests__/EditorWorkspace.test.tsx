@@ -9,6 +9,9 @@ jest.mock('../../Editor', () => 'Editor');
 jest.mock('../../preview/MarkdownPreview', () => 'Preview');
 jest.mock('../../layout/TabBar', () => ({ TabBar: 'TabBar' }));
 jest.mock('../../preview/ImageViewer', () => ({ ImageViewer: 'ImageViewer' }));
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: 'Ionicons',
+}));
 
 // Mock react-native components to avoid ref issues in test-renderer
 jest.mock('react-native', () => {
