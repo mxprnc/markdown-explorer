@@ -18,6 +18,7 @@ export async function injectMockFileSystem(page: Page, data: any[], files: Recor
             getDirectoryHandle: async () => ({ kind: 'directory' }),
             getFileHandle: async () => ({ kind: 'file' }),
             removeEntry: async () => {},
+            move: async () => {}, // Mock move
             values: async function* () { yield* []; }
           };
         } else {
@@ -26,8 +27,8 @@ export async function injectMockFileSystem(page: Page, data: any[], files: Recor
             name: item.name,
             getFile: async () => new File([''], item.name),
             createWritable: async () => ({ write: async () => {}, close: async () => {} }),
-            move: async (newName: string) => {
-              if (newName === 'already-exists.md') {
+            move: async (parentOrName: any, newName?: string) => {
+              if (parentOrName === 'already-exists.md' || newName === 'already-exists.md') {
                 throw new Error('Entry already exists');
               }
             }
@@ -52,7 +53,9 @@ export async function injectMockFileSystem(page: Page, data: any[], files: Recor
           kind: 'directory',
           name,
           getDirectoryHandle: async () => ({ kind: 'directory' }),
-          removeEntry: async () => {}
+          getFileHandle: async () => ({ kind: 'file' }),
+          removeEntry: async () => {},
+          move: async () => {}
         };
       },
       removeEntry: async () => {}

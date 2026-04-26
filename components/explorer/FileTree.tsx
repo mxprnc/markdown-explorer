@@ -23,6 +23,7 @@ interface FileTreeProps {
   onConfirmCreation: () => void;
   onCancelCreation: () => void;
   setDraggingTab: (val: any) => void;
+  onMove: (item: any, targetParentPath: string) => void;
 }
 
 export function FileTree({
@@ -30,7 +31,7 @@ export function FileTree({
   selectedFile, selectedFile2, expandedFolders, hoveredItemPath,
   onSelect, onToggle, onContextMenu, onMouseEnter, onMouseLeave, onRenameRequest,
   creatingItem, creationName, setCreationName, onConfirmCreation, onCancelCreation,
-  setDraggingTab
+  setDraggingTab, onMove
 }: FileTreeProps) {
   const { colors, isDark } = useTheme();
   
@@ -54,6 +55,7 @@ export function FileTree({
             onMouseLeave={onMouseLeave}
             onRenameRequest={onRenameRequest}
             setDraggingTab={setDraggingTab}
+            onMove={onMove}
           />
           {(isExpanded && item.children) ? (
             <FileTree 
@@ -76,6 +78,7 @@ export function FileTree({
               onConfirmCreation={onConfirmCreation}
               onCancelCreation={onCancelCreation}
               setDraggingTab={setDraggingTab}
+              onMove={onMove}
             />
           ) : null}
         </View>

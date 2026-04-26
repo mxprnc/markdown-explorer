@@ -39,6 +39,7 @@ import { ContextMenu } from '@/components/explorer/ContextMenu';
 import { AVAILABLE_MODELS } from '@/constants/Models';
 import { getFileCache, setFileCache } from '@/utils/IndexedDBUtils';
 import { handleTabSelection, pinTab, closeOthers, closeAll } from '@/utils/TabUtils';
+import { findItemInTree } from '@/utils/FileSystemUtils';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -174,6 +175,7 @@ function MainScreen() {
     resolveImage,
     handleRenameImage: handleRenameImageInHook,
     handleSaveChatToFile,
+    moveItem,
   } = useFileSystem();
   
   const { recentFiles, addRecentFile } = useRecentFiles();
@@ -913,6 +915,24 @@ function MainScreen() {
     setRenamingItem(null);
   };
 
+  const handleMoveFileSystem = useCallback(async (draggedItemInfo: any, targetParentPath: string) => {
+    const fullItem = findItemInTree(fileSystemData, draggedItemInfo.path);
+    if (!fullItem) {
+      console.error('Could not find item with path:', draggedItemInfo.path);
+      return;
+    }
+
+    const success = await moveItem(fullItem, targetParentPath);
+    if (success) {
+      const displayPath = targetParentPath || 'root';
+      setToast({ visible: true, message: `Moved to ${displayPath}` });
+      setTimeout(() => setToast({ visible: false, message: '' }), 3000);
+    } else {
+      if (Platform.OS === 'web') window.alert('An error occurred during move.');
+      else Alert.alert('Error', 'An error occurred during move.');
+    }
+  }, [moveItem, fileSystemData]);
+
   const handleConfirmCreation = async () => {
     const newItem = await createItem(creatingItem!.parentPath, creationName, creatingItem!.kind);
     if (newItem) {
@@ -1379,8 +1399,9 @@ function MainScreen() {
                       setNextraExportTarget(item);
                       setNextraExportModalVisible(true);
                     }}
+                    onMove={handleMoveFileSystem}
                   />
-                ), [isMobile, sidebarWidth, leftPaneWidth, fileSystemData, selectedFile, selectedFile2, expandedFolders, hoveredItemPath, handleSelectFile, toggleFolder, handleOpenDirectory, contextMenu, handleDeleteFileSystem, renamingItem, creatingItem, creationName, handleConfirmCreation, loadDirectoryRecursive])}
+                ), [isMobile, sidebarWidth, leftPaneWidth, fileSystemData, selectedFile, selectedFile2, expandedFolders, hoveredItemPath, handleSelectFile, toggleFolder, handleOpenDirectory, contextMenu, handleDeleteFileSystem, renamingItem, creatingItem, creationName, handleConfirmCreation, loadDirectoryRecursive, handleMoveFileSystem])}
               />
             </Animated.View>
           )}
@@ -1583,22 +1604,22 @@ function MainScreen() {
           {tabContextMenu && (
             <View 
               style={[
-                styles.contextMenu, 
+                s.contextMenu, 
                 { top: tabContextMenu.y, left: tabContextMenu.x, backgroundColor: colors.surface, borderColor: colors.border, zIndex: 4000 }
               ]}
             >
-              <Pressable style={styles.menuItem} onPress={() => handleTabAction('close')}>
-                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Close</Text>
+              <Pressable style={s.menuItem} onPress={() => handleTabAction('close')}>
+                <Text style={[s.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Close</Text>
               </Pressable>
-              <Pressable style={styles.menuItem} onPress={() => handleTabAction('pin')}>
-                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Pin</Text>
+              <Pressable style={s.menuItem} onPress={() => handleTabAction('pin')}>
+                <Text style={[s.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Pin</Text>
               </Pressable>
               <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
-              <Pressable style={styles.menuItem} onPress={() => handleTabAction('closeOthers')}>
-                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Close Others</Text>
+              <Pressable style={s.menuItem} onPress={() => handleTabAction('closeOthers')}>
+                <Text style={[s.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Close Others</Text>
               </Pressable>
-              <Pressable style={styles.menuItem} onPress={() => handleTabAction('closeAll')}>
-                <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Close All</Text>
+              <Pressable style={s.menuItem} onPress={() => handleTabAction('closeAll')}>
+                <Text style={[s.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Close All</Text>
               </Pressable>
             </View>
           )}
@@ -1713,11 +1734,10 @@ function MainScreen() {
 
         <RenameModal 
           visible={!!renamingItem}
-          onClose={() => setRenamingItem(null)}
-          currentName={renamingItem?.name || ''}
-          onRename={handleRenameFileSystem}
-          newName={newName}
-          setNewName={setNewName}
+          onCancel={() => setRenamingItem(null)}
+          name={newName}
+          onChangeName={setNewName}
+          onConfirm={handleRenameFileSystem}
         />
 
         <NextraExportModal 

@@ -29,6 +29,7 @@ interface FileExplorerProps {
   onCancelCreation: () => void;
   setDraggingTab: (val: any) => void;
   onExportToNextra: (item: any) => void;
+  onMove: (item: any, targetParentPath: string) => void;
 }
 
 export function FileExplorer({
@@ -37,7 +38,7 @@ export function FileExplorer({
   onSelect, onToggle, onMouseEnter, onMouseLeave, onOpenDirectory,
   contextMenu, setContextMenu, onDelete, onRenameRequest, onCreateRequest,
   creatingItem, creationName, setCreationName, onConfirmCreation, onCancelCreation,
-  setDraggingTab, onExportToNextra
+  setDraggingTab, onExportToNextra, onMove
 }: FileExplorerProps) {
   const { colors, isDark, fontFamilyUI } = useTheme();
   
@@ -52,7 +53,28 @@ export function FileExplorer({
           <Ionicons name="folder-open-outline" size={16} color={colors.primary} />
         </Pressable>
       </View>
-      <ScrollView style={styles.scroll}>
+      <ScrollView 
+        style={styles.scroll}
+        {...(Platform.OS === 'web' ? {
+          onDragOver: (e: any) => {
+            e.preventDefault();
+          },
+          onDrop: (e: any) => {
+            e.preventDefault();
+            try {
+              const data = JSON.parse(e.dataTransfer.getData("application/json"));
+              if (data && data.path) {
+                // If the path contains '/', it's not already in the root
+                if (data.path.includes('/')) {
+                  onMove(data, ''); // Move to root
+                }
+              }
+            } catch (err) {
+              console.error('Failed to parse root drag data', err);
+            }
+          }
+        } : {})}
+      >
         {fileSystemData.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>No folder opened.</Text>
@@ -90,6 +112,7 @@ export function FileExplorer({
             onConfirmCreation={onConfirmCreation}
             onCancelCreation={onCancelCreation}
             setDraggingTab={setDraggingTab}
+            onMove={onMove}
           />
         )}
       </ScrollView>

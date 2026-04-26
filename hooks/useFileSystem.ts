@@ -24,7 +24,13 @@ const getDirectoryAPI = () => {
 };
 
 const getSAF = () => (FileSystem as any).StorageAccessFramework;
-import { isImageFile, getParentPath, joinPaths, normalizePath, resolveImagePath } from '@/utils/FileSystemUtils';
+import { 
+  getParentPath, 
+  joinPaths, 
+  normalizePath, 
+  resolveImagePath, 
+  updateTreePaths 
+} from '@/utils/FileSystemUtils';
 
 export interface FileSystemItem {
   name: string;
@@ -294,6 +300,19 @@ export function useFileSystem() {
     });
   }, []);
 
+  const addItemToData = useCallback((items: FileSystemItem[], pPath: string, newItem: FileSystemItem): FileSystemItem[] => {
+    if (!pPath) return [...items, newItem].sort((a, b) => a.name.localeCompare(b.name));
+    return items.map(it => {
+      if (it.path === pPath) {
+        return { ...it, children: [...(it.children || []), newItem].sort((a, b) => a.name.localeCompare(b.name)), isLoaded: true };
+      }
+      if (it.children && pPath.startsWith(it.path + '/')) {
+        return { ...it, children: addItemToData(it.children, pPath, newItem) };
+      }
+      return it;
+    });
+  }, []);
+
   const saveToDisk = useCallback(async (path: string, content: string | Blob) => {
     if (!dirHandle) return false;
     try {
@@ -512,34 +531,24 @@ export function useFileSystem() {
           }
         }
 
-        const updatePath = (path: string) => {
-          if (path === oldPath) return newPath;
-          if (path.startsWith(oldPath + '/')) {
-            return newPath + path.slice(oldPath.length);
-          }
-          return path;
-        };
-
-        setFileSystemData(prev => updateFileSystemData(prev, oldPath, newPath, newName, newEntryHandle));
-        
         setLocalFiles(prev => {
           const next: Record<string, string> = {};
           Object.keys(prev).forEach(key => {
-            const newKey = updatePath(key);
+            const newKey = updateTreePaths(key, oldPath, newPath);
             next[newKey] = prev[key];
           });
           return next;
         });
 
-        setSelectedFile(prev => updatePath(prev));
-        setSelectedFile2(prev => updatePath(prev));
-        setSelectedDirPath(prev => updatePath(prev));
-        setOpenedFiles(prev => prev.map(updatePath));
-        setOpenedFiles2(prev => prev.map(updatePath));
+        setSelectedFile(prev => updateTreePaths(prev, oldPath, newPath));
+        setSelectedFile2(prev => updateTreePaths(prev, oldPath, newPath));
+        setSelectedDirPath(prev => updateTreePaths(prev, oldPath, newPath));
+        setOpenedFiles(prev => prev.map(p => updateTreePaths(p, oldPath, newPath)));
+        setOpenedFiles2(prev => prev.map(p => updateTreePaths(p, oldPath, newPath)));
         setExpandedFolders(prev => {
           const next: Record<string, boolean> = {};
           Object.keys(prev).forEach(key => {
-            const newKey = updatePath(key);
+            const newKey = updateTreePaths(key, oldPath, newPath);
             next[newKey] = prev[key];
           });
           return next;
@@ -746,7 +755,131 @@ export function useFileSystem() {
         console.error('Save chat to file failed', err);
         return false;
       }
-    }, [dirHandle, localFiles])
+    }, [dirHandle, localFiles]),
+    moveItem: useCallback(async (item: FileSystemItem, targetParentPath: string) => {
+      if (!item || !dirHandle) return false;
+      
+      const oldPath = item.path;
+      const targetPath = joinPaths(targetParentPath, item.name);
+      
+      if (oldPath === targetPath) return true;
+      if (targetPath.startsWith(oldPath + '/')) {
+        console.error('Cannot move a folder into its own subdirectory');
+        return false;
+      }
+
+      try {
+        let newHandle;
+        if (Platform.OS === 'web') {
+          // Find target parent handle
+          const pathParts = targetParentPath ? targetParentPath.split('/') : [];
+          let targetParentHandle = dirHandle;
+          for (const p of pathParts) {
+            targetParentHandle = await targetParentHandle.getDirectoryHandle(p);
+          }
+
+          // @ts-ignore
+          if (item.handle.move) {
+            // @ts-ignore
+            await item.handle.move(targetParentHandle);
+            newHandle = item.handle;
+          } else {
+            if (item.kind === 'directory') {
+              newHandle = await targetParentHandle.getDirectoryHandle(item.name, { create: true });
+              await copyDirectoryRecursive(item.handle, newHandle);
+            } else {
+              const file = await item.handle.getFile();
+              newHandle = await targetParentHandle.getFileHandle(item.name, { create: true });
+              const writable = await newHandle.createWritable();
+              await writable.write(file);
+              await writable.close();
+            }
+            
+            // Remove from old location
+            const oldParentPath = getParentPath(oldPath);
+            const oldParentParts = oldParentPath ? oldParentPath.split('/') : [];
+            let oldParentHandle = dirHandle;
+            for (const p of oldParentParts) {
+              oldParentHandle = await oldParentHandle.getDirectoryHandle(p);
+            }
+            await oldParentHandle.removeEntry(item.name, { recursive: true });
+          }
+        } else {
+          // Native Implementation
+          const findHandleByPath = (items: FileSystemItem[], p: string): any => {
+            if (!p) return dirHandle;
+            for (const it of items) {
+              if (it.path === p) return it.handle;
+              if (it.children && p.startsWith(it.path + '/')) {
+                return findHandleByPath(it.children, p);
+              }
+            }
+            return null;
+          };
+
+          const targetParentHandle = findHandleByPath(fileSystemData, targetParentPath) || dirHandle;
+          
+          if (Platform.OS === 'android' && targetParentHandle.startsWith('content://')) {
+            // SAF move is complex, use copy + delete for simplicity or if move is not direct
+            // For now, let's use moveAsync if handles are paths, or SAF specific move if available
+            newHandle = await StorageAccessFramework.copyAsync({
+              from: item.handle,
+              to: targetParentHandle
+            });
+            await deleteAsync(item.handle);
+          } else {
+            newHandle = joinPaths(targetParentHandle, item.name);
+            await moveAsync({ from: item.handle, to: newHandle });
+          }
+        }
+
+        // Update Tree Data
+        const updateItemPaths = (it: FileSystemItem, oldB: string, newB: string): FileSystemItem => {
+          const updated = { ...it, path: updateTreePaths(it.path, oldB, newB) };
+          if (updated.children) {
+            updated.children = updated.children.map(child => updateItemPaths(child, oldB, newB));
+          }
+          return updated;
+        };
+
+        const movedItem = updateItemPaths({ ...item, handle: newHandle }, oldPath, targetPath);
+
+        setFileSystemData(prev => {
+          const removed = removeItemFromData(prev, oldPath);
+          return addItemToData(removed, targetParentPath, movedItem);
+        });
+
+        // Update other states
+        setLocalFiles(prev => {
+          const next: Record<string, string> = {};
+          Object.keys(prev).forEach(key => {
+            const newKey = updateTreePaths(key, oldPath, targetPath);
+            next[newKey] = prev[key];
+          });
+          return next;
+        });
+
+        setSelectedFile(prev => updateTreePaths(prev, oldPath, targetPath));
+        setSelectedFile2(prev => updateTreePaths(prev, oldPath, targetPath));
+        setOpenedFiles(prev => prev.map(p => updateTreePaths(p, oldPath, targetPath)));
+        setOpenedFiles2(prev => prev.map(p => updateTreePaths(p, oldPath, targetPath)));
+        setExpandedFolders(prev => {
+          const next: Record<string, boolean> = {};
+          Object.keys(prev).forEach(key => {
+            const newKey = updateTreePaths(key, oldPath, targetPath);
+            next[newKey] = prev[key];
+          });
+          // Ensure target folder is expanded
+          next[targetParentPath] = true;
+          return next;
+        });
+
+        return true;
+      } catch (e) {
+        console.error('Move failed', e);
+        return false;
+      }
+    }, [dirHandle, fileSystemData, copyDirectoryRecursive, removeItemFromData, addItemToData]),
   };
 }
 

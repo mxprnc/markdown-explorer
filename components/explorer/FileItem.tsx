@@ -17,18 +17,20 @@ interface FileItemProps {
   onMouseLeave: () => void;
   onRenameRequest: (item: any) => void;
   setDraggingTab: (val: any) => void;
+  onMove: (item: any, targetParentPath: string) => void;
 }
 
 export function FileItem({
   item, depth, isSelected, isExpanded, hoveredItemPath,
   onSelect, onToggle, onContextMenu, onMouseEnter, onMouseLeave, onRenameRequest,
-  setDraggingTab
+  setDraggingTab, onMove
 }: FileItemProps) {
   const { colors, isDark, fontFamilyUI } = useTheme();
   const isImage = /\.(png|jpe?g|gif|webp)$/i.test(item.name);
   const isDarkTheme = isDark;
   const isDoc = /\.(md|txt)$/i.test(item.name);
   const isHovered = hoveredItemPath === item.path;
+  const [isDragOver, setIsDragOver] = React.useState(false);
 
   const lastClickTime = React.useRef<number>(0);
   const clickTimer = React.useRef<any>(null);
@@ -80,7 +82,8 @@ export function FileItem({
         styles.itemContainer,
         { paddingLeft: (item.kind === 'directory' ? 12 : 30) + depth * 12 },
         isSelected ? [styles.selectedItem, { borderLeftColor: colors.primary, backgroundColor: isDark ? '#2D3748' : '#EFF6FF', paddingLeft: (item.kind === 'directory' ? 9 : 27) + depth * 12 }] : {},
-        (isHovered && !isSelected) ? { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' } : {}
+        (isHovered && !isSelected) ? { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' } : {},
+        isDragOver ? { backgroundColor: isDark ? '#374151' : '#DBEAFE', outline: `1px dashed ${colors.primary}` } : {}
       ]}
     >
       {item.kind === 'directory' && (
@@ -138,16 +141,41 @@ export function FileItem({
   if (Platform.OS === 'web') {
     return (
       <div
-        draggable={item.kind === 'file'}
+        draggable
         data-testid={`explorer-item-wrapper-${item.path}`}
         onDragStart={(e: any) => {
-          if (item.kind === 'file' && e.dataTransfer) {
+          if (e.dataTransfer) {
             e.dataTransfer.effectAllowed = "move";
-            e.dataTransfer.setData("text/plain", item.path);
+            e.dataTransfer.setData("application/json", JSON.stringify({ path: item.path, kind: item.kind, name: item.name }));
             setDraggingTab({ file: item.path, sourcePane: 0 });
           }
         }}
-        onDragEnd={() => setDraggingTab(null)}
+        onDragOver={(e: any) => {
+          if (item.kind === 'directory') {
+            e.preventDefault();
+            setIsDragOver(true);
+          }
+        }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={(e: any) => {
+          if (item.kind === 'directory') {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsDragOver(false);
+            try {
+              const data = JSON.parse(e.dataTransfer.getData("application/json"));
+              if (data && data.path && data.path !== item.path) {
+                onMove(data, item.path);
+              }
+            } catch (err) {
+              console.error('Failed to parse drag data', err);
+            }
+          }
+        }}
+        onDragEnd={() => {
+          setDraggingTab(null);
+          setIsDragOver(false);
+        }}
       >
         <Pressable {...wrapperProps} style={{ cursor: 'pointer' } as any}>
           {fileContent}

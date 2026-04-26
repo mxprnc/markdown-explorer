@@ -73,3 +73,27 @@ export function resolveImagePath(relativePath: string, currentFilePath?: string)
 }
 
 
+/**
+ * Recursively finds an item in the file system tree by its path.
+ */
+export function findItemInTree(items: any[], path: string): any {
+  for (const item of items) {
+    if (item.path === path) return item;
+    if (item.children) {
+      const found = findItemInTree(item.children, path);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * Updates a path based on an old base and a new base (e.g. after moving/renaming a folder).
+ */
+export function updateTreePaths(path: string, oldBase: string, newBase: string): string {
+  if (path === oldBase) return newBase;
+  if (path.startsWith(oldBase + '/')) {
+    return newBase + path.slice(oldBase.length);
+  }
+  return path;
+}
