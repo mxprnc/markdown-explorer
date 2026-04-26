@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Explorer - AI-Powered Premium Markdown Sidekick</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            /* Light Mode Variables */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --accent: #3b82f6;
+            --accent-soft: rgba(59, 130, 246, 0.1);
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.3);
+        }
+
+        [data-theme="dark"] {
+            /* Dark Mode Variables (Obsidian & Violet) */
+            --bg-primary: #0b0e14;
+            --bg-secondary: #151921;
+            --accent: #7c3aed;
+            --accent-soft: rgba(124, 58, 237, 0.1);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: #1f2937;
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            --glass-bg: rgba(11, 14, 20, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Navbar */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 70px;
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 500;
+            font-size: 0.95rem;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .nav-links a:hover {
+            opacity: 1;
+            color: var(--accent);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-main);
+            padding: 0.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 180px 0 100px;
+            text-align: center;
+            background: radial-gradient(circle at 50% 0%, var(--accent-soft), transparent 50%);
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--text-main) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto 3rem;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+            box-shadow: 0 10px 20px -5px var(--accent-soft);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-secondary);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -10px var(--accent-soft);
+        }
+
+        /* Feature Grid */
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .features {
+            padding: 100px 0;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background-color: var(--bg-secondary);
+            padding: 3rem 2rem;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background-color: var(--accent-soft);
+            color: var(--accent);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+        }
+
+        /* Use Cases Section */
+        .use-cases {
+            padding: 100px 0;
+            background-color: var(--bg-secondary);
+        }
+
+        .use-case-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4rem;
+        }
+
+        .use-case-item {
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        .use-case-item:nth-child(even) {
+            flex-direction: row-reverse;
+        }
+
+        .use-case-image {
+            flex: 1;
+            height: 400px;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--accent-soft) 100%);
+            border-radius: 32px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+
+        .use-case-image::after {
+            content: 'Screenshot / Illustration Placeholder';
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .use-case-content {
+            flex: 1;
+        }
+
+        .use-case-content h3 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+        }
+
+        .use-case-content p {
+            font-size: 1.1rem;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+        }
+
+        .use-case-content ul {
+            list-style: none;
+        }
+
+        .use-case-content li {
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .use-case-content li i {
+            color: var(--accent);
+        }
+
+        /* Platform Section */
+        .platforms {
+            padding: 100px 0;
+            text-align: center;
+        }
+
+        .platform-icons {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .platform-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .platform-item i {
+            font-size: 3rem;
+            color: var(--text-muted);
+        }
+
+        .platform-item span {
+            font-weight: 600;
+        }
+
+        /* Tech Stack Footer */
+        .tech-footer {
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .tech-tags {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tech-tag {
+            padding: 0.5rem 1.25rem;
+            background-color: var(--accent-soft);
+            color: var(--accent);
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* Animations */
+        [data-aos] {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        [data-aos].aos-animate {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .use-case-item { flex-direction: column !important; gap: 2rem; }
+            .nav-links { display: none; }
+            .platform-icons { gap: 2rem; }
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+    <!-- Navbar -->
+    <nav>
+        <div class="container nav-content">
+            <a href="#" class="logo">
+                <i data-lucide="zap"></i>
+                Mark Explorer
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#use-cases">Use Cases</a>
+                <a href="#platforms">Platforms</a>
+                <button class="theme-toggle" id="themeSwitcher">
+                    <i data-lucide="moon" id="themeIcon"></i>
+                </button>
+                <a href="#" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">Download</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1 data-aos="fade-up">AI-Powered<br>Markdown Sidekick</h1>
+            <p data-aos="fade-up" data-aos-delay="100">
+                Mark Explorer는 로컬 마크다운 파일을 지능적으로 탐색하고 실시간으로 편집하는 프리미엄 도구입니다. 
+                Typora의 직관성, VSCode의 효율성, Obsidian의 깊이를 하나로 담았습니다.
+            </p>
+            <div class="cta-group" data-aos="fade-up" data-aos-delay="200">
+                <a href="#" class="btn btn-primary">지금 무료로 시작하기</a>
+                <a href="#" class="btn btn-secondary">GitHub 보기</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2>강력한 하이브리드 워크플로우</h2>
+                <p>단순한 에디터를 넘어, 당신의 지식 베이스를 위한 최고의 파트너</p>
+            </div>
+            <div class="feature-grid">
+                <div class="feature-card" data-aos="fade-up">
+                    <div class="feature-icon"><i data-lucide="layout"></i></div>
+                    <h3>Hybrid Editor</h3>
+                    <p>Tiptap 기반의 실시간 라이브 에디터와 2x2 분할 화면, 멀티탭 시스템을 통해 복잡한 문서 작업도 쾌적하게 수행합니다.</p>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                    <div class="feature-icon"><i data-lucide="link"></i></div>
+                    <h3>Smart Link Cards</h3>
+                    <p>일반 URL을 노션 스타일의 썸네일 카드로, 유튜브 링크를 인앱 재생이 가능한 비디오 모드로 자동 변환합니다.</p>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="feature-icon"><i data-lucide="brain"></i></div>
+                    <h3>AI & MCP Integration</h3>
+                    <p>Gemini AI가 문서의 맥락을 이해하고, MCP 프로토콜을 통해 외부 도구와 데이터를 연동하여 지능적인 제안을 제공합니다.</p>
+                </div>
+                <div class="feature-card" data-aos="fade-up">
+                    <div class="feature-icon"><i data-lucide="share-2"></i></div>
+                    <h3>Nextra Export</h3>
+                    <p>클릭 한 번으로 로컬 디렉터리를 Nextra 기반의 정적 사이트로 익스포트하여 당신의 지식을 세상과 공유하세요.</p>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                    <div class="feature-icon"><i data-lucide="smartphone"></i></div>
+                    <h3>Perfectly Responsive</h3>
+                    <p>PC는 물론 안드로이드, iOS 모바일 환경까지 완벽하게 지원하며 Safe Area와 모바일 전용 드로어를 제공합니다.</p>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="feature-icon"><i data-lucide="puzzle"></i></div>
+                    <h3>Plugin System</h3>
+                    <p>사용자 정의 템플릿과 플러그인 아키텍처를 통해 당신만의 독특한 마크다운 환경을 구축할 수 있습니다 (준비 중).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases Section -->
+    <section class="use-cases" id="use-cases">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2>당신을 위한 사용 사례</h2>
+                <p>Mark Explorer는 다양한 라이프스타일에 맞춰 유연하게 변화합니다.</p>
+            </div>
+            <div class="use-case-list">
+                <div class="use-case-item" data-aos="fade-right">
+                    <div class="use-case-image"></div>
+                    <div class="use-case-content">
+                        <h3>Mobile Knowledge Manager</h3>
+                        <p>출퇴근 길이나 이동 중에도 스마트폰에서 마크다운 파일을 손쉽게 관리하세요. 구글 드라이브나 iCloud와 연동하여 언제 어디서나 끊김 없는 편집이 가능합니다.</p>
+                        <ul>
+                            <li><i data-lucide="check-circle"></i> 모바일 전용 UI/UX 최적화</li>
+                            <li><i data-lucide="check-circle"></i> 클라우드 디렉터리 완벽 연동</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="use-case-item" data-aos="fade-left">
+                    <div class="use-case-image"></div>
+                    <div class="use-case-content">
+                        <h3>YouTube Content Curator</h3>
+                        <p>학습용 유튜브 영상의 핵심 내용을 기록하고, 영상 썸네일을 마크다운 내에 배치하여 시각적인 요약 노트를 만드세요. 나만의 유튜브 지식 저장소가 탄생합니다.</p>
+                        <ul>
+                            <li><i data-lucide="check-circle"></i> 유튜브 링크 썸네일 자동 추출</li>
+                            <li><i data-lucide="check-circle"></i> 인앱 비디오 플레이어 지원</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="use-case-item" data-aos="fade-right">
+                    <div class="use-case-image"></div>
+                    <div class="use-case-content">
+                        <h3>Privacy-First Journaling</h3>
+                        <p>등산 기록이나 일기 같은 소중한 일상을 소셜 플랫폼 대신 안전한 로컬 파일로 보관하세요. 백업 걱정 없이 맑은 정신과 그 당시의 바이브를 기록할 수 있습니다.</p>
+                        <ul>
+                            <li><i data-lucide="check-circle"></i> 100% 로컬 데이터 제어</li>
+                            <li><i data-lucide="check-circle"></i> 오프라인 우선(Offline-First) 설계</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Platforms Section -->
+    <section class="platforms" id="platforms">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2>모든 플랫폼에서 자유롭게</h2>
+                <p>제약 없는 마크다운 경험을 제공합니다.</p>
+            </div>
+            <div class="platform-icons">
+                <div class="platform-item" data-aos="zoom-in">
+                    <i data-lucide="monitor"></i>
+                    <span>Windows / Linux</span>
+                </div>
+                <div class="platform-item" data-aos="zoom-in" data-aos-delay="100">
+                    <i data-lucide="laptop"></i>
+                    <span>macOS</span>
+                </div>
+                <div class="platform-item" data-aos="zoom-in" data-aos-delay="200">
+                    <i data-lucide="smartphone"></i>
+                    <span>iOS / Android</span>
+                </div>
+                <div class="platform-item" data-aos="zoom-in" data-aos-delay="300">
+                    <i data-lucide="globe"></i>
+                    <span>Web Browser</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Footer -->
+    <footer class="tech-footer">
+        <div class="container">
+            <div class="tech-tags">
+                <span class="tech-tag">React Native (Expo)</span>
+                <span class="tech-tag">Tiptap</span>
+                <span class="tech-tag">Gemini AI</span>
+                <span class="tech-tag">Nextra</span>
+                <span class="tech-tag">IndexedDB</span>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+                © 2026 Mark Explorer. Designed for Markdown Lovers.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Lucide Icons Initialization
+        lucide.createIcons();
+
+        // Theme Switcher Logic
+        const body = document.body;
+        const themeSwitcher = document.getElementById('themeSwitcher');
+        const themeIcon = document.getElementById('themeIcon');
+
+        themeSwitcher.addEventListener('click', () => {
+            if (body.getAttribute('data-theme') === 'light') {
+                body.setAttribute('data-theme', 'dark');
+                themeIcon.setAttribute('data-lucide', 'sun');
+            } else {
+                body.setAttribute('data-theme', 'light');
+                themeIcon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+        });
+
+        // Simple AOS (Animate On Scroll) Implementation
+        const aosElements = document.querySelectorAll('[data-aos]');
+        
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('aos-animate');
+                }
+            });
+        }, observerOptions);
+
+        aosElements.forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
