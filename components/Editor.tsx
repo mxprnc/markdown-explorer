@@ -38,8 +38,8 @@ export default React.forwardRef(function Editor({ value, onChange, onSave, onPas
         const fontSize = level === 1 ? 26 : level === 2 ? 22 : level === 3 ? 20 : 18;
         return (
           <Text key={lineIdx}>
-            <Text style={{ color: isDark ? '#4B5563' : '#9CA3AF', fontWeight: '400' }}>{headingMatch[1]} </Text>
-            <Text style={{ fontSize, fontWeight: '700', color: isDark ? '#FFFFFF' : '#000000' }}>{headingMatch[2]}</Text>
+            <Text style={{ color: isDark ? '#64748b' : '#9CA3AF', fontWeight: '400' }}>{headingMatch[1]} </Text>
+            <Text style={{ fontSize, fontWeight: '700', color: isDark ? '#ffffff' : '#000000' }}>{headingMatch[2]}</Text>
             {!isLastLine && '\n'}
           </Text>
         );
@@ -76,7 +76,7 @@ export default React.forwardRef(function Editor({ value, onChange, onSave, onPas
       // Blockquote
       if (line.startsWith('>')) {
         return (
-          <Text key={lineIdx} style={{ color: isDark ? '#9CA3AF' : '#4B5563', fontStyle: 'italic' }}>
+          <Text key={lineIdx} style={{ color: isDark ? '#94a3b8' : '#4B5563', fontStyle: 'italic' }}>
             {line}
             {!isLastLine && '\n'}
           </Text>
@@ -108,9 +108,9 @@ export default React.forwardRef(function Editor({ value, onChange, onSave, onPas
       
       const content = match[0];
       if (content.startsWith('**')) {
-        parts.push(<Text key={match.index} style={{ fontWeight: 'bold', color: isDark ? '#E5E7EB' : '#111827' }}>{content}</Text>);
+        parts.push(<Text key={match.index} style={{ fontWeight: 'bold', color: isDark ? '#f8fafc' : '#111827' }}>{content}</Text>);
       } else if (content.startsWith('`')) {
-        parts.push(<Text key={match.index} style={{ backgroundColor: isDark ? '#374151' : '#F3F4F6', color: isDark ? '#FCA5A5' : '#EF4444', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' }}>{content}</Text>);
+        parts.push(<Text key={match.index} style={{ backgroundColor: isDark ? '#1e293b' : '#F3F4F6', color: isDark ? '#7dd3fc' : '#EF4444', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' }}>{content}</Text>);
       } else if (content.startsWith('*')) {
         parts.push(<Text key={match.index} style={{ fontStyle: 'italic' }}>{content}</Text>);
       }
@@ -126,19 +126,19 @@ export default React.forwardRef(function Editor({ value, onChange, onSave, onPas
   };
 
   return (
-    <View style={{ flex: 1, width: '100%', backgroundColor: isDark ? '#111827' : '#FFFFFF' }}>
+    <View style={{ flex: 1, width: '100%', backgroundColor: isDark ? '#0b0e14' : '#FFFFFF' }}>
       <TextInput
         ref={inputRef}
         onChangeText={onChange}
         onSelectionChange={(e) => onSelectionChange?.(e.nativeEvent.selection)}
         multiline
         placeholder="Start writing..."
-        placeholderTextColor={isDark ? '#4B5563' : '#9CA3AF'}
+        placeholderTextColor={isDark ? '#475569' : '#9CA3AF'}
         style={{
           flex: 1,
           width: '100%',
-          padding: 20,
-          color: isDark ? '#E5E7EB' : '#111827',
+          padding: 24,
+          color: isDark ? '#e2e8f0' : '#111827',
           fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
           fontSize: 16,
           lineHeight: 24,

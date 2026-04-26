@@ -15,6 +15,8 @@ interface ThemeContextType {
     surface: string;
     primary: string;
     textMuted: string;
+    textHighlight: string;
+    accentGlow: string;
   };
   fontFamilyUI: string;
   fontFamilyCode: string;
@@ -34,13 +36,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const colors = useMemo(() => ({
-    background: isDark ? '#121212' : '#FFFFFF',
-    text: isDark ? '#F3F4F6' : '#121212',
-    border: isDark ? '#374151' : '#E5E7EB',
-    surface: isDark ? '#1E1E1E' : '#F9FAFB',
-    primary: '#3B82F6',
-    textMuted: isDark ? '#9CA3AF' : '#6B7280',
+    background: isDark ? '#0b0e14' : '#FFFFFF',
+    text: isDark ? '#e2e8f0' : '#121212',
+    border: isDark ? 'rgba(255, 255, 255, 0.06)' : '#E5E7EB',
+    surface: isDark ? '#151921' : '#F9FAFB',
+    primary: isDark ? '#7c3aed' : '#3B82F6',
+    textMuted: isDark ? '#94a3b8' : '#6B7280',
+    textHighlight: isDark ? '#ffffff' : '#000000',
+    accentGlow: isDark ? 'rgba(124, 58, 237, 0.15)' : 'rgba(59, 130, 246, 0.08)',
   }), [isDark]);
+
 
   const fontFamilyUI = useMemo(() => Platform.select({ web: 'Inter, sans-serif', default: 'System' })!, []);
   const fontFamilyCode = useMemo(() => Platform.select({ web: 'JetBrains Mono, Fira Code, monospace', default: 'System' })!, []);

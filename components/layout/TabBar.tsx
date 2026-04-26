@@ -134,7 +134,8 @@ export const TabBar = memo(({
                 style={[
                   styles.tabText, 
                   { color: colors.textMuted, fontFamily: fontFamilyUI }, 
-                  isActive && [styles.tabTextActive, { color: colors.text }],
+                  isActive && [styles.tabTextActive, { color: colors.textHighlight }],
+
                   isPreview && { fontStyle: 'italic' }
                 ]}
               >

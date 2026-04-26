@@ -43,7 +43,18 @@ export function Sidebar({
   return (
     <View style={[styles.container, { width, borderRightColor: colors.border }]}>
       {/* Sidebar Icon Bar (Left) */}
-      <View style={[styles.iconBar, { width: iconBarWidth, backgroundColor: colors.background, borderRightColor: colors.border }]}>
+      <View style={[
+        styles.iconBar, 
+        { 
+          width: iconBarWidth, 
+          backgroundColor: colors.background, 
+          borderRightColor: colors.border,
+          ...(Platform.OS === 'web' && isDark ? {
+            backgroundColor: 'rgba(11, 14, 20, 0.95)',
+            backdropFilter: 'blur(8px)',
+          } : {} as any)
+        }
+      ]}>
         {allSidebarViews.map(view => (
           <Pressable
             key={view.id}
@@ -52,7 +63,7 @@ export function Sidebar({
               styles.iconBtn,
               activeViewId === view.id && { 
                 borderLeftColor: colors.primary,
-                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                backgroundColor: colors.accentGlow
               }
             ]}
           >
@@ -66,9 +77,19 @@ export function Sidebar({
       </View>
 
       {/* Sidebar Content (Right) */}
-      <View style={[styles.content, { backgroundColor: colors.surface }]}>
+      <View style={[
+        styles.content, 
+        { 
+          backgroundColor: colors.surface,
+          ...(Platform.OS === 'web' && isDark ? {
+            backgroundColor: 'rgba(21, 25, 33, 0.85)',
+            backdropFilter: 'blur(12px)',
+          } : {} as any)
+        }
+      ]}>
         {renderActiveView()}
       </View>
+
     </View>
   );
 }

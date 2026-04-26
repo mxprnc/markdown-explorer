@@ -1,0 +1,1 @@
+docs/plan/ui-ux-design-style/darkmode/PROMPT1.md 을 참고하여 ### 디자인 가이드에 부합하도록 현재 프로젝트의 다크테마를 개선하세요.

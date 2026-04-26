@@ -118,13 +118,13 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
     <NodeViewWrapper className="custom-code-block" style={{ margin: '24px 0' }}>
       <div style={{ display: isEditing ? 'block' : 'none' }}>
         <div style={{
-          backgroundColor: isDark ? '#111827' : '#F9FAFB',
-          border: '1px solid ' + (isDark ? '#374151' : '#E5E7EB'),
+          backgroundColor: isDark ? '#0b0e14' : '#F9FAFB',
+          border: '1px solid ' + (isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'),
           borderRadius: 8,
           padding: 16,
           fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
           fontSize: 14,
-          color: isDark ? '#E5E7EB' : '#1F2937'
+          color: isDark ? '#e2e8f0' : '#1F2937'
         }}>
           <div style={{ color: isDark ? '#9CA3AF' : '#6B7280', marginBottom: 8, userSelect: 'none' }}>
             ```{language}
@@ -146,8 +146,8 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
         {isMermaid ? (
           <div style={{
             position: 'relative',
-            border: '1px solid ' + (isDark ? '#374151' : '#E5E7EB'),
-            backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+            border: '1px solid ' + (isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'),
+            backgroundColor: isDark ? '#151921' : '#FFFFFF',
             borderRadius: 8,
             padding: 16
           }}>
@@ -161,8 +161,8 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
         ) : (
           <div style={{
             position: 'relative',
-            border: '1px solid ' + (isDark ? '#374151' : '#E5E7EB'),
-            backgroundColor: isDark ? '#111827' : '#F9FAFB',
+            border: '1px solid ' + (isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'),
+            backgroundColor: isDark ? '#0b0e14' : '#F9FAFB',
             borderRadius: 8,
             overflow: 'hidden'
           }}>
@@ -171,8 +171,8 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
               justifyContent: 'space-between',
               alignItems: 'center',
               padding: '8px 16px',
-              borderBottom: '1px solid ' + (isDark ? '#374151' : '#E5E7EB'),
-              backgroundColor: isDark ? '#1F2937' : '#F3F4F6'
+              borderBottom: '1px solid ' + (isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'),
+              backgroundColor: isDark ? '#151921' : '#F3F4F6'
             }}>
               <div style={{ fontSize: 11, fontWeight: 'bold', fontFamily: 'Inter, sans-serif', color: isDark ? '#9CA3AF' : '#6B7280', textTransform: 'uppercase' }}>
                 {language || 'code'}
@@ -272,7 +272,7 @@ const HeadingComponent = ({ node, updateAttributes, editor, getPos }: any) => {
           contentEditable={false}
           onClick={toggleLevel}
           style={{
-            color: isDark ? '#9CA3AF' : '#9CA3AF',
+            color: isDark ? '#64748b' : '#9CA3AF',
             fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
             fontSize: 'max(0.6em, 14px)',
             opacity: 0.8,
@@ -369,7 +369,7 @@ const BlockquoteComponent = ({ node, editor, getPos }: any) => {
   }, [editor, getPos, isEditing, node.nodeSize]);
 
   return (
-    <NodeViewWrapper style={{ position: 'relative', display: 'flex', borderLeft: `4px solid ${isDark ? '#374151' : '#E5E7EB'}`, paddingLeft: '16px', margin: '16px 0', color: isDark ? '#D1D5DB' : '#4B5563' }}>
+    <NodeViewWrapper style={{ position: 'relative', display: 'flex', borderLeft: `4px solid ${isDark ? '#334155' : '#E5E7EB'}`, paddingLeft: '16px', margin: '16px 0', color: isDark ? '#94a3b8' : '#4B5563' }}>
       {isEditing && (
         <span
           contentEditable={false}
@@ -377,7 +377,7 @@ const BlockquoteComponent = ({ node, editor, getPos }: any) => {
             position: 'absolute',
             left: 0,
             transform: 'translateX(calc(-100% - 12px))',
-            color: isDark ? '#9CA3AF' : '#9CA3AF',
+            color: isDark ? '#64748b' : '#9CA3AF',
             fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
             fontSize: 'max(0.6em, 14px)',
             opacity: 0.8,

@@ -66,18 +66,20 @@ const TOCPaneComponent = ({
                 paddingRight: 12,
                 paddingLeft: 12 + (item.level - 1) * 12,
                 borderBottomWidth: 1, 
-                borderBottomColor: isDark ? '#374151' : '#F3F4F6',
+                borderBottomColor: colors.border,
                 cursor: 'pointer',
                 borderLeftWidth: activeIndex === index ? 3 : 0,
                 borderLeftColor: colors.primary,
                 backgroundColor: activeIndex === index 
-                  ? (isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)')
-                  : 'transparent'
+                  ? colors.accentGlow 
+                  : 'transparent',
+                borderTopRightRadius: activeIndex === index ? 6 : 0,
+                borderBottomRightRadius: activeIndex === index ? 6 : 0,
               } as any}>
                 <Text 
                   numberOfLines={1} 
                   style={{ 
-                    color: activeIndex === index ? colors.primary : (item.level === 1 ? colors.text : colors.textMuted), 
+                    color: activeIndex === index ? colors.textHighlight : (item.level === 1 ? colors.text : colors.textMuted), 
                     fontSize: item.level <= 2 ? 13 : 12,
                     fontWeight: (item.level <= 2 || activeIndex === index) ? 'bold' : 'normal',
                     fontFamily: fontFamilyUI
@@ -85,6 +87,7 @@ const TOCPaneComponent = ({
                   {item.text}
                 </Text>
               </View>
+
             </Pressable>
           ))
         )}
