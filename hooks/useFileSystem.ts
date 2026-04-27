@@ -301,10 +301,29 @@ export function useFileSystem() {
   }, []);
 
   const addItemToData = useCallback((items: FileSystemItem[], pPath: string, newItem: FileSystemItem): FileSystemItem[] => {
-    if (!pPath) return [...items, newItem].sort((a, b) => a.name.localeCompare(b.name));
+    if (!pPath) {
+      // Root level duplicate check
+      if (items.some(it => it.path === newItem.path)) return items;
+      return [...items, newItem].sort((a, b) => {
+        if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+    }
+    
     return items.map(it => {
       if (it.path === pPath) {
-        return { ...it, children: [...(it.children || []), newItem].sort((a, b) => a.name.localeCompare(b.name)), isLoaded: true };
+        // Child level duplicate check
+        const existingChildren = it.children || [];
+        if (existingChildren.some(child => child.path === newItem.path)) return it;
+        
+        return { 
+          ...it, 
+          children: [...existingChildren, newItem].sort((a, b) => {
+            if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
+            return a.name.localeCompare(b.name);
+          }), 
+          isLoaded: true 
+        };
       }
       if (it.children && pPath.startsWith(it.path + '/')) {
         return { ...it, children: addItemToData(it.children, pPath, newItem) };
@@ -617,19 +636,6 @@ export function useFileSystem() {
           handle: newHandle,
           children: kind === 'directory' ? [] : undefined,
           isLoaded: kind === 'directory'
-        };
-
-        const addItemToData = (items: FileSystemItem[], pPath: string, itm: FileSystemItem): FileSystemItem[] => {
-          if (!pPath) return [...items, itm];
-          return items.map(it => {
-            if (it.path === pPath) {
-              return { ...it, children: [...(it.children || []), itm], isLoaded: true };
-            }
-            if (it.children && pPath.startsWith(it.path + '/')) {
-              return { ...it, children: addItemToData(it.children, pPath, itm) };
-            }
-            return it;
-          });
         };
 
         setFileSystemData(prev => addItemToData(prev, parentPath, newItem));

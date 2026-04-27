@@ -1,7 +1,19 @@
 import React from 'react';
 import { TextInput, Platform, View, Text, StyleSheet } from 'react-native';
 
-export default React.forwardRef(function Editor({ value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, isDark, onSelectionChange }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: any) => Promise<string>, onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean, onSelectionChange?: (selection: { start: number, end: number }) => void }, ref: any) {
+export default React.forwardRef(function Editor({ 
+  value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, isDark, onSelectionChange, onYoutubeExtract 
+}: { 
+  value: string, 
+  onChange: (v: string) => void, 
+  onSave?: (v: string) => void, 
+  onPasteImage?: (file: any) => Promise<string>, 
+  onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, 
+  resolveImage?: (src: string) => Promise<string>, 
+  isDark: boolean, 
+  onSelectionChange?: (selection: { start: number, end: number }) => void,
+  onYoutubeExtract?: () => void
+}, ref: any) {
   const inputRef = React.useRef<TextInput>(null);
 
   React.useImperativeHandle(ref, () => ({

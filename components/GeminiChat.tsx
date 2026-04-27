@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useAppSettings } from '@/contexts/SettingsContext';
 import { AVAILABLE_MODELS } from '@/constants/Models';
 
 interface GeminiChatProps {
@@ -27,7 +27,7 @@ export default function GeminiChat({ currentContent, onSaveChatToFile, bottomSpa
     selectedModel: model, 
     setSelectedModel: onModelChange,
     setShowGeminiSettings
-  } = useSettings();
+  } = useAppSettings();
   
   const models = AVAILABLE_MODELS;
   const onOpenSettings = () => setShowGeminiSettings(true);

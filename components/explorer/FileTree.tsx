@@ -96,8 +96,20 @@ export function FileTree({
                 value={creationName}
                 onChange={(e: any) => setCreationName(e.target.value)}
                 onKeyDown={(e: any) => {
-                  if (e.key === 'Enter') onConfirmCreation();
-                  if (e.key === 'Escape') onCancelCreation();
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (creationName.trim()) onConfirmCreation();
+                    else onCancelCreation();
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onCancelCreation();
+                  }
+                }}
+                onBlur={() => {
+                  if (!creationName.trim()) onCancelCreation();
                 }}
                 style={{
                   width: '90%',

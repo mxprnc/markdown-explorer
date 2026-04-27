@@ -95,8 +95,11 @@ export function preprocessMarkdown(md: string): string {
     .replace(/\\\]/g, ']');     // Restore links ]
 
   // Convert [mx-...] syntax to HTML span for LinkCardExtension to parse correctly on load
-  processed = processed.replace(/\[mx-(thumb|link|video|plain)#?([^\]]*)\]\(([^)]+)\)/g, (match, type, alt, url) => {
-    return `<span data-mx-link-card="true" data-type="${type}" data-alt="${alt}" data-url="${url}"></span>`;
+  processed = processed.replace(/\[mx-(thumb|link|video|plain)\s*#?\s*([^\]]*)\]\(([^)]+)\)/gi, (match, type, alt, url) => {
+    // Escape double quotes for HTML attributes
+    const safeAlt = alt.trim().replace(/"/g, '&quot;');
+    const safeUrl = url.trim().replace(/"/g, '&quot;');
+    return `<span data-mx-link-card="true" data-type="${type.toLowerCase()}" data-alt="${safeAlt}" data-url="${safeUrl}"></span>`;
   });
 
   return processed;

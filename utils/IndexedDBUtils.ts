@@ -7,7 +7,7 @@
 
 const DB_NAME = 'MarkdownExplorerDB';
 const STORE_NAME = 'files';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 import { Platform } from 'react-native';
 
@@ -28,6 +28,9 @@ export async function openDB(): Promise<IDBDatabase | null> {
         }
         if (!db.objectStoreNames.contains('recent_files')) {
           db.createObjectStore('recent_files', { keyPath: 'path' });
+        }
+        if (!db.objectStoreNames.contains('settings')) {
+          db.createObjectStore('settings', { keyPath: 'key' });
         }
       };
     } catch (e) {
@@ -89,6 +92,35 @@ export async function clearCache(): Promise<void> {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     const request = store.clear();
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
+  });
+}
+export async function getSetting(key: string): Promise<any> {
+  const db = await openDB();
+  if (!db) return null;
+  
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('settings', 'readonly');
+    const store = transaction.objectStore('settings');
+    const request = store.get(key);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      resolve(request.result ? request.result.value : null);
+    };
+  });
+}
+
+export async function setSetting(key: string, value: any): Promise<void> {
+  const db = await openDB();
+  if (!db) return;
+  
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('settings', 'readwrite');
+    const store = transaction.objectStore('settings');
+    const request = store.put({ key, value, timestamp: Date.now() });
 
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve();

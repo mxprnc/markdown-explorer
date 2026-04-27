@@ -5,7 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 interface ButtonProps {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   style?: ViewStyle;
   textStyle?: TextStyle;
@@ -40,6 +40,7 @@ export const Button: React.FC<ButtonProps> = ({
   const getTextColor = () => {
     if (variant === 'outline') return colors.primary;
     if (variant === 'secondary') return colors.text;
+    if (variant === 'ghost') return colors.textMuted;
     return '#FFFFFF';
   };
 

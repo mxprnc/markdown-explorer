@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import GeminiChat from '@/components/GeminiChat';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAppSettings } from '@/contexts/SettingsContext';
 import { decodePath } from '@/utils/TabUtils';
 import { Resizer } from '@/components/ui/Resizer';
 
@@ -21,6 +22,7 @@ interface FooterProps {
 
 export const Footer = memo(({ height, responder, selectedFile, editorContent, onSaveChatToFile, fileList, isCollapsed, onToggleCollapse, isResizing }: FooterProps) => {
   const { colors, fontFamilyCode } = useTheme();
+  const { setSettingsVisible } = useAppSettings();
   
   const animatedStyle = useAnimatedStyle(() => ({
     height: height.value,
@@ -72,9 +74,18 @@ export const Footer = memo(({ height, responder, selectedFile, editorContent, on
         >
           {selectedFile ? decodePath(selectedFile) : 'No file selected'}
         </Text>
-        <View style={{ marginLeft: 'auto', flexDirection: 'row', gap: 12 }}>
+        <View style={{ marginLeft: 'auto', flexDirection: 'row', gap: 12, alignItems: 'center' }}>
           <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode }]}>UTF-8</Text>
           <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode }]}>Markdown</Text>
+          <Pressable 
+            onPress={() => setSettingsVisible(true)}
+            style={({ hovered }: any) => [
+              { padding: 4, borderRadius: 4 },
+              hovered && { backgroundColor: 'rgba(255,255,255,0.2)' }
+            ]}
+          >
+            <Ionicons name="settings-outline" size={14} color="#FFF" />
+          </Pressable>
         </View>
       </View>
     </Animated.View>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
-import { findBestHeadingMatch } from '@/utils/MarkdownUtils';
+import { findBestHeadingMatch, preprocessMarkdown, postprocessMarkdown } from '@/utils/MarkdownUtils';
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import { Extension, getMarkRange, Node } from '@tiptap/core';
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
@@ -21,6 +21,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default' });
 import { LinkCardExtension } from './editor/LinkCardExtension';
 import { useTheme } from '@/contexts/ThemeContext';
 import { CopyButton } from './ui/CopyButton';
+import { EditorContextMenu } from './editor/EditorContextMenu';
 
 function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {
   const [svg, setSvg] = useState<string>('');
@@ -493,8 +494,8 @@ const LiveMarkdownExtension = Extension.create({
               if (node.type.name === 'image' || node.type.name === 'customImage' || node.type.name === 'customYoutube' || node.type.name === 'linkCard') {
                 const isTouchingFromBefore = newState.selection.$from.pos === pos;
                 const isTouchingFromAfter = newState.selection.$from.pos === pos + node.nodeSize;
-                const isSelected = newState.selection.from <= pos && newState.selection.to >= pos + node.nodeSize;
-                const isTouching = isTouchingFromBefore || isTouchingFromAfter || isSelected;
+                const isCollapsed = newState.selection.empty;
+                const isTouching = isCollapsed && (isTouchingFromBefore || isTouchingFromAfter);
                   
                 if (isTouching) {
                   let textStr = '';
@@ -593,7 +594,8 @@ const LiveMarkdownExtension = Extension.create({
 
 
                 // Handle LinkCard (mx-thumb, mx-link, mx-video)
-                const mxRegex = /\[mx-(thumb|link|video|plain)#?([^\]]*)\]\(([^)]+)\)/g;
+                // Handle LinkCard (mx-thumb, mx-link, mx-video)
+                const mxRegex = /\[mx-(thumb|link|video|plain)\s*#?\s*([^\]]*)\]\(([^)]+)\)/gi;
                 let mxMatch;
                 while ((mxMatch = mxRegex.exec(text)) !== null) {
                   const matchStart = mxMatch.index;
@@ -753,7 +755,6 @@ const LiveMarkdownExtension = Extension.create({
 });
 
 // Functions moved to utils/MarkdownUtils.ts for better testability.
-import { preprocessMarkdown, postprocessMarkdown } from '@/utils/MarkdownUtils';
 
 const ImagePastingExtension = Extension.create({
   name: 'imagePasting',
@@ -1085,9 +1086,32 @@ const SaveShortcut = Extension.create({
   },
 });
 
-export default forwardRef(function Editor({ value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, isDark, onHeadingVisible, onSelectionChange }: { value: string, onChange: (v: string) => void, onSave?: (v: string) => void, onPasteImage?: (file: File) => Promise<string>, onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, resolveImage?: (src: string) => Promise<string>, isDark: boolean, onHeadingVisible?: (index: number) => void, onSelectionChange?: (selection: { start: number, end: number }) => void }, ref: any) {
+export default forwardRef(function Editor({ 
+  value, onChange, onSave, onPasteImage, onRenameImage, resolveImage, 
+  isDark, onHeadingVisible, onSelectionChange, onYoutubeExtract 
+}: { 
+  value: string, 
+  onChange: (v: string) => void, 
+  onSave?: (v: string) => void, 
+  onPasteImage?: (file: File) => Promise<string>, 
+  onRenameImage?: (oldSrc: string, newName: string) => Promise<string>, 
+  resolveImage?: (src: string) => Promise<string>, 
+  isDark: boolean, 
+  onHeadingVisible?: (index: number) => void, 
+  onSelectionChange?: (selection: { start: number, end: number }) => void,
+  onYoutubeExtract?: () => void
+}, ref: any) {
   const wrapperRef = React.useRef<HTMLDivElement>(null);
+  const [editorContextMenu, setEditorContextMenu] = React.useState<{ x: number, y: number, visible: boolean } | null>(null);
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setEditorContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      visible: true
+    });
+  };
 
   const extensions = React.useMemo(() => [
     StarterKit.configure({ codeBlock: false, heading: false, blockquote: false }),
@@ -1262,7 +1286,10 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
     },
     insertText: (text: string) => {
       if (!editor || editor.isDestroyed) return;
-      editor.commands.insertContent(text);
+      editor.commands.insertContent(preprocessMarkdown(text));
+      // Force an enter command to move the cursor away from the last node
+      // and trigger the live-conversion for the last item.
+      editor.commands.enter();
       editor.commands.focus();
     }
   }));
@@ -1338,9 +1365,22 @@ export default forwardRef(function Editor({ value, onChange, onSave, onPasteImag
           color: inherit;
         }
       `}</style>
-        <div data-testid="editor-input" style={{ height: '100%' }}>
+        <div 
+          data-testid="editor-input" 
+          style={{ height: '100%' }}
+          onContextMenu={handleContextMenu}
+        >
           <EditorContent editor={editor} />
         </div>
+        {editorContextMenu && (
+          <EditorContextMenu 
+            x={editorContextMenu.x}
+            y={editorContextMenu.y}
+            visible={editorContextMenu.visible}
+            onClose={() => setEditorContextMenu(null)}
+            onExtractYoutube={onYoutubeExtract || (() => {})}
+          />
+        )}
     </div>
   );
 });

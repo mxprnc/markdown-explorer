@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Explorer | AI-Powered Markdown Sidekick</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --primary: #7c3aed;
+            --primary-glow: rgba(124, 58, 237, 0.3);
+            --bg: #0b0e14;
+            --surface: #151921;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --glass: rgba(21, 25, 33, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* --- Components --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.8rem;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px var(--primary-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn-secondary {
+            background-color: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--primary);
+        }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2rem;
+            transition: var(--transition);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(124, 58, 237, 0.4);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+
+        /* --- Navigation --- */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(11, 14, 20, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo i {
+            color: var(--primary);
+            font-size: 2rem;
+        }
+
+        /* --- Hero Section --- */
+        .hero {
+            padding: 180px 0 100px;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .hero-btns {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 4rem;
+        }
+
+        .hero-mockup {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 30px 100px rgba(0,0,0,0.6);
+            transform: perspective(1000px) rotateX(5deg);
+            transition: var(--transition);
+        }
+
+        .hero-mockup:hover {
+            transform: perspective(1000px) rotateX(0deg);
+        }
+
+        .hero-mockup img {
+            width: 100%;
+            display: block;
+        }
+
+        /* --- Features Section --- */
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 80px;
+        }
+
+        .feature-card i {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            display: inline-block;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+        }
+
+        /* --- Platforms --- */
+        .platforms {
+            padding: 60px 0;
+            background: var(--surface);
+            text-align: center;
+        }
+
+        .platform-list {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 3rem;
+            margin-top: 2rem;
+        }
+
+        .platform-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+
+        .platform-item:hover {
+            color: var(--primary);
+            transform: translateY(-5px);
+        }
+
+        .platform-item i {
+            font-size: 2.5rem;
+        }
+
+        /* --- Use Cases --- */
+        .use-cases {
+            padding: 100px 0;
+        }
+
+        .case-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .case-card {
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.02);
+            border-radius: 16px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .case-card h4 {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        /* --- Footer --- */
+        footer {
+            padding: 80px 0 40px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .footer-logo {
+            margin-bottom: 2rem;
+            display: inline-flex;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        .footer-bottom {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* --- Animations --- */
+        [data-aos] {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .aos-animate {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 3rem; }
+            .hero-btns { flex-direction: column; padding: 0 2rem; }
+            .platform-list { gap: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="container">
+            <a href="#" class="logo">
+                <i class="ph-fill ph-markdown-logo"></i>
+                Mark Explorer
+            </a>
+            <div class="nav-links">
+                <a href="https://github.com/alpha300uk/markdown-explorer" class="btn btn-secondary">
+                    <i class="ph ph-github-logo"></i> GitHub
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container">
+            <h1 data-aos>AI-Powered<br>Markdown Sidekick</h1>
+            <p data-aos>로컬 문서를 지능적으로 탐색하고 관리하는 가장 완벽한 방법. <br>당신의 지식 창고를 위해 설계된 프리미엄 마크다운 에디터.</p>
+            <div class="hero-btns" data-aos>
+                <a href="#" class="btn btn-primary">
+                    <i class="ph-fill ph-rocket-launch"></i> 지금 시작하기
+                </a>
+                <a href="#" class="btn btn-secondary">
+                    <i class="ph ph-play-circle"></i> 데모 보기
+                </a>
+            </div>
+            <div class="hero-mockup" data-aos>
+                <img src="./hero_mark_explorer.png" alt="Mark Explorer Dashboard">
+            </div>
+        </div>
+    </header>
+
+    <section class="platforms">
+        <div class="container">
+            <p style="color: var(--text-muted); margin-bottom: 2rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;">Supported Everywhere</p>
+            <div class="platform-list">
+                <div class="platform-item"><i class="ph ph-android-logo"></i><span>Android</span></div>
+                <div class="platform-item"><i class="ph ph-apple-logo"></i><span>iOS</span></div>
+                <div class="platform-item"><i class="ph ph-windows-logo"></i><span>Windows</span></div>
+                <div class="platform-item"><i class="ph ph-apple-logo"></i><span>macOS</span></div>
+                <div class="platform-item"><i class="ph ph-linux-logo"></i><span>Linux</span></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" style="padding: 120px 0;">
+        <div class="container">
+            <div class="section-title">
+                <h2 data-aos>혁신적인 기능들</h2>
+                <p data-aos style="color: var(--text-muted);">단순한 에디터를 넘어, 당신의 워크플로우를 완성합니다.</p>
+            </div>
+            <div class="features-grid">
+                <div class="glass-card feature-card" data-aos>
+                    <i class="ph ph-pencil-line"></i>
+                    <h3>Live Editor</h3>
+                    <p>Tiptap 엔진 기반의 강력한 실시간 편집 환경. 작성과 동시에 완성되는 아름다운 마크다운을 경험하세요.</p>
+                </div>
+                <div class="glass-card feature-card" data-aos>
+                    <i class="ph ph-columns"></i>
+                    <h3>Multi-pane Workspace</h3>
+                    <p>2x2 스플릿 뷰와 자유로운 탭 드래그 앤 드롭. 여러 문서를 동시에 비교하고 편집하며 생산성을 극대화하세요.</p>
+                </div>
+                <div class="glass-card feature-card" data-aos>
+                    <i class="ph ph-export"></i>
+                    <h3>Nextra Export</h3>
+                    <p>한 번의 클릭으로 로컬 문서를 세련된 정적 사이트로 변환. 별도의 설정 없이 전문가 수준의 문서 사이트를 구축하세요.</p>
+                </div>
+                <div class="glass-card feature-card" data-aos>
+                    <i class="ph ph-brain"></i>
+                    <h3>AI & MCP Integration</h3>
+                    <p>Gemini와 Model Context Protocol 연동. AI가 당신의 문서 맥락을 이해하고 파일 시스템을 직접 제어합니다.</p>
+                </div>
+                <div class="glass-card feature-card" data-aos>
+                    <i class="ph ph-hard-drive"></i>
+                    <h3>Offline-First</h3>
+                    <p>브라우저 Native API를 통한 로컬 파일 직접 관리. 데이터는 항상 당신의 장치에 안전하게 머뭅니다.</p>
+                </div>
+                <div class="glass-card feature-card" data-aos>
+                    <i class="ph ph-paint-brush-broad"></i>
+                    <h3>Premium Design</h3>
+                    <p>Obsidian 스타일의 다크 모드와 글래스모피즘 UI. 장시간 작업에도 눈이 편안하고 아름다운 작업 환경을 제공합니다.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="use-cases" style="background: rgba(124, 58, 237, 0.05);">
+        <div class="container">
+            <div class="section-title">
+                <h2 data-aos>다양한 사용 사례</h2>
+                <p data-aos style="color: var(--text-muted);">Mark Explorer는 모든 상황에서 최고의 동반자가 됩니다.</p>
+            </div>
+            <div class="case-grid">
+                <div class="case-card" data-aos>
+                    <h4>📱 모바일 마크다운 관리</h4>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;">안드로이드/iOS 폰에서 마크다운 파일을 쉽고 빠르게 편집하고 관리하세요.</p>
+                </div>
+                <div class="case-card" data-aos>
+                    <h4>🔍 리서치 및 요약</h4>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;">유튜브 영상이나 뉴스 내용을 AI와 함께 요약하고 탐색기로 체계적으로 정리하세요.</p>
+                </div>
+                <div class="case-card" data-aos>
+                    <h4>☁️ 클라우드 동기화</h4>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;">Google Drive, iCloud 연동 디렉토리를 바로 열어 어디서든 문서를 이어 작성하세요.</p>
+                </div>
+                <div class="case-card" data-aos>
+                    <h4>🏔 소중한 일상 기록</h4>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;">등산 후의 맑은 정신, 여행의 감동을 마크다운 문서로 프라이빗하게 남기세요.</p>
+                </div>
+                <div class="case-card" data-aos>
+                    <h4>✍️ 소셜 초안 작성</h4>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;">백업 걱정 없이 블로그나 SNS 초안을 로컬에서 안전하게 작업하세요.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <a href="#" class="logo footer-logo">
+                <i class="ph-fill ph-markdown-logo"></i>
+                Mark Explorer
+            </a>
+            <div class="footer-links">
+                <a href="#">Features</a>
+                <a href="#">GitHub</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 Mark Explorer. Built with passion for Markdown lovers.</p>
+                <p style="margin-top: 0.5rem; font-size: 0.8rem;">비영리 목적으로 누구나 자유롭게 사용할 수 있는 오픈소스 프로젝트입니다.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Simple AOS implementation
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('aos-animate');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('[data-aos]').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>

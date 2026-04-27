@@ -40,15 +40,18 @@ import { AVAILABLE_MODELS } from '@/constants/Models';
 import { getFileCache, setFileCache } from '@/utils/IndexedDBUtils';
 import { handleTabSelection, pinTab, closeOthers, closeAll } from '@/utils/TabUtils';
 import { findItemInTree } from '@/utils/FileSystemUtils';
+import { YoutubeExtractorModal } from '@/components/editor/YoutubeExtractorModal';
+import { YoutubePlaylistItem, ExtractionOptions } from '@/utils/YoutubeUtils';
 
 WebBrowser.maybeCompleteAuthSession();
 
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
-import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
+import { SettingsProvider, useAppSettings } from '@/contexts/SettingsContext';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { PluginProvider, usePlugins } from '@/contexts/PluginContext';
 import { AppInstance } from '@/core/AppInstance';
 import { QuickPicker } from '@/components/ui/QuickPicker';
+import { SettingsModal } from '@/components/settings/SettingsModal';
 
 const appInstance = new AppInstance();
 
@@ -56,7 +59,7 @@ function MainScreen() {
   "use no-memo";
   const { themeMode, isDark, toggleTheme, colors, fontFamilyUI, fontFamilyCode } = useTheme();
   const s = React.useMemo(() => getStyles(colors), [colors]);
-  const gemini = useSettings();
+  const settings = useAppSettings();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   useEffect(() => {
     console.log(`[App] Window Dimensions: ${windowWidth}x${windowHeight}`);
@@ -265,6 +268,63 @@ function MainScreen() {
   }, [isFooterVisible]);
   const [sidebarViews, setSidebarViews] = useState<any[]>([]);
   const [lastSavedContent, setLastSavedContent] = useState<string>('');
+  const [youtubeModalVisible, setYoutubeModalVisible] = useState(false);
+
+  const handleYoutubeExtract = (items: YoutubePlaylistItem[], mode: string, options: ExtractionOptions & { listType?: string }) => {
+    let markdown = '';
+    const listType = options.listType || 'Numbered';
+    
+    items.forEach((item, index) => {
+      let line = '';
+      if (listType === 'Numbered') {
+        line = `${index + 1}. `;
+      } else if (listType === 'Bulleted') {
+        line = `- `;
+      }
+
+      // Sanitize title for markdown links (especially for mx-video which might be sensitive)
+      const sanitizedTitle = item.title.replace(/\[/g, '(').replace(/\]/g, ')');
+      
+      if (mode === 'Text') {
+        line += `[${sanitizedTitle}](${item.url})`;
+      } else if (mode === 'URL') {
+        line += item.url;
+      } else if (mode === 'Card') {
+        line += `[mx-link#${sanitizedTitle}](${item.url})`;
+      } else if (mode === 'Video') {
+        line += `[mx-video#${sanitizedTitle}](${item.url})`;
+      }
+
+      const stats = [];
+      if (options.showLikes && item.likeCount) stats.push(`👍 ${parseInt(item.likeCount).toLocaleString()}`);
+      if (options.showViews && item.viewCount) stats.push(`👁️ ${parseInt(item.viewCount).toLocaleString()}`);
+      
+      if (stats.length > 0) {
+        line += ` - ${stats.join(' | ')}`;
+      }
+      
+      markdown += line + (listType === 'Plain' ? '\n\n' : '\n');
+    });
+
+    // Add trailing newlines to prevent the cursor from "touching" the last item
+    // and keeping it in raw markdown mode.
+    markdown += '\n\n';
+
+    const activeEditor = activePane === 1 ? editorRef1.current : editorRef2.current;
+    if (activeEditor) {
+      (activeEditor as any).insertText(markdown);
+    } else {
+      // Fallback if ref is not available
+      const setContent = activePane === 1 ? setEditorContent : setEditorContent2;
+      const currentContent = activePane === 1 ? editorContent : editorContent2;
+      const selection = activePane === 1 ? selection1 : selection2;
+      
+      const newContent = currentContent.substring(0, selection.start) + markdown + currentContent.substring(selection.end);
+      setContent(newContent);
+    }
+    
+    setYoutubeModalVisible(false);
+  };
 
   const stateRefs = useRef({
     fileSystemData,
@@ -586,7 +646,7 @@ function MainScreen() {
           });
         },
         setGeminiApiKey: (key: string) => {
-          gemini.setGeminiApiKey(key);
+          settings.setGeminiApiKey(key);
         },
         mockClipboard: () => {
           try {
@@ -934,13 +994,25 @@ function MainScreen() {
   }, [moveItem, fileSystemData]);
 
   const handleConfirmCreation = async () => {
-    const newItem = await createItem(creatingItem!.parentPath, creationName, creatingItem!.kind);
-    if (newItem) {
-      if (newItem.kind === 'file') handleSelectFile(newItem.path);
-      else setExpandedFolders(prev => ({ ...prev, [creatingItem!.parentPath]: true }));
+    if (!creatingItem || !creationName.trim()) {
+      setCreatingItem(null);
+      setCreationName('');
+      return;
     }
+
+    const parentP = creatingItem.parentPath;
+    const kind = creatingItem.kind;
+    const name = creationName.trim();
+
+    // Reset UI state immediately to prevent double submission
     setCreatingItem(null);
     setCreationName('');
+
+    const newItem = await createItem(parentP, name, kind);
+    if (newItem) {
+      if (newItem.kind === 'file') handleSelectFile(newItem.path);
+      else setExpandedFolders(prev => ({ ...prev, [parentP]: true }));
+    }
   };
 
   const handleTabContextMenu = (e: any, file: string, paneId: 1 | 2) => {
@@ -1480,6 +1552,7 @@ function MainScreen() {
                 onSelectionChange1={setSelection1}
                 onSelectionChange2={setSelection2}
                 forcePaneModes={isSplitMode ? { 1: 'editor', 2: 'files' } : undefined}
+                onYoutubeExtract={() => setYoutubeModalVisible(true)}
               />
 
               {/* Pinned TOC for Mobile */}
@@ -1693,6 +1766,14 @@ function MainScreen() {
               </Pressable>
             </Modal>
           )}
+
+          <SettingsModal />
+
+          <YoutubeExtractorModal 
+            visible={youtubeModalVisible}
+            onConfirm={handleYoutubeExtract}
+            onCancel={() => setYoutubeModalVisible(false)}
+          />
         </KeyboardAvoidingView>
 
         <Footer 
@@ -1729,7 +1810,7 @@ function MainScreen() {
 
         {/* MODALS */}
         <GeminiSettingsModal 
-          visible={gemini.showGeminiSettings} onClose={() => gemini.setShowGeminiSettings(false)}
+          visible={settings.showGeminiSettings} onClose={() => settings.setShowGeminiSettings(false)}
         />
 
         <RenameModal 

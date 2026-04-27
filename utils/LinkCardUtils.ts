@@ -14,9 +14,11 @@ export const clearMetadataCache = () => metadataCache.clear();
  */
 export const getYoutubeId = (url: string): string | null => {
   if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  // More robust regex for various YouTube URL formats
+  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?v=)|(shorts\/))([^#\&\?]*).*/;
   const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
+  const id = (match && match[8].length === 11) ? match[8] : null;
+  return id;
 };
 
 export interface LinkMetadata {

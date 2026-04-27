@@ -50,6 +50,7 @@ interface EditorWorkspaceProps {
   onSelectionChange1?: (selection: { start: number, end: number }) => void;
   onSelectionChange2?: (selection: { start: number, end: number }) => void;
   forcePaneModes?: { [key: number]: 'files' | 'editor' };
+  onYoutubeExtract?: () => void;
 }
 
 export function EditorWorkspace({
@@ -64,7 +65,8 @@ export function EditorWorkspace({
   onTabContextMenu, isDark, onDropTab, onHeadingVisible,
   onOpenDirectory, selectedFolder,
   onSelectionChange1, onSelectionChange2,
-  forcePaneModes
+  forcePaneModes,
+  onYoutubeExtract
 }: EditorWorkspaceProps) {
   const { colors, fontFamilyUI } = useTheme();
   const [dragOverPane, setDragOverPane] = React.useState<number | null>(null);
@@ -185,6 +187,7 @@ export function EditorWorkspace({
           onSelectionChange={isPane1 ? onSelectionChange1 : onSelectionChange2}
           isDark={isDark}
           onHeadingVisible={paneId === activePane ? onHeadingVisible : undefined}
+          onYoutubeExtract={onYoutubeExtract}
         />
       );
     };

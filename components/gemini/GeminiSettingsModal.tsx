@@ -3,7 +3,7 @@ import { View, Text, Modal, Pressable, TextInput, StyleSheet, ScrollView } from 
 import { Ionicons } from '@expo/vector-icons';
 import { AVAILABLE_MODELS } from '@/constants/Models';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useAppSettings } from '@/contexts/SettingsContext';
 import { Button } from '@/components/ui/Button';
 import { Collapsible } from '@/components/ui/Collapsible';
 
@@ -21,7 +21,7 @@ export const GeminiSettingsModal = memo(({ visible, onClose }: GeminiSettingsMod
     tempRootPath, setTempRootPath,
     saveSettings, logout, promptAsync,
     googleAccessToken
-  } = useSettings();
+  } = useAppSettings();
   
   const hasToken = !!googleAccessToken;
   

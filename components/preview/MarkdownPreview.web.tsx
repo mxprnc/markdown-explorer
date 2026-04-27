@@ -243,8 +243,8 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
       text = text.trim();
       
       // Handle LinkCard (mx-thumb, mx-link, mx-video)
-      // Lenient regex to handle case-insensitivity and empty titles
-      const mxMatch = text.match(/^mx-(thumb|link|video)#(.*)$/i);
+      // Lenient regex to handle case-insensitivity, spaces, and nested content
+      const mxMatch = text.match(/^mx-(thumb|link|video)\s*#\s*(.*)$/i);
       
       if (mxMatch) {
         const type = mxMatch[1].toLowerCase();
