@@ -12,6 +12,7 @@ interface GeminiChatProps {
   onSaveChatToFile?: (filename: string, content: string) => Promise<boolean>;
   bottomSpacing?: number;
   fileList?: string[];
+  onClose?: () => void;
 }
 
 interface Message {
@@ -19,7 +20,7 @@ interface Message {
   content: string;
 }
 
-export default function GeminiChat({ currentContent, onSaveChatToFile, bottomSpacing = 0, fileList = [] }: GeminiChatProps) {
+export default function GeminiChat({ currentContent, onSaveChatToFile, bottomSpacing = 0, fileList = [], onClose }: GeminiChatProps) {
   const { colors, isDark, fontFamilyCode } = useTheme();
   const { 
     geminiApiKey: apiKey, 
@@ -223,6 +224,19 @@ ${userMsg}`;
               <Ionicons name="settings-outline" size={14} color={colors.text} />
               <Text style={[styles.settingsBtnText, { color: colors.text }]}>Settings</Text>
             </Pressable>
+
+            {onClose && (
+              <Pressable 
+                onPress={onClose} 
+                style={({ hovered }: any) => [
+                  styles.closeBtn,
+                  hovered && { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
+                ]}
+                testID="gemini-close-btn"
+              >
+                <Ionicons name="chevron-down" size={18} color={colors.text} />
+              </Pressable>
+            )}
           </View>
        </View>
 
@@ -446,4 +460,12 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'center' 
   },
+  closeBtn: {
+    padding: 4,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {})
+  } as any,
 });

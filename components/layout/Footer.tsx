@@ -51,6 +51,7 @@ export const Footer = memo(({ height, responder, selectedFile, editorContent, on
             currentContent={editorContent} 
             onSaveChatToFile={onSaveChatToFile}
             fileList={fileList}
+            onClose={onToggleCollapse}
           />
         </View>
       )}
@@ -119,10 +120,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   toggleBtn: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 4,
-  }
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(255, 255, 255, 0.1)',
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
+  } as any
 });

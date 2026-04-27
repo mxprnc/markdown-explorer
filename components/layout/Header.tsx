@@ -164,40 +164,44 @@ export const Header = memo(({
           </Pressable>
         )}
 
-        <Pressable 
-          onPress={() => {
-            console.log('[Header] Gemini button pressed');
-            onGeminiPress?.();
-          }}
-          style={({ pressed }) => [
-            styles.themeBtn, 
-            { opacity: pressed ? 0.6 : 1 }
-          ]}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          testID="header-gemini-btn"
-        >
-          <Ionicons 
-            name={isGeminiOpen ? 'sparkles' : 'sparkles-outline'} 
-            size={18} 
-            color={isGeminiOpen ? colors.primary : colors.text} 
-          />
-        </Pressable>
+        <View style={styles.tabContainer}>
+          <Pressable 
+            onPress={() => {
+              console.log('[Header] Gemini button pressed');
+              onGeminiPress?.();
+            }}
+            style={({ pressed }) => [
+              styles.tabBtn,
+              isGeminiOpen && { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+              { opacity: pressed ? 0.6 : 1 }
+            ]}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            testID="header-gemini-btn"
+          >
+            <Ionicons 
+              name={isGeminiOpen ? 'sparkles' : 'sparkles-outline'} 
+              size={18} 
+              color={isGeminiOpen ? colors.primary : colors.text} 
+            />
+            {!isMobile && <Text style={[styles.tabBtnText, { color: isGeminiOpen ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Gemini</Text>}
+          </Pressable>
 
-        <Pressable 
-          onPress={toggleTheme} 
-          style={({ pressed }) => [
-            styles.themeBtn, 
-            { opacity: pressed ? 0.6 : 1 }
-          ]}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          testID="header-theme-btn"
-        >
-          <Ionicons 
-            name={themeMode === 'light' ? 'moon-outline' : 'sunny-outline'} 
-            size={18} 
-            color={colors.text} 
-          />
-        </Pressable>
+          <Pressable 
+            onPress={toggleTheme} 
+            style={({ pressed }) => [
+              styles.tabBtn, 
+              { opacity: pressed ? 0.6 : 1 }
+            ]}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            testID="header-theme-btn"
+          >
+            <Ionicons 
+              name={themeMode === 'light' ? 'moon-outline' : 'sunny-outline'} 
+              size={18} 
+              color={colors.text} 
+            />
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -263,6 +267,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 44,
     height: 44,
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {})
   } as any,
   actionIcon: {
     color: '#3B82F6',
