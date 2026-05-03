@@ -4,6 +4,7 @@
 - product-owner-subagent
 - ux-designer-subagent
 - frontend-developer-subagent
+- qa-engineer-subagent
 
 기획의 STEP 은 다음과 같이 이뤄졌으면 합니다.
 
