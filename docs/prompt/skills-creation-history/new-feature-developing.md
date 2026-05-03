@@ -15,6 +15,7 @@
 - (5) QA Check
 - (6) Documentation
 
+Skill 을 시작하는 초기에는 {feature명}을 무엇으로 할지를 사용자에게 묻고 해당 {feature명}으로 작업을 시작합니다. 만약 이미 `.gemini/skills/new-feature-developing/{feature명}` 디렉토리가 존재한다면 사용자가 수정을 원하는지를 물어봅니다. 사용자가 수정을 원한다면 {feature명}으로 작업을 시작합니다.  
 
 
 (1) Planning, Idea Storming<br/>
@@ -97,6 +98,8 @@
 
 .gemini/skills/new-feature-developing/{feature명}/unresolved-issues/{번호}.md 에 기록하고 이와 관련한 진행현황을 사용자에게 알립니다.
 
+그리고 (1) 단계에서부터 Product Owner, UX Designer, Implementation Planning, Implementation, QA Check 각 단계별로 테스트 실패 사항에 대해 어떤 내용을 수정해야 할지를 요청받고, 수정 요청사항을 수용할지 말지를 사용자에게 묻습니다. 수정을 요청사항을 수용하겠다면 해당 Phase 로 돌아가서 수정을 하고, 그렇지 않다면 (6) Documentation 단계로 넘어갑니다.
+
 <br/>
 
 (6) Documentation<br/>
@@ -147,10 +150,20 @@
 
 **[단계별 상세 지침]**
 
+### [초기 설정 (Initialization)]
+- **Feature 명칭 설정:** 스킬 시작 시 가장 먼저 사용자에게 개발할 `{feature명}`이 무엇인지 묻습니다.
+- **기존 디렉토리 확인:** `.gemini/skills/new-feature-developing/{feature명}` 디렉토리가 이미 존재하는지 확인합니다.
+  - **존재할 경우:** 사용자에게 기존 기능의 수정을 원하는지 물어보고, 수락 시 해당 디렉토리의 히스토리를 바탕으로 작업을 시작합니다.
+  - **존재하지 않을 경우:** 새로운 기능 개발로 간주하고 작업을 시작합니다.
+
 ### (1) Planning, Idea Storming
 - **에이전트:** `@product-owner-subagent` 호출
-- **사전 확인:** `.gemini/skills/new-feature-developing/{feature명}/product-owner/` 내의 파일을 확인합니다. (기존 파일 선택 또는 신규 생성 로직 적용)
-- **구현 검증:** 기획안이 나오면 반드시 **`@frontend-developer-subagent`**를 호출하여 **구현 가능성(Feasibility)**을 확인합니다.
+- **사전 확인:** `.gemini/skills/new-feature-developing/{feature명}/product-owner/` 내의 파일을 확인합니다.
+  - 파일이 없다면 `1.md`를 생성하고 시작합니다.
+  - 파일이 있다면 사용자에게 **'이미 존재하는 document 선택'** 또는 **'새로운 document 생성'**을 묻습니다.
+    - **기존 선택 시:** 특정 번호를 선택받고 수정을 원하는지 묻습니다. 수정을 원치 않으면 즉시 (2)단계로 점프합니다.
+    - **새로운 생성 시:** 다음 번호의 파일을 생성하고 기획을 시작합니다.
+- **구현 검증:** 기획안이 도출되면 반드시 **`@frontend-developer-subagent`**를 호출하여 **구현 가능성(Feasibility)**을 확인합니다.
   - **구현 불가 시:** 불가능한 이유를 설명하고 대안을 제시합니다. 사용자가 대안을 수락하면 기획안을 수정합니다.
 - **동작:** 최소 3가지 아이디어(A, B, C)를 제시하고 사용자와 소통하며 만족할 때까지 반복합니다.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/product-owner/{번호}.md`
@@ -158,10 +171,14 @@
 
 ### (2) Appearance Designing
 - **에이전트:** `@ux-designer-subagent` 호출
-- **사전 확인:** `.gemini/skills/new-feature-developing/{feature명}/ux-designer/` 내의 파일을 확인합니다. (기존 파일 선택 또는 신규 생성 로직 적용)
+- **사전 확인:** `.gemini/skills/new-feature-developing/{feature명}/ux-designer/` 내의 파일을 확인합니다.
+  - 파일이 없다면 `1.md`를 생성하고 시작합니다.
+  - 파일이 있다면 사용자에게 **'이미 존재하는 document 선택'** 또는 **'새로운 document 생성'**을 묻습니다.
+    - **기존 선택 시:** 특정 번호를 선택받고 수정을 원하는지 묻습니다. 수정을 원치 않으면 즉시 (3)단계로 점프합니다.
+    - **새로운 생성 시:** 다음 번호의 파일을 생성하고 디자인을 시작합니다.
 - **구현 검증:** 디자인 설계 중 **`@frontend-developer-subagent`**를 호출하여 해당 UI/UX의 구현 가능성을 확인합니다.
   - **구현 불가 시:** 디자인을 수정하거나, 기획 자체의 변경이 필요하면 (1)단계로 회귀합니다.
-- **동작:** Mark Explorer의 디자인 시스템에 부합하도록 UI/UX를 설계합니다.
+- **동작:** Mark Explorer의 디자인 시스템에 부합하도록 UI/UX를 설계합니다. 사용자의 피드백을 받아 최적화합니다.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/ux-designer/{번호}.md`
 - **전환:** 디자인 확정 시 (3)단계로 진행합니다. 수정을 원할 경우 (1)단계로 돌아갈지 현재 단계를 계속할지 묻습니다.
 
@@ -179,22 +196,26 @@
 
 ### (5) QA Check
 - **에이전트:** `@qa-engineer-subagent` 호출
-- **동작:** 구현 결과가 기획/디자인과 일치하는지 검증합니다. 실패 시 `unresolved-issues`에 기록합니다.
+- **동작:** 구현 결과가 기획/디자인과 일치하는지 검증합니다. 10회 이상 실패 또는 기능 구현 불가 시 `unresolved-issues`에 기록합니다.
+- **피드백 및 회귀 로직:** 
+  - 검증 실패 시, (1) Planning, (2) Designing, (3) Implementation Planning, (4) Implementation 중 어떤 단계의 내용을 수정해야 할지 구체적인 수정 요청사항을 정리합니다.
+  - 사용자에게 **"수정 요청사항을 수용하시겠습니까?"**라고 묻습니다.
+    - **수락 시:** 해당 Phase로 돌아가 수정을 진행합니다.
+    - **거절 시:** 수정을 생략하고 (6) Documentation 단계로 넘어갑니다.
 - **산출물:** 
   - 테스트 결과: `.gemini/skills/new-feature-developing/{feature명}/qa/{번호}.md`
   - 미해결 이슈: `.gemini/skills/new-feature-developing/{feature명}/unresolved-issues/{번호}.md`
-- **전환:** 검증 완료 시 (6)단계로 진행합니다. 실패 시 (1)~(4) 중 적절한 단계로 회귀합니다.
 
 ### (6) Documentation
 - **에이전트:** `@product-owner-subagent` 호출
-- **동작:** 모든 히스토리를 종합하여 `docs/features/{feature명}/00.feature-overview.md`를 작성합니다.
-- **종료:** 완료 후 종료하거나 원하는 이전 단계로 이동하여 작업을 계속합니다.
+- **동작:** 모든 히스토리를 종합하여 `docs/features/{feature명}/00.feature-overview.md`를 작성합니다. 미해결 이슈가 있다면 해당 파일 경로를 명시합니다.
+- **종료:** 완료 후 사용자에게 종료할지 묻고, 종료를 원치 않으면 (1)~(6) 단계 중 어느 Phase로 돌아가 작업을 계속할지 묻습니다.
 
 ---
 
 **[공통 운영 규칙]**
-1.  **파일명 관리:** `{feature명}`은 kebab-case, `{번호}`는 1부터 시작하는 정수를 사용합니다.
-2.  **문서 기반 작업:** 각 단계 시작 시 관련 산출물 문서를 `view_file`로 읽어 컨텍스트를 유지하세요.
+1.  **파일명 관리:** `{feature명}`은 kebab-case, `{번호}`는 1부터 시작하는 정수를 사용합니다. 기획을 변경할 때는 번호를 증가시키지 않고 현재 파일의 내용을 수정하는 것을 원칙으로 합니다.
+2.  **문서 기반 작업:** 각 단계 시작 시 관련 산출물 문서를 `view_file`로 읽어 컨텍스트를 유지하세요. (`.gemini/skills/new-feature-developing/**` 내의 문서 경로 명시)
 3.  **사용자 인터랙션:** 매 단계 전환 시 명확하게 다음 단계 진행 또는 이전 단계 회귀 여부를 묻습니다.
 4.  **자율성:** 사용자가 만족하더라도 전문가적 관점에서 개선 여지가 있다면 능동적으로 대안을 제시하세요.
 ```
