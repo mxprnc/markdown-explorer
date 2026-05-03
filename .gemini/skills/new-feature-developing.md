@@ -17,25 +17,25 @@
 - **에이전트:** `product-owner-subagent` 호출
 - **동작:** 여러 아이디어(A, B, C 등)를 제시하고 사용자의 선택을 받습니다. 사용자의 의견이 반영될 때까지 기획을 고도화합니다.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/product-owner/{번호}.md`
-- **전환:** 기획에 만족하면 사용자의 승인을 얻어 (2)단계로 이동합니다.
+- **전환:** 기획에 만족하면 사용자의 승인을 얻어 (2)단계로 이동합니다. 불만족 시 다시 (1)단계를 진행하거나 특정 사유가 있다면 중단 여부를 묻습니다.
 
 ### (2) Appearance Designing
 - **에이전트:** `ux-designer-subagent` 호출
 - **동작:** Mark Explorer의 기존 디자인 시스템에 부합하는 UI/UX를 설계합니다. 사용자의 피드백을 받아 디자인을 최적화합니다.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/ux-designer/{번호}.md`
-- **전환:** 디자인에 만족하면 사용자의 승인을 얻어 (3)단계로 이동합니다.
+- **전환:** 디자인에 만족하면 사용자의 승인을 얻어 (3)단계로 이동합니다. 사용자가 수정을 원할 경우 (1) Planning 단계로 돌아가 기획부터 수정할지, 현재 (2) Designing 단계를 계속할지 선택할 수 있습니다.
 
 ### (3) Implementation Planning
 - **에이전트:** `frontend-developer-subagent` 호출
 - **동작:** PO의 기획 내용을 구현하기 위한 구체적인 기술 설계와 단계별 계획을 세웁니다.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/implementation-planning/{번호}.md`
-- **전환:** 계획이 확정되면 사용자의 승인을 얻어 (4)단계로 이동합니다.
+- **전환:** 계획이 확정되면 사용자의 승인을 얻어 (4)단계로 이동합니다. 계획 내용이 기획이나 디자인과 상충될 경우 (1) Planning 또는 (2) Appearance Designing 단계로 돌아가 수정할 수 있습니다.
 
 ### (4) Implementation
 - **에이전트:** `frontend-developer-subagent` 호출
 - **동작:** 구현 계획에 따라 실제 컴포넌트와 로직을 코딩합니다. 코드 작성 후 사용자 피드백을 반영하여 완성도를 높입니다.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/implementation/{번호}.md`
-- **전환:** 구현이 완료되면 (5)단계로 이동합니다. (불만족 시 이전 단계 선택 이동)
+- **전환:** 구현이 완료되면 (5)단계로 이동합니다. 구현 과정에서 기획/디자인/계획의 변경이 필요하다고 판단되면 사용자에게 (1), (2), (3) 중 어느 단계로 돌아가 수정을 진행할지 묻고 해당 단계로 회귀합니다.
 
 ### (5) QA Check
 - **에이전트:** `qa-engineer-subagent` 호출
@@ -43,7 +43,7 @@
 - **산출물:** 
   - 테스트 결과: `.gemini/skills/new-feature-developing/{feature명}/qa/{번호}.md`
   - 미해결 이슈: `.gemini/skills/new-feature-developing/{feature명}/unresolved-issues/{번호}.md`
-- **전환:** 검증 완료 시 (6)단계로 이동합니다. (실패 시 사용자 선택 단계로 회귀)
+- **전환:** 검증 완료 시 (6)단계로 이동합니다. 실패하거나 수정이 필요한 경우 (1) 기획, (2) 디자인, (3) 구현 계획, (4) 구현 중 어느 단계로 돌아가서 문제를 해결할지 사용자에게 묻고 해당 단계로 회귀합니다.
 
 ### (6) Documentation
 - **에이전트:** `product-owner-subagent` 호출
