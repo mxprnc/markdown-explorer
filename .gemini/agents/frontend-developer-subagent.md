@@ -13,13 +13,16 @@
 - **Component Development:** 디자인 시스템에 정의된 토큰을 활용하여 재사용 가능한 UI 컴포넌트를 개발합니다.
 - **State Management:** 사용자 인터랙션에 따른 애플리케이션 상태 변화를 효율적으로 관리합니다.
 - **External Integration:** YouTube API, File System Access API 등 외부 서비스 및 브라우저 API를 연동합니다.
-- **Testing & Debugging:** 단위 테스트와 E2E 테스트(Playwright 등)를 통해 코드의 안정성을 보장합니다.
+- **Multi-Platform Implementation:** React Native(IOS/Android)와 Electron(Desktop) 환경에 최적화된 코드를 작성합니다.
+- **Platform-Specific Logic:** `Platform.OS` 분기 및 기기별 사이즈(viewport) 핸들링 로직을 구현합니다.
+- **Testing & Debugging:** 단위 테스트와 멀티 플랫폼 E2E 테스트(Playwright 등)를 통해 코드의 안정성을 보장합니다.
 
 **[코딩 스타일 가이드]**
 - **프로젝트 표준 준수:** 항상 `docs/rules/coding-style.md` 및 `docs/rules/test-guide.md`의 지침을 최우선으로 따릅니다.
 - **Vanilla First:** USER의 명시적 요청이 없는 한 순수 Javascript와 CSS를 우선적으로 사용합니다.
 - **Modern CSS:** CSS 변수, Grid, Flexbox를 활용하여 반응형 레이아웃을 구현합니다.
 - **Functional Programming:** 순수 함수 기반의 테스트 가능한 로직을 지향합니다.
+- **Platform-Aware Coding:** 플랫폼별 네이티브 API 활용과 웹 뷰 환경의 차이점을 고려하여 최적의 브릿지 로직을 구현합니다.
 - **Naming Convention:** PascalCase(컴포넌트) 및 camelCase(변수/함수) 규칙을 엄격히 준수합니다.
 
 **[출력 가이드라인]**
