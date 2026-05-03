@@ -36,6 +36,9 @@
 
 '번호'는 1부터 시작하며, 기존에 이미 1.md 가 있다면 2.md, 3.md ... 로 추가하며 계획을 기록합니다. 현재 기획을 사용자가 변경하기를 원한다면 {번호}를 증감시키지 않고 현재{번호}.md 의 내용을 수정하는 것을 원칙으로 합니다.
 
+이 과정에서 'frontend-developer-subagent'에게 해당 내용이 구현 가능한지를 묻고, 만약 불가능하다면 불가능한 이유를 사용자에게 설명하고, 구현 가능한 대안을 제시합니다. 사용자가 대안을 받아들인다면 대안에 대한 (1) Planning, Idea Storming 과정의 {번호}.md 파일을 수정하고 (2) Appearance Designing 과정으로 넘어갈지, 계속해서 {번호}.md 의 내용을 보완할지를 묻습니다.
+
+
 
 (2) Appearance Designing <br/>
 먼저 사전에 `.gemini/skills/new-feature-developing/{feature명}/ux-designer` 내에 아무 파일도 없다면 1.md 파일을 만든 후 시작합니다. 
@@ -54,6 +57,9 @@
 완료된 내용은 .gemini/skills/new-feature-developing/{feature명}/ux-designer/{번호}.md 에 기록합니다. 
 
 '번호'는 1부터 시작하며, 기존에 이미 1.md 가 있다면 2.md, 3.md ... 로 추가하며 계획을 기록합니다. 현재 기획을 사용자가 변경하기를 원한다면 {번호}를 증감시키지 않고 현재{번호}.md 의 내용을 수정하는 것을 원칙으로 합니다.
+
+이 과정에서 'frontend-developer-subagent'에게 해당 내용이 구현 가능한지를 묻고, 불가능하다면 구현 가능한 방향으로 (2) Appearance Designing 과정으로 다시 진행합니다. 만약 기획 내용까지 변경해야 한다면 (1) Planning, Idea Storming 과정으로 돌아갑니다.<br/>
+<br/>
 
 
 (3) Implementation Planning<br/>
@@ -143,22 +149,19 @@
 
 ### (1) Planning, Idea Storming
 - **에이전트:** `@product-owner-subagent` 호출
-- **사전 확인:** `.gemini/skills/new-feature-developing/{feature명}/product-owner/` 내의 파일을 확인합니다.
-  - 파일이 없다면 `1.md`를 생성하고 시작합니다.
-  - 파일이 있다면 사용자에게 **'이미 존재하는 document 선택'** 또는 **'새로운 document 생성'**을 묻습니다.
-    - **기존 선택 시:** 특정 번호를 선택받고 수정을 원하는지 묻습니다. 수정을 원치 않으면 즉시 (2)단계로 점프합니다.
-    - **새로운 생성 시:** 다음 번호의 파일을 생성하고 기획을 시작합니다.
+- **사전 확인:** `.gemini/skills/new-feature-developing/{feature명}/product-owner/` 내의 파일을 확인합니다. (기존 파일 선택 또는 신규 생성 로직 적용)
+- **구현 검증:** 기획안이 나오면 반드시 **`@frontend-developer-subagent`**를 호출하여 **구현 가능성(Feasibility)**을 확인합니다.
+  - **구현 불가 시:** 불가능한 이유를 설명하고 대안을 제시합니다. 사용자가 대안을 수락하면 기획안을 수정합니다.
 - **동작:** 최소 3가지 아이디어(A, B, C)를 제시하고 사용자와 소통하며 만족할 때까지 반복합니다.
-- **산출물:** `.gemini/skills/new-feature-developing/{feature명}/product-owner/{번호}.md` (수정 시 기존 파일 갱신, 신규 시 추가)
+- **산출물:** `.gemini/skills/new-feature-developing/{feature명}/product-owner/{번호}.md`
 - **전환:** 기획 확정 시 (2)단계로 진행합니다. 불만족 시 다시 (1)단계를 진행하거나 중단 여부를 묻습니다.
 
 ### (2) Appearance Designing
 - **에이전트:** `@ux-designer-subagent` 호출
-- **사전 확인:** `.gemini/skills/new-feature-developing/{feature명}/ux-designer/` 내의 파일을 확인합니다.
-  - 파일이 없다면 `1.md`를 생성하고 시작합니다.
-  - 파일이 있다면 사용자에게 **'이미 존재하는 document 선택'** 또는 **'새로운 document 생성'**을 묻습니다.
-    - **기존 선택 시:** 특정 번호를 선택받고 수정을 원하는지 묻습니다. 수정을 원치 않으면 즉시 (3)단계로 점프합니다.
-- **동작:** Mark Explorer의 디자인 시스템에 부합하도록 UI/UX를 설계합니다. 사용자의 피드백을 받아 최적화합니다.
+- **사전 확인:** `.gemini/skills/new-feature-developing/{feature명}/ux-designer/` 내의 파일을 확인합니다. (기존 파일 선택 또는 신규 생성 로직 적용)
+- **구현 검증:** 디자인 설계 중 **`@frontend-developer-subagent`**를 호출하여 해당 UI/UX의 구현 가능성을 확인합니다.
+  - **구현 불가 시:** 디자인을 수정하거나, 기획 자체의 변경이 필요하면 (1)단계로 회귀합니다.
+- **동작:** Mark Explorer의 디자인 시스템에 부합하도록 UI/UX를 설계합니다.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/ux-designer/{번호}.md`
 - **전환:** 디자인 확정 시 (3)단계로 진행합니다. 수정을 원할 경우 (1)단계로 돌아갈지 현재 단계를 계속할지 묻습니다.
 
