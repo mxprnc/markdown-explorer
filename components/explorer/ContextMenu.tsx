@@ -14,29 +14,43 @@ interface ContextMenuProps {
   onCreateFile: (parentPath: string) => void;
   onCreateFolder: (parentPath: string) => void;
   onExportToNextra: (item: any) => void;
+  onCreateYoutubePlaylist?: (parentPath: string) => void;
 }
 
 export function ContextMenu({ 
-  x, y, visible, item, onClose, onRename, onDelete, onCreateFile, onCreateFolder, onExportToNextra
+  x, y, visible, item, onClose, onRename, onDelete, onCreateFile, onCreateFolder, onExportToNextra, onCreateYoutubePlaylist
 }: ContextMenuProps) {
   const { colors, isDark, fontFamilyUI } = useTheme();
+  const menuRef = React.useRef<View>(null);
 
   React.useEffect(() => {
     if (!visible) return;
 
-    const handleGlobalClick = () => onClose();
+    const handleGlobalClick = (e: MouseEvent) => {
+      if (menuRef.current) {
+        const domNode = menuRef.current as unknown as HTMLElement;
+        if (domNode && domNode.contains(e.target as Node)) {
+          return;
+        }
+      }
+      onClose();
+    };
     const handleGlobalContextMenu = () => onClose();
 
     // Small delay to prevent current click from closing it immediately
     const timeout = setTimeout(() => {
-      window.addEventListener('click', handleGlobalClick);
-      window.addEventListener('contextmenu', handleGlobalContextMenu);
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.addEventListener) {
+        window.addEventListener('click', handleGlobalClick, true);
+        window.addEventListener('contextmenu', handleGlobalContextMenu, true);
+      }
     }, 10);
 
     return () => {
       clearTimeout(timeout);
-      window.removeEventListener('click', handleGlobalClick);
-      window.removeEventListener('contextmenu', handleGlobalContextMenu);
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.removeEventListener) {
+        window.removeEventListener('click', handleGlobalClick, true);
+        window.removeEventListener('contextmenu', handleGlobalContextMenu, true);
+      }
     };
   }, [visible, onClose]);
 
@@ -44,6 +58,7 @@ export function ContextMenu({
 
   return (
     <View 
+      ref={menuRef}
       testID="explorer-context-menu"
       style={[
         styles.menu, 
@@ -68,6 +83,16 @@ export function ContextMenu({
             <Ionicons name="folder-outline" size={14} color={colors.text} style={styles.menuIcon} />
             <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>New Folder</Text>
           </Pressable>
+          {onCreateYoutubePlaylist && (
+            <Pressable 
+              testID="context-menu-youtube-playlist"
+              onPress={() => { onCreateYoutubePlaylist(item.path); onClose(); }}
+              style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
+            >
+              <Ionicons name="logo-youtube" size={14} color="#EF4444" style={styles.menuIcon} />
+              <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Create Youtube Playlist Note</Text>
+            </Pressable>
+          )}
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
           <Pressable 
             testID="context-menu-export-nextra"

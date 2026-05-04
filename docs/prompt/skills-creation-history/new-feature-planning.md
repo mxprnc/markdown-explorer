@@ -115,6 +115,7 @@
     - **새로운 생성 시:** 다음 번호의 파일을 생성하고 기획을 시작합니다.
 - **동작:** 최소 3가지 아이디어(A, B, C)를 제시하고 사용자와 소통하며 만족할 때까지 반복합니다.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/product-owner/{번호}.md`
+  - **회의록(Meeting Minutes) 포함:** 해당 문서 내에 `## Idea Evolution Log (회의록)` 섹션을 반드시 포함하여, 아이디어가 어떻게 발전해왔는지(예: A안 -> B안 채택 -> B안에 특정 기능을 추가하여 B'안으로 발전 등) 히스토리와 결정 사유를 누적 기록합니다. 이를 통해 언제든 과거 논의되었던 아이디어로 쉽게 되돌아가거나(Rollback) 파생(Fork)시킬 수 있도록 합니다.
 
 ### (2) Appearance Designing
 - **에이전트:** `@ux-designer-subagent` 호출

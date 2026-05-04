@@ -65,6 +65,38 @@ export default function MarkdownPreview({ content, isDark, resolveImage }: { con
     code_block: (node: any, children: any, parent: any, styles: any) => {
       return renderCodeBlock(node, children, 'code');
     },
+    link: (node: any, children: any, parent: any, styles: any) => {
+      const href = node.attributes.href;
+      let text = '';
+      if (node.children && node.children.length > 0) {
+        text = node.children[0].content || '';
+      }
+      
+      const mxMatch = text.match(/^mx-(thumb|link|video)\s*#\s*(.*)$/i);
+      
+      if (mxMatch) {
+        const type = mxMatch[1].toLowerCase();
+        const alt = mxMatch[2].trim();
+        
+        if (type === 'thumb') {
+          return (
+            <View key={node.key} style={{ 
+              borderWidth: 1, borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e5e7eb', 
+              borderRadius: 8, padding: 12, marginVertical: 12, backgroundColor: isDark ? '#1f2937' : '#fff'
+            }}>
+              <Text style={{ fontSize: 14, fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#111827', marginBottom: 4 }}>{alt}</Text>
+              <Text style={{ fontSize: 12, color: '#6b7280' }} numberOfLines={1}>{href}</Text>
+            </View>
+          );
+        }
+        
+        return (
+          <Text key={node.key} style={{ color: '#3b82f6', textDecorationLine: 'none' }}>🔗 {alt || href}</Text>
+        );
+      }
+      
+      return <Text key={node.key} style={{ color: '#3b82f6' }}>{children}</Text>;
+    },
   };
 
 

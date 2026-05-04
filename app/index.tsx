@@ -41,7 +41,9 @@ import { getFileCache, setFileCache } from '@/utils/IndexedDBUtils';
 import { handleTabSelection, pinTab, closeOthers, closeAll } from '@/utils/TabUtils';
 import { findItemInTree } from '@/utils/FileSystemUtils';
 import { YoutubeExtractorModal } from '@/components/editor/YoutubeExtractorModal';
+import { ExpandedExtractionModal } from '@/components/exporter/youtube/ExpandedExtractionModal';
 import { YoutubePlaylistItem, ExtractionOptions } from '@/utils/YoutubeUtils';
+import { ExportMode } from '@/utils/PlaylistParserUtils';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -269,6 +271,8 @@ function MainScreen() {
   const [sidebarViews, setSidebarViews] = useState<any[]>([]);
   const [lastSavedContent, setLastSavedContent] = useState<string>('');
   const [youtubeModalVisible, setYoutubeModalVisible] = useState(false);
+  const [expandedYoutubeModalVisible, setExpandedYoutubeModalVisible] = useState(false);
+  const [youtubeTargetDirectory, setYoutubeTargetDirectory] = useState<string | undefined>(undefined);
 
   const handleYoutubeExtract = (items: YoutubePlaylistItem[], mode: string, options: ExtractionOptions & { listType?: string }) => {
     let markdown = '';
@@ -324,6 +328,80 @@ function MainScreen() {
     }
     
     setYoutubeModalVisible(false);
+  };
+
+  const handleExpandedYoutubeExtract = async (
+    url: string, 
+    mode: ExportMode, 
+    format: ExportFormat, 
+    listType: ExportListType, 
+    targetDirectory?: string,
+    editedItems?: PlaylistItem[],
+    editedTitle?: string
+  ) => {
+    let playlistTitle = editedTitle || "Youtube_Playlist";
+    let items: PlaylistItem[] = editedItems || [];
+    
+    if (items.length === 0 && url) {
+      // 1. Fetch playlist data (API) if no edited items provided
+      const { fetchPlaylistItems, fetchPlaylistMetadata, extractPlaylistId } = await import('@/utils/YoutubeUtils');
+      const playlistId = extractPlaylistId(url);
+      
+      if (playlistId) {
+        const youtubeKey = settings.apiKeys.youtube;
+        const metadata = await fetchPlaylistMetadata(playlistId, youtubeKey);
+        if (metadata && metadata.title) {
+          playlistTitle = metadata.title;
+        }
+        
+        const apiItems = await fetchPlaylistItems(playlistId, 500, false, youtubeKey);
+        items = apiItems.map(item => ({
+          id: item.videoId,
+          title: item.title,
+          url: item.url,
+          note: ''
+        }));
+      }
+    }
+    
+    // Fallback if no items were found
+    if (items.length === 0) {
+      items = [
+        { id: 'dQw4w9WgXcQ', title: 'Sample Video 1', url: 'https://youtube.com/watch?v=dQw4w9WgXcQ', note: 'First sample note generated automatically.' }
+      ];
+    }
+    
+    const { serializePlaylistToMarkdown } = await import('@/utils/PlaylistParserUtils');
+    const markdown = serializePlaylistToMarkdown(items, mode, format, listType);
+    
+    if (targetDirectory !== undefined) {
+      // D-1 mode: Create a new file in targetDirectory
+      const safeTitle = playlistTitle.replace(/[^a-zA-Z0-9가-힣_-]/g, '_');
+      const now = new Date();
+      const sequenceNum = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+      const fileName = `${safeTitle}_${sequenceNum}.md`;
+      const fullPath = targetDirectory === '' ? fileName : `${targetDirectory}/${fileName}`;
+      
+      // Register the new file in the FileSystem state first
+      await createItem(targetDirectory, fileName, 'file');
+      
+      await handleSaveToDiskInHook(fullPath, markdown);
+      appInstance.emit('vault:changed');
+      handleSelectFile(fullPath, false, activePane); // Open the new file
+    } else {
+      // D-2 mode: Insert at cursor
+      const activeEditor = activePane === 1 ? editorRef1.current : editorRef2.current;
+      if (activeEditor) {
+        (activeEditor as any).insertText(markdown + '\n\n');
+      } else {
+        const setContent = activePane === 1 ? setEditorContent : setEditorContent2;
+        const currentContent = activePane === 1 ? editorContent : editorContent2;
+        const selection = activePane === 1 ? selection1 : selection2;
+        const newContent = currentContent.substring(0, selection.start) + markdown + '\n\n' + currentContent.substring(selection.end);
+        setContent(newContent);
+      }
+    }
+    setExpandedYoutubeModalVisible(false);
   };
 
   const stateRefs = useRef({
@@ -647,6 +725,10 @@ function MainScreen() {
         },
         setGeminiApiKey: (key: string) => {
           settings.setGeminiApiKey(key);
+        },
+        triggerExpandedYoutubeModal: (path?: string) => {
+          setYoutubeTargetDirectory(path || '');
+          setExpandedYoutubeModalVisible(true);
         },
         mockClipboard: () => {
           try {
@@ -1552,7 +1634,10 @@ function MainScreen() {
                 onSelectionChange1={setSelection1}
                 onSelectionChange2={setSelection2}
                 forcePaneModes={isSplitMode ? { 1: 'editor', 2: 'files' } : undefined}
-                onYoutubeExtract={() => setYoutubeModalVisible(true)}
+                onYoutubeExtract={(targetDirectory) => {
+                  setYoutubeTargetDirectory(targetDirectory);
+                  setExpandedYoutubeModalVisible(true);
+                }}
               />
 
               {/* Pinned TOC for Mobile */}
@@ -1774,6 +1859,13 @@ function MainScreen() {
             onConfirm={handleYoutubeExtract}
             onCancel={() => setYoutubeModalVisible(false)}
           />
+
+          <ExpandedExtractionModal 
+            visible={expandedYoutubeModalVisible}
+            targetDirectory={youtubeTargetDirectory}
+            onExtract={handleExpandedYoutubeExtract}
+            onClose={() => setExpandedYoutubeModalVisible(false)}
+          />
         </KeyboardAvoidingView>
 
         <Footer 
@@ -1841,6 +1933,10 @@ function MainScreen() {
             }
             setNextraExportTarget(item);
             setNextraExportModalVisible(true);
+          }}
+          onCreateYoutubePlaylist={(path) => {
+            setYoutubeTargetDirectory(path);
+            setExpandedYoutubeModalVisible(true);
           }}
         />
 

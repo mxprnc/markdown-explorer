@@ -13,25 +13,35 @@ interface EditorContextMenuProps {
 
 export function EditorContextMenu({ x, y, visible, onClose, onExtractYoutube }: EditorContextMenuProps) {
   const { colors, isDark, fontFamilyUI } = useTheme();
+  const menuRef = React.useRef<View>(null);
 
   React.useEffect(() => {
     if (!visible) return;
 
-    const handleGlobalClick = () => onClose();
+    const handleGlobalClick = (e: MouseEvent) => {
+      // If clicking inside the menu, let the Pressable handle it
+      if (menuRef.current) {
+        const domNode = menuRef.current as unknown as HTMLElement;
+        if (domNode && domNode.contains(e.target as Node)) {
+          return;
+        }
+      }
+      onClose();
+    };
     const handleGlobalContextMenu = (e: MouseEvent) => {
         e.preventDefault();
         onClose();
     };
 
     const timeout = setTimeout(() => {
-      window.addEventListener('click', handleGlobalClick);
-      window.addEventListener('contextmenu', handleGlobalContextMenu);
+      window.addEventListener('click', handleGlobalClick, true);
+      window.addEventListener('contextmenu', handleGlobalContextMenu, true);
     }, 10);
 
     return () => {
       clearTimeout(timeout);
-      window.removeEventListener('click', handleGlobalClick);
-      window.removeEventListener('contextmenu', handleGlobalContextMenu);
+      window.removeEventListener('click', handleGlobalClick, true);
+      window.removeEventListener('contextmenu', handleGlobalContextMenu, true);
     };
   }, [visible, onClose]);
 
@@ -39,6 +49,7 @@ export function EditorContextMenu({ x, y, visible, onClose, onExtractYoutube }: 
 
   return (
     <View 
+      ref={menuRef}
       style={[
         styles.menu, 
         { top: y, left: x, backgroundColor: colors.surface, borderColor: colors.border }

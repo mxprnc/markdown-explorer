@@ -259,13 +259,21 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
         }
         
         if (type === 'thumb') {
+          const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+          const ytMatch = href ? ytRegex.exec(href) : null;
+          const thumbUrl = ytMatch ? `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg` : null;
+
           return (
             <a href={href} target="_blank" rel="noopener noreferrer" style={{ 
-              display: 'flex', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', 
-              textDecoration: 'none', margin: '12px 0', maxWidth: '600px', backgroundColor: isDark ? '#1f2937' : '#fff' 
+              display: 'flex', border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#e5e7eb'}`, borderRadius: '8px', overflow: 'hidden', 
+              textDecoration: 'none', margin: '12px 0', maxWidth: '600px', backgroundColor: isDark ? '#1f2937' : '#fff',
+              alignItems: 'center'
             }}>
+              {thumbUrl && (
+                <img src={thumbUrl} style={{ width: '120px', height: '90px', objectFit: 'cover' }} alt="" />
+              )}
               <div style={{ flex: 1, padding: '12px' }}>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#111827' }}>{alt}</div>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#111827', marginBottom: '4px' }}>{alt}</div>
                 <div style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{href}</div>
               </div>
             </a>
