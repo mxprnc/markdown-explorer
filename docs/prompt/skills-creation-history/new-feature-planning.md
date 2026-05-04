@@ -15,6 +15,10 @@
 
 
 (1) Planning, Idea Storming<br/>
+작업을 담당하는 sub agent : product-owner-subagent<br/>
+<br/>
+
+
 먼저 사전에 `.gemini/skills/new-feature-developing/{feature명}/product-owner` 내에 아무 파일도 없다면 1.md 파일을 만든 후 시작합니다. 
 
 만약 사용자가 이미 작성해둔 `.gemini/skills/new-feature-developing/{feature명}/product-owner/{번호}.md` 파일이 있다면 다음 중 하나를 사용자가 선택하도록 합니다.
@@ -34,7 +38,15 @@
 '번호'는 1부터 시작하며, 기존에 이미 1.md 가 있다면 2.md, 3.md ... 로 추가하며 계획을 기록합니다. 현재 기획을 사용자가 변경하기를 원한다면 {번호}를 증감시키지 않고 현재{번호}.md 의 내용을 수정하는 것을 원칙으로 합니다.
 
 
+'product-owner-subagent'는 'frontend-developer-subagent'가 작성한 `.gemini/skills/new-feature-developing/{feature명}/feasibility-check/{번호}.md` 파일이 있다면 해당 파일의 내용을 읽고 검토해서 `.gemini/skills/new-feature-developing/{feature명}/product-owner/{번호}.md` 파일의 내용을 수정 및 보완,업데이트 합니다.<br/>
+<br/>
+
+
 (2) Appearance Designing <br/>
+작업을 담당하는 sub agent : ux-designer-subagent<br/>
+<br/>
+
+
 먼저 사전에 `.gemini/skills/new-feature-developing/{feature명}/ux-designer` 내에 아무 파일도 없다면 1.md 파일을 만든 후 시작합니다. 
 
 만약 사용자가 이미 작성해둔 `.gemini/skills/new-feature-developing/{feature명}/ux-designer/{번호}.md` 파일이 있다면 다음 중 하나를 사용자가 선택하도록 합니다.
@@ -53,10 +65,15 @@
 '번호'는 1부터 시작하며, 기존에 이미 1.md 가 있다면 2.md, 3.md ... 로 추가하며 계획을 기록합니다. 현재 기획을 사용자가 변경하기를 원한다면 {번호}를 증감시키지 않고 현재{번호}.md 의 내용을 수정하는 것을 원칙으로 합니다.
 
 
+'ux-designer-subagent'는 'frontend-developer-subagent'가 작성한 `.gemini/skills/new-feature-developing/{feature명}/feasibility-check/{번호}.md` 파일이 있다면 해당 파일의 내용을 읽고 검토해서 `.gemini/skills/new-feature-developing/{feature명}/ux-designer/{번호}.md` 파일의 내용을 수정 및 보완,업데이트 합니다.<br/>
+<br/>
+
+
+
 (3) Implementation Feasibility Check<br/>
 제품이 구현 가능한지 검토하는 단계입니다.
 
-구현 가능할 경우 종료할지, 새로운 요구사항이 더 생겼는지를 묻고 (1),(2) 단계중 하나로 돌아갈지를 묻습니다. 
+구현 가능할 경우 종료할지, 새로운 요구사항(기획 or 디자인)이 더 생겼을수도 있기에 (1),(2) 단계중 하나로 돌아갈지를 묻습니다. (종료 vs (1),(2) 선택)
 
 만약 사용자가 (1) Planning, Idea Storming 단계로 돌아가기를 원한다면 (1) Planning, Idea Storming 으로 돌아가서 다시 시작합니다. 
 
@@ -65,6 +82,10 @@
 위의 내용을 바탕으로 product-owner-subagent, ux-designer-subagent, frontend-developer-subagent 를 활용해서 'new-feature-planning' skill 을 생성하는 프롬프트를 작성하세요. 
 
 제품이 구현 불가능하다면, (1) Planning, Idea Storming 으로 넘어가며 불가능한 이유를 'product-owner-subagent'에게 전달하여 수정을 요청합니다. 이 후 (1) Planning, Idea Storming 단계를 거쳐서 다시 시작합니다.
+
+이때 'frontend-developer-subagent'에게 구현가능한지를 검토해달라고 요청할때 'frontend-developer-subagent' 에게 검토 결과를 .gemini/skills/new-feature-developing/{feature명}/feasibility-check/{번호}.md 파일에 기록하도록 요청하며, 이때 이 파일에 이전 사이클에 작성된 내용이 있다면, 모두 지우고 새로 작성하도록 전달합니다. `.gemini/skills/new-feature-developing/{feature명}/feasibility-check/{번호}.md` 의 내용에는 '구현불가' or '구현가능'을 명확히 명시해야 합니다.<br/>
+
+.gemini/skills/new-feature-developing/{feature명}/feasibility-check/{번호}.md 의 결과 내용이 구현 불가능하다면, (1) Planning, Idea Storming 부터 다시 시작합니다.
 
 바로 아래의 '### A'에 작성하세요. 위의 내용은 삭제하거나 수정하지 마세요. 
 
@@ -107,9 +128,12 @@
 ### (3) Implementation Feasibility Check
 - **에이전트:** `@frontend-developer-subagent` 호출
 - **동작:** 기획과 디자인 내용을 검토하여 기술적 구현 가능성(Feasibility)을 판별합니다.
+  - **검토 기록:** 프론트엔드 에이전트는 검토 결과를 `.gemini/skills/new-feature-developing/{feature명}/feasibility-check/{번호}.md` 파일에 기록합니다. (이전 내용이 있다면 모두 지우고 덮어쓰기) 이 때, 문서 내에 **'구현가능'** 또는 **'구현불가'** 여부를 명확히 명시해야 합니다.
 - **결과 처리:**
-  - **구현 가능(Yes):** 종료할지, 아니면 (1) 또는 (2)단계로 돌아가 추가 요구사항을 반영할지 사용자에게 묻습니다.
-  - **구현 불가능(No):** 불가능한 기술적 이유를 상세히 정리하여 `product-owner-subagent`에게 전달하고, 다시 (1) Planning 단계로 돌아가 기획 수정을 요청합니다.
+  - **구현 가능(Yes):** 사용자에게 기획 확정 및 문서화(4단계)로 넘어갈지, (1) 또는 (2)단계로 돌아가 추가 요구사항(기획 or 디자인)을 진행할지 묻습니다. (종료 vs (1),(2) 선택)
+  - **구현 불가능(No) 또는 보완 필요 시:** 
+    - 불가능한 이유와 대안을 `feasibility-check` 문서에 기록한 뒤, (1) Planning 단계로 돌아가서 기획을 수정하고 다시 시작하는 것을 원칙으로 합니다. (디자인 수정만 필요한 경우 (2) Appearance Designing 단계로 회귀)
+    - 회귀 후 `@product-owner-subagent` 또는 `@ux-designer-subagent`는 반드시 해당 `feasibility-check/{번호}.md` 문서를 읽고 피드백을 반영하여 자신들의 산출물(`product-owner/{번호}.md` 또는 `ux-designer/{번호}.md`)을 업데이트해야 합니다.
 
 ### (4) Documentation
 - **에이전트:** `@product-owner-subagent` 호출
@@ -122,5 +146,7 @@
 2.  **단계 회귀:** 사용자가 원할 경우 언제든지 이전 단계(1~2)로 돌아가 기획이나 디자인을 수정할 수 있습니다.
 3.  **문서 기반 작업:** 각 단계 시작 시 관련 산출물 문서를 `view_file`로 읽어 컨텍스트를 유지하세요.
 4.  **자율성:** 사용자가 만족하더라도 전문가적 관점에서 개선 여지가 있다면 능동적으로 대안을 제시하세요.
+5.  **Sub-agent 호출 지침:** Orchestrator가 Sub-agent를 호출할 때는 반드시 "현재까지의 요약", "참고해야 할 문서의 정확한 파일 경로", 그리고 "이번 턴에 에이전트가 수행해야 할 구체적인 목표와 행동 지침"을 프롬프트로 명확하게 전달해야 합니다.
+6.  **상태 및 넘버링 추적:** Orchestrator는 꼬임을 방지하기 위해 현재 진행 중인 Phase와 작업 중인 문서 번호(Active Version)를 항상 메모리에 유지하고 추적해야 합니다.
 ```
 

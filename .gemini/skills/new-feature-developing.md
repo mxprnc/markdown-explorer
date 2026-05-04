@@ -29,7 +29,9 @@
     - **기존 선택 시:** 특정 번호를 선택받고 수정을 원하는지 묻습니다. 수정을 원치 않으면 즉시 (2)단계로 점프합니다.
     - **새로운 생성 시:** 다음 번호의 파일을 생성하고 기획을 시작합니다.
 - **구현 검증:** 기획안이 도출되면 반드시 **`@frontend-developer-subagent`**를 호출하여 **구현 가능성(Feasibility)**을 확인합니다.
-  - **구현 불가 시:** 불가능한 이유를 설명하고 대안을 제시합니다. 사용자가 대안을 수락하면 기획안을 수정합니다.
+  - **검토 기록:** 프론트엔드 에이전트는 검토 결과를 `.gemini/skills/new-feature-developing/{feature명}/feasibility-check/{번호}.md` 파일에 기록합니다. (이전 내용이 있다면 모두 지우고 새로 작성) 해당 문서 내에 **'구현가능'** 또는 **'구현불가'** 여부를 명확히 명시해야 합니다.
+  - **기획 보완:** `@product-owner-subagent`는 작성된 `feasibility-check` 문서를 읽고 이를 반영하여 `.gemini/skills/new-feature-developing/{feature명}/product-owner/{번호}.md` 문서를 수정 및 업데이트합니다.
+  - **구현 불가 시:** 불가능한 이유를 사용자에게 설명하고 대안을 제시하며, 수락 시 기획안을 수정합니다.
 - **동작:** 최소 3가지 아이디어(A, B, C)를 제시하고 사용자와 소통하며 만족할 때까지 반복합니다.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/product-owner/{번호}.md`
 - **전환:** 기획 확정 시 (2)단계로 진행합니다. 불만족 시 다시 (1)단계를 진행하거나 중단 여부를 묻습니다.
@@ -42,31 +44,34 @@
     - **기존 선택 시:** 특정 번호를 선택받고 수정을 원하는지 묻습니다. 수정을 원치 않으면 즉시 (3)단계로 점프합니다.
     - **새로운 생성 시:** 다음 번호의 파일을 생성하고 디자인을 시작합니다.
 - **구현 검증:** 디자인 설계 중 **`@frontend-developer-subagent`**를 호출하여 해당 UI/UX의 구현 가능성을 확인합니다.
-  - **구현 불가 시:** 디자인을 수정하거나, 기획 자체의 변경이 필요하면 (1)단계로 회귀합니다.
+  - **검토 기록:** 프론트엔드 에이전트는 검토 결과를 `.gemini/skills/new-feature-developing/{feature명}/feasibility-check/{번호}.md` 파일에 기록합니다. (이전 내용이 있다면 모두 지우고 새로 작성) 해당 문서 내에 **'구현가능'** 또는 **'구현불가'** 여부를 명확히 명시해야 합니다.
+  - **디자인 보완:** `@ux-designer-subagent`는 작성된 `feasibility-check` 문서를 읽고 이를 반영하여 `.gemini/skills/new-feature-developing/{feature명}/ux-designer/{번호}.md` 문서를 수정 및 업데이트합니다.
+  - **구현 불가 시:** 구현 가능한 방향으로 디자인을 수정하거나, 기획 자체의 변경이 필요하면 (1)단계로 회귀합니다.
 - **동작:** Mark Explorer의 디자인 시스템에 부합하도록 UI/UX를 설계합니다. 사용자의 피드백을 받아 최적화합니다.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/ux-designer/{번호}.md`
 - **전환:** 디자인 확정 시 (3)단계로 진행합니다. 수정을 원할 경우 (1)단계로 돌아갈지 현재 단계를 계속할지 묻습니다.
 
 ### (3) Implementation Planning
 - **에이전트:** `@frontend-developer-subagent` 호출
-- **동작:** PO/Designer의 결과물을 바탕으로 기술 설계 및 단계별 구현 계획을 세웁니다.
+- **동작:** PO/Designer의 결과물을 바탕으로 기술 설계 및 단계별 구현 계획을 세웁니다. 이때 기존 코드베이스 구조와 컴포넌트를 탐색하여 통합성을 고려해야 하며, 한 번에 개발하기 어렵다면 Step (4)를 위해 개발 단위를 작은 단위의 체크리스트(Task Chunk)로 쪼개어 계획하세요.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/implementation-planning/{번호}.md`
 - **전환:** 계획 확정 시 (4)단계로 진행합니다. 기획/디자인 수정이 필요하면 (1) 또는 (2)단계로 회귀합니다.
 
 ### (4) Implementation
 - **에이전트:** `@frontend-developer-subagent` 호출
-- **동작:** 계획에 따라 코드를 작성합니다. `docs/rules/coding-style.md`를 엄격히 준수합니다.
+- **동작:** 계획에 따라 코드를 작성합니다. `docs/rules/coding-style.md`를 엄격히 준수합니다. Step (3)에서 나눈 작은 단위별로 순차적으로 개발하고, 각 단위마다 에러가 없는지 기본적인 빌드/Lint 확인을 수행하세요.
 - **산출물:** `.gemini/skills/new-feature-developing/{feature명}/implementation/{번호}.md`
 - **전환:** 구현 완료 후 (5)단계로 진행하거나, 필요 시 (1)~(3) 단계 중 하나로 회귀합니다.
 
 ### (5) QA Check
 - **에이전트:** `@qa-engineer-subagent` 호출
-- **동작:** 구현 결과가 기획/디자인과 일치하는지 검증합니다. 10회 이상 실패 또는 기능 구현 불가 시 `unresolved-issues`에 기록합니다.
+- **동작:** 구현 결과가 기획/디자인과 일치하는지 검증합니다. (테스트 코드 실행, 브라우저 렌더링 확인 등 실질적인 검증 수행) 10회 이상 실패 또는 기능 구현 불가 시 `unresolved-issues`에 기록합니다.
 - **피드백 및 회귀 로직:** 
   - 검증 실패 시, (1) Planning, (2) Designing, (3) Implementation Planning, (4) Implementation 중 어떤 단계의 내용을 수정해야 할지 구체적인 수정 요청사항을 정리합니다.
   - 사용자에게 **"수정 요청사항을 수용하시겠습니까?"**라고 묻습니다.
     - **수락 시:** 해당 Phase로 돌아가 수정을 진행합니다.
     - **거절 시:** 수정을 생략하고 (6) Documentation 단계로 넘어갑니다.
+  - **만약 회귀(Revert) 후 재시도했음에도 동일한 문제로 또다시 실패한다면, 무한 루프를 방지하기 위해 해당 기능은 '구현 보류' 처리하고 (6) Documentation 단계로 넘어갑니다.**
 - **산출물:** 
   - 테스트 결과: `.gemini/skills/new-feature-developing/{feature명}/qa/{번호}.md`
   - 미해결 이슈: `.gemini/skills/new-feature-developing/{feature명}/unresolved-issues/{번호}.md`
@@ -83,3 +88,5 @@
 2.  **문서 기반 작업:** 각 단계 시작 시 관련 산출물 문서를 `view_file`로 읽어 컨텍스트를 유지하세요. (`.gemini/skills/new-feature-developing/**` 내의 문서 경로 명시)
 3.  **사용자 인터랙션:** 매 단계 전환 시 명확하게 다음 단계 진행 또는 이전 단계 회귀 여부를 묻습니다.
 4.  **자율성:** 사용자가 만족하더라도 전문가적 관점에서 개선 여지가 있다면 능동적으로 대안을 제시하세요.
+5.  **Sub-agent 호출 지침:** Orchestrator가 Sub-agent를 호출할 때는 반드시 "현재까지의 요약", "참고해야 할 문서의 정확한 파일 경로", 그리고 "이번 턴에 에이전트가 수행해야 할 구체적인 목표와 행동 지침"을 프롬프트로 명확하게 전달해야 합니다.
+6.  **상태 및 넘버링 추적:** Orchestrator는 꼬임을 방지하기 위해 현재 진행 중인 Phase와 작업 중인 문서 번호(Active Version)를 항상 메모리에 유지하고 추적해야 합니다.
