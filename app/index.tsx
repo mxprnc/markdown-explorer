@@ -354,8 +354,8 @@ function MainScreen() {
           playlistTitle = metadata.title;
         }
         
-        const apiItems = await fetchPlaylistItems(playlistId, 500, false, youtubeKey);
-        items = apiItems.map(item => ({
+        const response = await fetchPlaylistItems(playlistId, 50, false, youtubeKey);
+        items = response.items.map(item => ({
           id: item.videoId,
           title: item.title,
           url: item.url,
@@ -709,6 +709,7 @@ function MainScreen() {
         setSelectedFile: (file: string) => setSelectedFile(file),
         setEditorContent: (content: string) => setEditorContent(content),
         setEditorContent2: (content: string) => setEditorContent2(content),
+        updateAPIKey: (type: any, key: string) => settings.updateAPIKey(type, key),
         appInstance,
         previewRef1,
         previewRef2,

@@ -70,7 +70,8 @@ export function YoutubeExtractorModal({ visible, onConfirm, onCancel }: YoutubeE
 
     setIsLoading(true);
     const size = Math.min(50, Math.max(1, parseInt(batchSize) || 20));
-    const items = await fetchPlaylistItems(playlistId, size, showLikes || showViews, youtubeKey);
+    const response = await fetchPlaylistItems(playlistId, size, showLikes || showViews, youtubeKey);
+    const items = response.items;
     
     if (items.length > 0) {
       onConfirm(items, mode, { showLikes, showViews, batchSize: size, listType });
@@ -166,7 +167,7 @@ export function YoutubeExtractorModal({ visible, onConfirm, onCancel }: YoutubeE
           <View style={styles.row}>
             {/* Batch Size */}
             <View style={[styles.section, { flex: 1, marginRight: 12 }]}>
-              <Text style={[styles.label, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>BATCH SIZE (MAX 50)</Text>
+              <Text style={[styles.label, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>ITEM LIMIT (MAX 50)</Text>
               <TextInput
                 style={[styles.input, { 
                   backgroundColor: isDark ? '#1a1a1a' : '#fff', 

@@ -6,6 +6,13 @@ test.describe('YouTube Playlist Exporter Verification', () => {
     await page.goto('/');
     await injectMockFileSystem(page, [], {});
     
+    // Inject API Key BEFORE triggering the modal
+    await page.evaluate(() => {
+      if ((window as any).__E2E_HOOKS__) {
+        (window as any).__E2E_HOOKS__.updateAPIKey('youtube', 'MOCK_KEY');
+      }
+    });
+
     // Trigger modal via E2E hook
     await page.evaluate(() => {
       if ((window as any).__E2E_HOOKS__) {
@@ -19,9 +26,10 @@ test.describe('YouTube Playlist Exporter Verification', () => {
   });
 
   test('should have correct default values', async ({ page }) => {
-    // Check default Item Limit
-    const limitInput = page.getByTestId('item-limit-input');
-    await expect(limitInput).toHaveValue('20');
+    // Check default Batch Size
+    const batchInput = page.getByTestId('item-limit-input');
+    await expect(batchInput).toHaveValue('20');
+    await expect(page.locator('text=BATCH SIZE (MAX 50)')).toBeVisible();
 
     // Check default List Type (Plain should be active)
     const plainToggle = page.getByTestId('list-type-Plain');
@@ -40,14 +48,14 @@ test.describe('YouTube Playlist Exporter Verification', () => {
     await expect(page.locator('text=Live Preview')).toBeVisible();
   });
 
-  test('should allow manual item limit input', async ({ page }) => {
-    const limitInput = page.getByTestId('item-limit-input');
+  test('should allow manual batch size input', async ({ page }) => {
+    const batchInput = page.getByTestId('item-limit-input');
     
-    await limitInput.fill('50');
-    await expect(limitInput).toHaveValue('50');
+    await batchInput.fill('50');
+    await expect(batchInput).toHaveValue('50');
     
-    await limitInput.fill('5');
-    await expect(limitInput).toHaveValue('5');
+    await batchInput.fill('5');
+    await expect(batchInput).toHaveValue('5');
   });
 
   test('should switch between Markdown and Preview tabs', async ({ page }) => {
@@ -63,13 +71,91 @@ test.describe('YouTube Playlist Exporter Verification', () => {
     await expect(page.locator('text=Enter URL to see preview')).toBeVisible();
   });
 
-  test('should show preview when URL is entered', async ({ page }) => {
+  test('should automatically loop and accumulate items until the end', async ({ page }) => {
+
+    const playlistId = 'PL_LOOP_TEST';
+    const url = `https://www.youtube.com/playlist?list=${playlistId}`;
+    
+    let requestCount = 0;
+    await page.route('**/youtube/v3/playlistItems*', async (route) => {
+      requestCount++;
+      if (requestCount === 1) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            items: [
+              { snippet: { title: 'Video 1', thumbnails: { default: { url: '' } }, channelTitle: 'Ch' }, contentDetails: { videoId: 'v1' } },
+              { snippet: { title: 'Video 2', thumbnails: { default: { url: '' } }, channelTitle: 'Ch' }, contentDetails: { videoId: 'v2' } }
+            ],
+            nextPageToken: 'token2'
+          })
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            items: [
+              { snippet: { title: 'Video 3', thumbnails: { default: { url: '' } }, channelTitle: 'Ch' }, contentDetails: { videoId: 'v3' } },
+              { snippet: { title: 'Video 4', thumbnails: { default: { url: '' } }, channelTitle: 'Ch' }, contentDetails: { videoId: 'v4' } }
+            ],
+            nextPageToken: null
+          })
+        });
+      }
+    });
+
+    await page.route('**/youtube/v3/playlists*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: [{ snippet: { title: 'Loop Test Playlist', channelTitle: 'Ch' }, contentDetails: { itemCount: 4 } }]
+        })
+      });
+    });
+
     const urlInput = page.getByTestId('playlist-url-input');
-    await urlInput.fill('https://www.youtube.com/playlist?list=PLAx0_A2LToY_I3_Xn-yS7qF97B6XN8S1C');
+    await urlInput.fill(url);
     
-    // Wait for debounce and fetch (mock fallback will show Sample Video)
+    await expect(page.locator('text=Video 1')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('text=Video 4')).toBeVisible({ timeout: 15000 });
+    
+    const previewHeader = page.locator('text=Live Preview');
+    await expect(previewHeader).toContainText('(4 / 4)');
+  });
+
+  test('should handle API errors gracefully (TC-YT-05)', async ({ page }) => {
+
+    await page.route('**/youtube/v3/playlists*', async (route) => {
+      await route.fulfill({ status: 403, body: 'Quota Exceeded' });
+    });
+
+    const urlInput = page.getByTestId('playlist-url-input');
+    await urlInput.fill('https://www.youtube.com/playlist?list=ERROR');
+    
+    // Check if empty state message is shown instead of crashing
     await page.waitForTimeout(2000);
+    await expect(page.locator('text=Enter URL to see preview')).toBeVisible();
+  });
+
+  test('should debounce URL input to prevent API spam (TC-YT-06)', async ({ page }) => {
+    let apiCallCount = 0;
+    await page.route('**/youtube/v3/playlists*', async (route) => {
+      apiCallCount++;
+      await route.fulfill({ status: 200, body: JSON.stringify({ items: [] }) });
+    });
+
+    const urlInput = page.getByTestId('playlist-url-input');
     
-    await expect(page.locator('text=Sample Video 1')).toBeVisible();
+    // Simulate real typing with pressSequentially
+    await urlInput.click();
+    await urlInput.pressSequentially('https://www.youtube.com/playlist?list=123', { delay: 50 });
+    
+    await page.waitForTimeout(1500); 
+    
+    // Should only have been called once despite many key presses
+    expect(apiCallCount).toBeLessThanOrEqual(1);
   });
 });

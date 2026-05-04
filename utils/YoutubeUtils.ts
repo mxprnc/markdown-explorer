@@ -48,24 +48,39 @@ export async function fetchPlaylistMetadata(playlistId: string, apiKey?: string)
   return null;
 }
 
+export interface PlaylistResponse {
+  items: YoutubePlaylistItem[];
+  nextPageToken?: string;
+}
+
 export async function fetchPlaylistItems(
   playlistId: string,
   maxResults: number = 20,
   includeStats: boolean = false,
-  apiKey?: string
-): Promise<YoutubePlaylistItem[]> {
+  apiKey?: string,
+  pageToken?: string
+): Promise<PlaylistResponse> {
   const key = apiKey || API_KEY;
   if (!key) {
     console.error('YouTube API Key is missing');
-    return [];
+    return { items: [] };
   }
 
   try {
-    const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlistId}&maxResults=${maxResults}&key=${key}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlistId}&maxResults=${Math.min(50, maxResults)}&key=${key}`;
+    if (pageToken) {
+      url += `&pageToken=${pageToken}`;
+    }
 
-    if (!data.items) return [];
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('YouTube API error:', error);
+      return { items: [] };
+    }
+    
+    const data = await response.json();
+    if (!data.items) return { items: [] };
 
     const items: YoutubePlaylistItem[] = data.items.map((item: any) => ({
       title: item.snippet.title,
@@ -76,27 +91,32 @@ export async function fetchPlaylistItems(
       publishedAt: item.snippet.publishedAt,
     }));
 
-    if (includeStats) {
+    if (includeStats && items.length > 0) {
       const videoIds = items.map(item => item.videoId).join(',');
       const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${key}`;
       const statsResponse = await fetch(statsUrl);
-      const statsData = await statsResponse.json();
-
-      if (statsData.items) {
-        statsData.items.forEach((statItem: any) => {
-          const index = items.findIndex(i => i.videoId === statItem.id);
-          if (index !== -1) {
-            items[index].viewCount = statItem.statistics.viewCount;
-            items[index].likeCount = statItem.statistics.likeCount;
-          }
-        });
+      
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        if (statsData.items) {
+          statsData.items.forEach((statItem: any) => {
+            const itemIndex = items.findIndex(item => item.videoId === statItem.id);
+            if (itemIndex !== -1) {
+              items[itemIndex].viewCount = statItem.statistics.viewCount;
+              items[itemIndex].likeCount = statItem.statistics.likeCount;
+            }
+          });
+        }
       }
     }
 
-    return items;
+    return { 
+      items, 
+      nextPageToken: data.nextPageToken 
+    };
   } catch (error) {
     console.error('Error fetching playlist items:', error);
-    return [];
+    return { items: [] };
   }
 }
 

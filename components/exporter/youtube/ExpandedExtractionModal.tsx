@@ -10,7 +10,7 @@ interface ExpandedExtractionModalProps {
   visible: boolean;
   onClose: () => void;
   targetDirectory?: string; // If provided via Context Menu, it locks into D-1 auto-creation mode
-  onExtract: (url: string, mode: ExportMode, format: ExportFormat, listType: ExportListType, targetDirectory?: string) => void;
+  onExtract: (url: string, mode: ExportMode, format: ExportFormat, listType: ExportListType, targetDirectory?: string, editedItems?: PlaylistItem[], editedTitle?: string) => void;
 }
 
 export const ExpandedExtractionModal: React.FC<ExpandedExtractionModalProps> = ({ 
@@ -22,15 +22,17 @@ export const ExpandedExtractionModal: React.FC<ExpandedExtractionModalProps> = (
   const [listType, setListType] = useState<ExportListType>('Plain');
   const [itemLimit, setItemLimit] = useState('20');
   const [isLoading, setIsLoading] = useState(false);
-  const { apiKeys, setSettingsVisible, setActiveTab } = useAppSettings();
+  const settings = useAppSettings();
   const { colors, isDark, fontFamilyUI, fontFamilyCode } = useTheme();
-  const youtubeKey = apiKeys.youtube;
+  const youtubeKey = settings.apiKeys?.youtube || "";
   const [previewData, setPreviewData] = useState<PlaylistItem[] | null>(null);
   const [editableData, setEditableData] = useState<PlaylistItem[] | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [playlistTitle, setPlaylistTitle] = useState<string>("Youtube_Playlist");
+  const [metadata, setMetadata] = useState<any>(null);
   const [previewTab, setPreviewTab] = useState<'markdown' | 'preview'>('preview');
+  const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (previewData) {
@@ -60,61 +62,77 @@ export const ExpandedExtractionModal: React.FC<ExpandedExtractionModalProps> = (
     }
   }, [visible, targetDirectory]);
 
-  // Real fetching logic for Live Preview
+  // Automatic Incremental Looping Fetch
   useEffect(() => {
     if (!url) {
       setPreviewData(null);
+      setNextPageToken(undefined);
       return;
     }
     
     let isMounted = true;
-    const fetchPreview = async () => {
+    const batchSizeNum = parseInt(itemLimit) || 20;
+
+    const fetchAllBatches = async () => {
       setIsLoading(true);
+      setPreviewData([]); // Reset for new URL
+      
       try {
         const { fetchPlaylistItems, extractPlaylistId, fetchPlaylistMetadata } = await import('@/utils/YoutubeUtils');
         const playlistId = extractPlaylistId(url);
         
         if (playlistId) {
-          const metadata = await fetchPlaylistMetadata(playlistId, youtubeKey);
-          if (isMounted && metadata?.title) {
-            setPlaylistTitle(metadata.title);
+          // 1. Get metadata first
+          const meta = await fetchPlaylistMetadata(playlistId, youtubeKey);
+          if (isMounted && meta) {
+            setPlaylistTitle(meta.title);
+            setMetadata(meta);
           }
-          
-          const apiItems = await fetchPlaylistItems(playlistId, parseInt(itemLimit) || 20, false, youtubeKey);
-          if (isMounted) {
-            if (apiItems.length > 0) {
-              setPreviewData(apiItems.map(item => ({
+
+          // 2. Loop until no more pages
+          let currentToken: string | undefined = undefined;
+          let hasMore = true;
+
+          while (hasMore && isMounted) {
+            const response = await fetchPlaylistItems(playlistId, batchSizeNum, false, youtubeKey, currentToken);
+            
+            if (response.items.length > 0) {
+              const newItems = response.items.map(item => ({
                 id: item.videoId,
                 title: item.title,
                 url: item.url,
                 note: ''
-              })));
+              }));
+              
+              // Append to existing data
+              setPreviewData(prev => [...(prev || []), ...newItems]);
+              
+              currentToken = response.nextPageToken;
+              setNextPageToken(currentToken);
+              
+              if (!currentToken) {
+                hasMore = false;
+              }
             } else {
-              // Fallback for preview if API fails (e.g. no API key)
-              setPreviewData([
-                { id: 'dQw4w9WgXcQ', title: 'Sample Video 1', url: 'https://youtube.com/watch?v=dQw4w9WgXcQ', note: 'First sample note generated automatically.' },
-                { id: 'kJQP7kiw5Fk', title: 'Sample Video 2', url: 'https://youtube.com/watch?v=kJQP7kiw5Fk', note: '' }
-              ]);
+              hasMore = false;
             }
-          }
-        } else {
-          if (isMounted) {
-            setPreviewData([
-              { id: 'dQw4w9WgXcQ', title: 'Sample Video 1', url: 'https://youtube.com/watch?v=dQw4w9WgXcQ', note: 'First sample note generated automatically.' },
-              { id: 'kJQP7kiw5Fk', title: 'Sample Video 2', url: 'https://youtube.com/watch?v=kJQP7kiw5Fk', note: '' }
-            ]);
+            
+            // Small safety break to allow UI to breathe
+            if (hasMore) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
           }
         }
       } catch (err) {
-        console.error('Failed to fetch preview data', err);
+        console.error('Failed to fetch playlist batches', err);
       } finally {
         if (isMounted) setIsLoading(false);
       }
     };
 
     const timer = setTimeout(() => {
-      fetchPreview();
-    }, 800); // debounce input
+      fetchAllBatches();
+    }, 800);
 
     return () => {
       isMounted = false;
@@ -207,7 +225,7 @@ export const ExpandedExtractionModal: React.FC<ExpandedExtractionModalProps> = (
                   ))}
                 </View>
 
-                <Text style={[styles.label, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>ITEM LIMIT</Text>
+                <Text style={[styles.label, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>BATCH SIZE (MAX 50)</Text>
                 <TextInput 
                   testID="item-limit-input"
                   style={[styles.input, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', borderColor: colors.border, color: colors.text, fontFamily: fontFamilyCode, marginBottom: 20 }]} 
@@ -265,7 +283,7 @@ export const ExpandedExtractionModal: React.FC<ExpandedExtractionModalProps> = (
             {/* Right Panel: Live Preview */}
             <View style={[styles.rightPanel, { backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }]}>
               <View style={[styles.previewHeader, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
-                <Text style={[styles.previewTitle, { color: colors.text, fontFamily: fontFamilyUI }]}>Live Preview</Text>
+                <Text style={[styles.previewTitle, { color: colors.text, fontFamily: fontFamilyUI }]}>Live Preview {previewData ? `(${previewData.length}${metadata?.itemCount ? ` / ${metadata.itemCount}` : ''})` : ''}</Text>
                 <View style={styles.tabGroup}>
                   <TouchableOpacity testID="tab-markdown" onPress={() => setPreviewTab('markdown')}>
                     <Text style={[styles.tabText, { color: previewTab === 'markdown' ? colors.primary : colors.textMuted, fontWeight: previewTab === 'markdown' ? '700' : '400' }]}>Markdown</Text>
@@ -281,9 +299,9 @@ export const ExpandedExtractionModal: React.FC<ExpandedExtractionModalProps> = (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={colors.primary} />
                   </View>
-                ) : !previewData ? (
+                ) : (!previewData || previewData.length === 0) ? (
                   <View style={styles.emptyPreview}>
-                    <Ionicons name="document-text-outline" size={48} color={colors.border} />
+                    <Ionicons name="link-outline" size={48} color={colors.textMuted} />
                     <Text style={[styles.emptyPreviewText, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>Enter URL to see preview</Text>
                   </View>
                 ) : (
@@ -558,5 +576,17 @@ const styles = StyleSheet.create({
   },
   copyButton: {
     padding: 8,
+  },
+  loadMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  loadMoreText: {
+    fontSize: 13,
+    fontWeight: 'bold',
   },
 });
