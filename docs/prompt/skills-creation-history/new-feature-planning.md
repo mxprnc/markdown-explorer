@@ -7,14 +7,14 @@
 
 기획의 STEP 은 다음과 같이 이뤄졌으면 합니다.
 
-- (1) Planning, Idea Storming
+- (1) Idea Meeting
 - (2) Appearance Designing 
 - (3) Implementation Feasibility Check
 - (4) Documentation
 
 
 
-(1) Planning, Idea Storming<br/>
+(1) Idea Meeting<br/>
 작업을 담당하는 sub agent : product-owner-subagent<br/>
 <br/>
 
@@ -31,7 +31,7 @@
 
 제품에 대한 기획을 할때 여러가지의 의견이 있을 수 있습니다. 만약 제품에 대한 Idea 가 A, B, C 로 나왔다면, 이 것에 대해 사용자에게 의견을 물어봐서 A,B,C 중 어떤 것을 선택할지를 물어보고 선택합니다. 만약 사용자의 의견이 더 있는지를 물어보고 더 원하는게 있다면 다시 기획을 해서 발전시키거나 선택지를 수정해서 다시 물어봅니다.
 
-이 과정을 반복하면서 사용자에게 만족스러운지를 묻고 '(2) Appearance Designing' 로 넘어갈지를 묻고, 여기에 대해 Yes 를 한다면 '(2) Appearance Designing'으로 넘어갑니다. No 를 한다면 (1) Planning, Idea Storming 과정으로 돌아가서 다시 시작합니다. 단, 사용자가 기획에 대해서 만족을 했더라도 기획내용중에 개선의 여지가 있다고 판단되면 product-owner-subagent는 스스로 개선의견을 추가해서 다시 물어봅니다.
+이 과정을 반복하면서 사용자에게 만족스러운지를 묻고 '(2) Appearance Designing' 로 넘어갈지를 묻고, 여기에 대해 Yes 를 한다면 '(2) Appearance Designing'으로 넘어갑니다. No 를 한다면 (1) Idea Meeting 과정으로 돌아가서 다시 시작합니다. 단, 사용자가 기획에 대해서 만족을 했더라도 기획내용중에 개선의 여지가 있다고 판단되면 product-owner-subagent는 스스로 개선의견을 추가해서 다시 물어봅니다.
 
 완료된 내용은 .gemini/skills/new-feature-developing/history/{feature명}/product-owner/{번호}.md 에 기록합니다. 
 
@@ -58,7 +58,7 @@
   - 이 옵션을 선택한다면 새로운 {번호}.md 파일을 생성한 후 사용자의 입력을 받고, 디자인을 정리하는 작업을 시작합니다.
 
 
-'(1) Planning, Idea Storming' 에 대한 디자인을 사용자에게 보여주기 위해서, mark explorer 의 현재의 전체 디자인에 대한 스타일에 부합하도록 발전시키거나 발전시켜 나갑니다. 이 과정에 역시 사용자의 의견을 물어보면서 계속해서 최적화해나갑니다. 사용자의 의견을 수렴해서 디자인이 개선되고 난후, 다음 단계인 (3) Implementation Feasibility Check 단계로 넘어갈지를 묻고, 여기에 대해 Yes 를 한다면 '(3) Implementation Feasibility Check'으로 넘어갑니다. No 를 한다면 (2) Appearance Designing 과정으로 돌아가서 다시 시작합니다. 단, 사용자가 디자인에 대해서 만족을 했더라도 디자인내용중에 개선의 여지가 있다고 판단되면 ux-designer-subagent는 스스로 개선의견을 추가해서 다시 물어봅니다.
+'(1) Idea Meeting' 에 대한 디자인을 사용자에게 보여주기 위해서, mark explorer 의 현재의 전체 디자인에 대한 스타일에 부합하도록 발전시키거나 발전시켜 나갑니다. 이 과정에 역시 사용자의 의견을 물어보면서 계속해서 최적화해나갑니다. 사용자의 의견을 수렴해서 디자인이 개선되고 난후, 다음 단계인 (3) Implementation Feasibility Check 단계로 넘어갈지를 묻고, 여기에 대해 Yes 를 한다면 '(3) Implementation Feasibility Check'으로 넘어갑니다. No 를 한다면 (2) Appearance Designing 과정으로 돌아가서 다시 시작합니다. 단, 사용자가 디자인에 대해서 만족을 했더라도 디자인내용중에 개선의 여지가 있다고 판단되면 ux-designer-subagent는 스스로 개선의견을 추가해서 다시 물어봅니다.
 
 완료된 내용은 .gemini/skills/new-feature-developing/history/{feature명}/ux-designer/{번호}.md 에 기록합니다. 
 
@@ -75,19 +75,25 @@
 
 구현 가능할 경우 종료할지, 새로운 요구사항(기획 or 디자인)이 더 생겼을수도 있기에 (1),(2) 단계중 하나로 돌아갈지를 묻습니다. (종료 vs (1),(2) 선택)
 
-만약 사용자가 (1) Planning, Idea Storming 단계로 돌아가기를 원한다면 (1) Planning, Idea Storming 으로 돌아가서 다시 시작합니다. 
+만약 사용자가 (1) Idea Meeting 단계로 돌아가기를 원한다면 (1) Idea Meeting 으로 돌아가서 다시 시작합니다. 
 
 만약 사용자가 (2) Appearance Designing 단계로 돌아가기를 원한다면 (2) Appearance Designing 으로 돌아가서 다시 시작합니다. 
 
 위의 내용을 바탕으로 product-owner-subagent, ux-designer-subagent, frontend-developer-subagent 를 활용해서 'new-feature-planning' skill 을 생성하는 프롬프트를 작성하세요. 
 
-제품이 구현 불가능하다면, (1) Planning, Idea Storming 으로 넘어가며 불가능한 이유를 'product-owner-subagent'에게 전달하여 수정을 요청합니다. 이 후 (1) Planning, Idea Storming 단계를 거쳐서 다시 시작합니다.
+제품이 구현 불가능하다면, (1) Idea Meeting 으로 넘어가며 불가능한 이유를 'product-owner-subagent'에게 전달하여 수정을 요청합니다. 이 후 (1) Idea Meeting 단계를 거쳐서 다시 시작합니다.
 
 이때 'frontend-developer-subagent'에게 구현가능한지를 검토해달라고 요청할때 'frontend-developer-subagent' 에게 검토 결과를 .gemini/skills/new-feature-developing/history/{feature명}/feasibility-check/{번호}.md 파일에 기록하도록 요청하며, 이때 이 파일에 이전 사이클에 작성된 내용이 있다면, 모두 지우고 새로 작성하도록 전달합니다. `.gemini/skills/new-feature-developing/history/{feature명}/feasibility-check/{번호}.md` 의 내용에는 '구현불가' or '구현가능'을 명확히 명시해야 합니다.<br/>
 
-.gemini/skills/new-feature-developing/history/{feature명}/feasibility-check/{번호}.md 의 결과 내용이 구현 불가능하다면, (1) Planning, Idea Storming 부터 다시 시작합니다.
+.gemini/skills/new-feature-developing/history/{feature명}/feasibility-check/{번호}.md 의 결과 내용이 구현 불가능하다면, (1) Idea Meeting 부터 다시 시작합니다.
+
+
+
+(4) Documentation<br/>
+이 과정이 끝나면 `product-owner-subagent`는 `.gemini/skills/new-feature-developing/history/{feature명}/meeting-log/{번호}.md`를 작성하여 회의록을 작성합니다. 이미 작성된 내용이 있다면 새로 추가된 내용을 이어서 추가합니다.
 
 바로 아래의 '### A'에 작성하세요. 위의 내용은 삭제하거나 수정하지 마세요. 
+
 
 ### A
 ```markdown
@@ -97,7 +103,7 @@
 당신은 'Mark Explorer' 프로젝트의 신규 기능 기획 및 디자인 단계를 총괄하는 **Planning Orchestrator**입니다. 아이디어 스토밍부터 UI/UX 설계, 기술적 구현 가능성 검토까지의 과정을 관리하며, 각 단계에 최적화된 **Sub-agents**(`.gemini/agents/`에 정의됨)를 `@명칭`으로 호출하여 기획의 완성도를 높입니다.
 
 **[워크플로우 요약]**
-1.  **(1) Planning, Idea Storming:** 기획 및 아이디어 구체화 (product-owner-subagent 활용)
+1.  **(1) Idea Meeting:** 기획 및 아이디어 구체화 (product-owner-subagent 활용)
 2.  **(2) Appearance Designing:** UI/UX 디자인 및 스타일링 (ux-designer-subagent 활용)
 3.  **(3) Implementation Feasibility Check:** 구현 가능성 검토 (frontend-developer-subagent 활용)
 4.  **(4) Documentation:** 기획 및 디자인 히스토리 문서화 (product-owner-subagent 활용)
@@ -106,7 +112,7 @@
 
 **[단계별 상세 지침]**
 
-### (1) Planning, Idea Storming
+### (1) Idea Meeting
 - **에이전트:** `@product-owner-subagent` 호출
 - **문서 관리:** `.gemini/skills/new-feature-developing/history/{feature명}/product-owner/` 경로를 확인합니다.
   - 파일이 없으면 `1.md`를 생성하고 시작합니다.
@@ -142,7 +148,7 @@
 
 ### (4) Documentation
 - **에이전트:** `@product-owner-subagent` 호출
-- **동작:** 최종 확정된 기획 및 디자인 내용을 바탕으로 `docs/features/{feature명}/00.planning-summary.md`를 작성하여 히스토리를 보존합니다.
+- **동작:** 최종 확정된 기획 및 디자인 내용을 바탕으로 `.gemini/skills/new-feature-developing/history/{feature명}/meeting-log/{번호}.md`를 작성하여 회의록을 작성합니다. 이미 작성된 내용이 있다면 새로 추가된 내용을 이어서 추가합니다.
 
 ---
 
