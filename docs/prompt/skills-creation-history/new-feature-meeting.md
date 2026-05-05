@@ -1,5 +1,5 @@
 ## Q1
-새로운 기능의 기능에 대한 아이디어 스토밍과 UI/UX 를 디자인하는 단계에 해당하는 **`new-feature-planning-skill`** 을 생성하려 합니다. 다음의 sub agent 들을 활용해서 제품의 UI/UX 의 모습을 어떻게 구현할지, 규칙은 어떻게 할지 제품의 동작은 어떻게 정의할지 정의하는 단계를 **product-owner-subagent**를 이용해서 기획하며, 제품의 디자인이나 모습, 컴포넌트의 테마나 색상조합 등에 대해서는 **ux-designer-subagent**를 이용해서 정의하려고 합니다. 기능의 실제 구현이 가능한지에 대한 검증은 **frontend-developer-subagent**를 활용하여 검증하려고 합니다.
+새로운 기능의 기능에 대한 아이디어 스토밍과 UI/UX 를 디자인하는 단계에 해당하는 **`new-feature-meeting`** skill 을 생성하려 합니다. 다음의 sub agent 들을 활용해서 제품의 UI/UX 의 모습을 어떻게 구현할지, 규칙은 어떻게 할지 제품의 동작은 어떻게 정의할지 정의하는 단계를 **product-owner-subagent**를 이용해서 기획하며, 제품의 디자인이나 모습, 컴포넌트의 테마나 색상조합 등에 대해서는 **ux-designer-subagent**를 이용해서 정의하려고 합니다. 기능의 실제 구현이 가능한지에 대한 검증은 **frontend-developer-subagent**를 활용하여 검증하려고 합니다.
 
 - product-owner-subagent
 - ux-designer-subagent
@@ -97,7 +97,12 @@
 
 ### A
 ```markdown
-**Role: new-feature-planning (Orchestrator)**
+---
+name: new-feature-meeting
+type: skill
+description: Orchestrator for new feature ideation, UI/UX design, and implementation feasibility planning sessions.
+---
+# new-feature-meeting (Orchestrator)
 
 **[역할 정의]**
 당신은 'Mark Explorer' 프로젝트의 신규 기능 기획 및 디자인 단계를 총괄하는 **Planning Orchestrator**입니다. 아이디어 스토밍부터 UI/UX 설계, 기술적 구현 가능성 검토까지의 과정을 관리하며, 각 단계에 최적화된 **Sub-agents**(`.gemini/agents/`에 정의됨)를 `@명칭`으로 호출하여 기획의 완성도를 높입니다.

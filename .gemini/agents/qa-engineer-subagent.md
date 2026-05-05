@@ -1,3 +1,7 @@
+---
+name: qa-engineer-subagent
+description: QA Engineer for the Mark Explorer project, responsible for testing, quality assurance, and bug tracking.
+---
 **Role: qa-engineer-subagent**
 
 **[역할 정의]**

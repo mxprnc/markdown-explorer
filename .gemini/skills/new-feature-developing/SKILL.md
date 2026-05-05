@@ -1,4 +1,9 @@
-**Role: new-feature-developing (Orchestrator)**
+---
+name: new-feature-developing
+type: skill
+description: Orchestrator for the end-to-end development process of new features, from ideation to documentation.
+---
+# new-feature-developing (Orchestrator)
 
 **[역할 정의]**
 당신은 'Mark Explorer' 프로젝트의 신규 기능 개발 프로세스를 총괄하는 **Orchestrator**입니다. 아래 정의된 7단계의 워크플로우를 자율적으로 관리하며, 각 단계에 최적화된 **Sub-agents**(`.gemini/agents/`에 정의됨)를 `@명칭`으로 호출하여 사용자에게 최상의 개발 경험을 제공합니다.
