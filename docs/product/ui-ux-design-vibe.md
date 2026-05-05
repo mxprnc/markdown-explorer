@@ -33,7 +33,12 @@
 
 ## 4. 컴포넌트 디자인 특징
 
-### 4.1 에디터 및 콘텐츠
+### 4.1 에디터 및 마크다운 렌더링
+- **Markdown Highlighting**: 에디터 내에서 마크다운 문법이 실시간으로 시각화됩니다.
+  - `# Heading 1`: 볼드체, 큰 폰트 크기.
+  - `- List items`: 커스텀 마커와 들여쓰기.
+  - `> Blockquotes`: 왼쪽 테두리(Border-left)와 구별되는 텍스트 색상.
+  - `Inline Code`: 배경색이 있는 모노스페이스 폰트.
 - **Code Blocks**: 배경색(`#f9fafb`)과 테두리를 통해 본문과 분리. 우측 상단에 미세한 그림자가 있는 'COPY' 버튼 배치.
 - **TOC (Table of Contents)**: 우측 패널에 위치. 현재 읽고 있는 섹션은 파란색 배경(`Active Highlight`)과 왼쪽의 두꺼운 파란색 인디케이터로 표시.
 
@@ -44,6 +49,10 @@
 ### 4.3 하단 인터페이스 (Status & AI)
 - **Status Bar**: 최하단에 위치하며 선명한 블루 배경에 화이트 텍스트를 사용하여 현재 상태(파일 경로, 인코딩 등)를 명확히 전달.
 - **AI Chat Pane**: 하단에 고정 가능하며, 입력창에는 은은한 테두리와 블루 전송 아이콘 적용.
+
+### 4.4 모바일 UI 최적화 (Mobile Optimization)
+- **Responsive Workspace**: 세로(Portrait) 및 가로(Landscape) 모드 간의 자동 레이아웃 조정.
+- **Safe Area Support**: `SafeAreaProvider`를 통해 노치(Notch)나 홈 인디케이터와 같은 시스템 UI 요소와의 겹침을 방지합니다.
 
 ## 5. 인터랙션 바이브 (Interaction Vibe)
 
