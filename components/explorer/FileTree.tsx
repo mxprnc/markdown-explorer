@@ -93,6 +93,7 @@ export function FileTree({
             {Platform.OS === 'web' ? (
               <input
                 autoFocus
+                data-testid="creation-input"
                 value={creationName}
                 onChange={(e: any) => setCreationName(e.target.value)}
                 onKeyDown={(e: any) => {

@@ -58,6 +58,12 @@ export async function injectMockFileSystem(page: Page, data: any[], files: Recor
           move: async () => {}
         };
       },
+      getFileHandle: async (name: string) => ({ 
+        kind: 'file', 
+        name,
+        getFile: async () => new File([''], name),
+        createWritable: async () => ({ write: async () => {}, close: async () => {} })
+      }),
       removeEntry: async () => {}
     });
   }, { data, files });

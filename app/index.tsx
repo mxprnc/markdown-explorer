@@ -1087,11 +1087,12 @@ function MainScreen() {
     const kind = creatingItem.kind;
     const name = creationName.trim();
 
-    // Reset UI state immediately to prevent double submission
+    const newItem = await createItem(parentP, name, kind);
+    
+    // Reset UI state after creation attempt
     setCreatingItem(null);
     setCreationName('');
 
-    const newItem = await createItem(parentP, name, kind);
     if (newItem) {
       if (newItem.kind === 'file') handleSelectFile(newItem.path);
       else setExpandedFolders(prev => ({ ...prev, [parentP]: true }));
@@ -1555,8 +1556,9 @@ function MainScreen() {
                       setNextraExportModalVisible(true);
                     }}
                     onMove={handleMoveFileSystem}
+                    selectedFolder={selectedFolder}
                   />
-                ), [isMobile, sidebarWidth, leftPaneWidth, fileSystemData, selectedFile, selectedFile2, expandedFolders, hoveredItemPath, handleSelectFile, toggleFolder, handleOpenDirectory, contextMenu, handleDeleteFileSystem, renamingItem, creatingItem, creationName, handleConfirmCreation, loadDirectoryRecursive, handleMoveFileSystem])}
+                ), [isMobile, sidebarWidth, leftPaneWidth, fileSystemData, selectedFile, selectedFile2, expandedFolders, hoveredItemPath, handleSelectFile, toggleFolder, handleOpenDirectory, contextMenu, handleDeleteFileSystem, renamingItem, creatingItem, creationName, handleConfirmCreation, loadDirectoryRecursive, handleMoveFileSystem, selectedFolder])}
               />
             </Animated.View>
           )}

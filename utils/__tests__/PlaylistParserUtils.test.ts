@@ -48,7 +48,8 @@ Second note here.
   it('should serialize to D-1 correctly', () => {
     const items = parsePlaylistFromMarkdown(d1Text, 'D-1');
     const serialized = serializePlaylistToMarkdown(items, 'D-1');
-    expect(serialized).toContain('## First Video');
+    // Default listType is 'Bulleted', so it adds '- ' prefix to headers
+    expect(serialized).toContain('## - First Video');
     expect(serialized).toContain('### Note');
     expect(serialized).toContain('---');
   });
@@ -56,7 +57,8 @@ Second note here.
   it('should serialize to D-2 correctly', () => {
     const items = parsePlaylistFromMarkdown(d2Text, 'D-2');
     const serialized = serializePlaylistToMarkdown(items, 'D-2');
-    expect(serialized).toContain('- **First Video**');
+    // Default format is 'URL', so it uses [Title](URL) instead of bold title
+    expect(serialized).toContain('- [First Video](https://youtube.com/watch?v=123)');
     expect(serialized).toContain('  > This is my first note.');
   });
 

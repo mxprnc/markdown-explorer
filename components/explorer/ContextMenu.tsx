@@ -105,22 +105,26 @@ export function ContextMenu({
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
         </>
       )}
-      <Pressable 
-        testID="context-menu-rename"
-        onPress={() => { onRename(item); onClose(); }}
-        style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
-      >
-        <Ionicons name="pencil-outline" size={14} color={colors.text} style={styles.menuIcon} />
-        <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Rename</Text>
-      </Pressable>
-      <Pressable 
-        testID="context-menu-delete"
-        onPress={() => { onDelete(item); onClose(); }}
-        style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
-      >
-        <Ionicons name="trash-outline" size={14} color="#EF4444" style={styles.menuIcon} />
-        <Text style={[styles.menuText, { color: '#EF4444', fontFamily: fontFamilyUI }]}>Delete</Text>
-      </Pressable>
+      {item.path !== '' && (
+        <>
+          <Pressable 
+            testID="context-menu-rename"
+            onPress={() => { onRename(item); onClose(); }}
+            style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
+          >
+            <Ionicons name="pencil-outline" size={14} color={colors.text} style={styles.menuIcon} />
+            <Text style={[styles.menuText, { color: colors.text, fontFamily: fontFamilyUI }]}>Rename</Text>
+          </Pressable>
+          <Pressable 
+            testID="context-menu-delete"
+            onPress={() => { onDelete(item); onClose(); }}
+            style={({ hovered }: any) => [styles.menuItem, hovered && { backgroundColor: isDark ? '#2D3748' : '#F3F4F6' }]}
+          >
+            <Ionicons name="trash-outline" size={14} color="#EF4444" style={styles.menuIcon} />
+            <Text style={[styles.menuText, { color: '#EF4444', fontFamily: fontFamilyUI }]}>Delete</Text>
+          </Pressable>
+        </>
+      )}
     </View>
   );
 }

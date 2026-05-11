@@ -4,6 +4,7 @@ import { useAppSettings } from '@/contexts/SettingsContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { ExportMode, ExportFormat, ExportListType, PlaylistItem, serializePlaylistToMarkdown, formatYoutubeLink } from '../../../utils/PlaylistParserUtils';
+import { fetchPlaylistItems, extractPlaylistId, fetchPlaylistMetadata } from '@/utils/YoutubeUtils';
 import MarkdownPreview from '../../preview/MarkdownPreview';
 
 interface ExpandedExtractionModalProps {
@@ -67,9 +68,11 @@ export const ExpandedExtractionModal: React.FC<ExpandedExtractionModalProps> = (
     if (!url) {
       setPreviewData(null);
       setNextPageToken(undefined);
+      setIsLoading(false);
       return;
     }
     
+    setIsLoading(true); // Set loading immediately to show feedback during debounce
     let isMounted = true;
     const batchSizeNum = parseInt(itemLimit) || 20;
 
@@ -78,7 +81,6 @@ export const ExpandedExtractionModal: React.FC<ExpandedExtractionModalProps> = (
       setPreviewData([]); // Reset for new URL
       
       try {
-        const { fetchPlaylistItems, extractPlaylistId, fetchPlaylistMetadata } = await import('@/utils/YoutubeUtils');
         const playlistId = extractPlaylistId(url);
         
         if (playlistId) {
@@ -298,6 +300,7 @@ export const ExpandedExtractionModal: React.FC<ExpandedExtractionModalProps> = (
                 {isLoading ? (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.textMuted, marginTop: 12, fontFamily: fontFamilyUI }]}>Fetching Playlist Data...</Text>
                   </View>
                 ) : (!previewData || previewData.length === 0) ? (
                   <View style={styles.emptyPreview}>

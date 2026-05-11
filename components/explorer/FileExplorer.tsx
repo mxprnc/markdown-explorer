@@ -30,6 +30,7 @@ interface FileExplorerProps {
   setDraggingTab: (val: any) => void;
   onExportToNextra: (item: any) => void;
   onMove: (item: any, targetParentPath: string) => void;
+  selectedFolder?: string;
 }
 
 export function FileExplorer({
@@ -38,23 +39,46 @@ export function FileExplorer({
   onSelect, onToggle, onMouseEnter, onMouseLeave, onOpenDirectory,
   contextMenu, setContextMenu, onDelete, onRenameRequest, onCreateRequest,
   creatingItem, creationName, setCreationName, onConfirmCreation, onCancelCreation,
-  setDraggingTab, onExportToNextra, onMove
+  setDraggingTab, onExportToNextra, onMove, selectedFolder
 }: FileExplorerProps) {
   const { colors, isDark, fontFamilyUI } = useTheme();
   
   React.useEffect(() => {
     console.log('[FileExplorer] Rendering with items:', fileSystemData.length);
   }, [fileSystemData]);
+  const handleRootContextMenu = (e: any) => {
+    if (Platform.OS === 'web') {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenu({ 
+        x: e.clientX, 
+        y: e.clientY, 
+        visible: true, 
+        item: { kind: 'directory', path: '', name: selectedFolder || 'Root' } 
+      });
+    }
+  };
+
   return (
     <View style={[styles.paneLeft, { backgroundColor: colors.surface, borderRightColor: colors.border, flex: 1 }]}>
       <View style={[styles.paneHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <Text style={[styles.paneTitle, { color: colors.textMuted }]}>Explorer</Text>
+        <Text 
+          testID="explorer-title"
+          style={[styles.paneTitle, { color: colors.textMuted }]}
+          {...(Platform.OS === 'web' ? {
+            onContextMenu: handleRootContextMenu
+          } : {})}
+        >
+          {selectedFolder || 'Explorer'}
+        </Text>
         <Pressable onPress={onOpenDirectory} style={styles.headerBtn}>
           <Ionicons name="folder-open-outline" size={16} color={colors.primary} />
         </Pressable>
       </View>
       <ScrollView 
+        testID="explorer-scroll-view"
         style={styles.scroll}
+        contentContainerStyle={{ flexGrow: 1 }}
         {...(Platform.OS === 'web' ? {
           onDragOver: (e: any) => {
             e.preventDefault();
@@ -72,7 +96,8 @@ export function FileExplorer({
             } catch (err) {
               console.error('Failed to parse root drag data', err);
             }
-          }
+          },
+          onContextMenu: handleRootContextMenu
         } : {})}
       >
         {fileSystemData.length === 0 ? (
