@@ -99,3 +99,182 @@ description: Orchestrator for the end-to-end development process of new features
 2.  **문서 기반 컨텍스트:** 각 단계 시작 시 관련 히스토리 문서를 `view_file`로 읽어 컨텍스트를 유지합니다.
 3.  **상태 추적:** Orchestrator는 현재 진행 중인 Phase와 작업 중인 문서 번호를 항상 추적해야 합니다.
 4.  **Sub-agent 호출:** 호출 시 현재 상황 요약, 참고 문서 경로, 구체적인 목표를 프롬프트로 명확히 전달합니다.
+
+---
+
+## 📊 프로세스 흐름도 (Mermaid Diagrams)
+
+본 섹션은 `new-feature-developing` 스킬의 전체 및 단계별 상세 워크플로우를 시각화한 Mermaid 다이어그램입니다. 각 에이전트의 역할, 상태 분기 및 회귀 로직을 한눈에 파악할 수 있습니다.
+
+### 1. 전체 프로세스 흐름 (Overall Workflow)
+
+```mermaid
+flowchart TD
+    Start([시작]) --> Init[초기 설정: Feature 명칭 및 디렉토리 확인]
+    Init --> Phase1[Phase 1: Idea Meeting]
+    Phase1 -->|Yes| Phase2[Phase 2: Appearance Designing]
+    Phase1 -->|No| Phase1
+    Phase2 -->|Yes| Phase3[Phase 3: Implementation Planning]
+    Phase2 -->|No| Phase2
+    Phase2 -->|기획 변경 필요| Phase1
+    Phase3 -->|Yes| Phase4[Phase 4: Implementation]
+    Phase3 -->|No| Phase3
+    Phase4 --> Phase5[Phase 5: Tuning]
+    Phase5 -->|수정 필요| Phase1_4{Phase 1~4 중 회귀}
+    Phase1_4 -->|Phase 1| Phase1
+    Phase1_4 -->|Phase 2| Phase2
+    Phase1_4 -->|Phase 3| Phase3
+    Phase1_4 -->|Phase 4| Phase4
+    Phase5 -->|만족| Phase6[Phase 6: QA Check]
+    Phase6 -->|검증 실패| Phase1_5_QA{Phase 1~5 중 회귀}
+    Phase1_5_QA -->|Phase 1| Phase1
+    Phase1_5_QA -->|Phase 2| Phase2
+    Phase1_5_QA -->|Phase 3| Phase3
+    Phase1_5_QA -->|Phase 4| Phase4
+    Phase1_5_QA -->|Phase 5| Phase5
+    Phase6 -->|검증 완료 / 거절| Phase7[Phase 7: Documentation]
+    Phase7 -->|종료| End([종료])
+    Phase7 -->|계속| Phase1_7{Phase 1~7 중 회귀}
+    Phase1_7 -->|Phase 1| Phase1
+    Phase1_7 -->|Phase 2| Phase2
+    Phase1_7 -->|Phase 3| Phase3
+    Phase1_7 -->|Phase 4| Phase4
+    Phase1_7 -->|Phase 5| Phase5
+    Phase1_7 -->|Phase 6| Phase6
+    Phase1_7 -->|Phase 7| Phase7
+```
+
+### 2. 초기 설정 및 Phase 1: Idea Meeting 세부 흐름
+
+```mermaid
+flowchart TD
+    subgraph Initialization [초기 설정]
+        InitStart([초기 설정 시작]) --> SetName[Feature 명칭 설정]
+        SetName --> CheckDir{기존 디렉토리 존재 여부}
+        CheckDir -->|존재| AskModify{기존 기능 수정 여부 질문}
+        AskModify -->|Yes| StartFeature[해당 Feature명으로 작업 시작]
+        AskModify -->|No| SetName
+        CheckDir -->|미존재| StartFeature
+    end
+    
+    subgraph Phase1 [Phase 1: Idea Meeting]
+        StartFeature --> CallPO1[@product-owner-subagent 호출]
+        CallPO1 --> CheckPOFile{PO 문서 존재 여부}
+        CheckPOFile -->|없음| CreatePO1[1.md 생성 및 시작]
+        CheckPOFile -->|있음| SelectPO{이미 존재하는 문서 선택 또는 새 문서 생성}
+        SelectPO -->|기존 선택| SelectNo[특정 번호 선택 및 수정 여부 확인]
+        SelectNo -->|수정 미희망| Step2Go{Phase 2 진행 여부}
+        SelectNo -->|수정 희망| Ideation[아이디어 도출 및 제안 A, B, C]
+        SelectPO -->|새로 생성| CreateNewPO[새로운 {번호}.md 생성 및 기획 시작]
+        CreatePO1 --> Ideation
+        CreateNewPO --> Ideation
+        
+        Ideation --> FeedBack1[사용자 의견 수렴 및 기획 발전]
+        FeedBack1 --> CheckFeasibility[@frontend-developer-subagent 호출: 구현 가능성 검토]
+        CheckFeasibility --> RecordFeasibility["feasibility-check/{번호}.md 기록 <br>(구현가능 또는 구현불가 명시)"]
+        RecordFeasibility --> ModifyPO[PO가 검토 결과를 읽고 PO 문서 수정 및 보완]
+        ModifyPO --> MeetingLog["meeting-log/{번호}.md 작성/추가"]
+        MeetingLog --> Step2Go
+        Step2Go -->|Yes| End1([Phase 2 이동])
+        Step2Go -->|No| CallPO1
+    end
+```
+
+### 3. Phase 2: Appearance Designing 세부 흐름
+
+```mermaid
+flowchart TD
+    subgraph Phase2 [Phase 2: Appearance Designing]
+        Start2([Phase 2 시작]) --> CallUX[@ux-designer-subagent 호출]
+        CallUX --> CheckUXFile{UX 문서 존재 여부}
+        CheckUXFile -->|없음| CreateUX1[1.md 생성 및 시작]
+        CheckUXFile -->|있음| SelectUX{이미 존재하는 문서 선택 또는 새 문서 생성}
+        SelectUX -->|기존 선택| SelectUXNo[특정 번호 선택 및 수정 여부 확인]
+        SelectUXNo -->|수정 미희망| Step3Go{Phase 3 진행 여부}
+        SelectUXNo -->|수정 희망| DesignUX[UI/UX 설계 및 피드백 반영]
+        SelectUX -->|새로 생성| CreateNewUX[새로운 {번호}.md 생성 및 디자인 시작]
+        CreateUX1 --> DesignUX
+        CreateNewUX --> DesignUX
+        
+        DesignUX --> CheckFeasibility2[@frontend-developer-subagent 호출: 구현 가능성 검토]
+        CheckFeasibility2 --> RecordFeasibility2["feasibility-check/{번호}.md 기록 <br>(구현가능/불가 명시)"]
+        RecordFeasibility2 --> CheckPOReview{PO가 결과 검토: 기획 변경 필요 여부}
+        CheckPOReview -->|기획 변경 필요| Regress1([Phase 1 회귀])
+        CheckPOReview -->|불필요/보완완료| Step3Go
+        Step3Go -->|Yes| End2([Phase 3 이동])
+        Step3Go -->|No| CallUX
+    end
+```
+
+### 4. Phase 3 & Phase 4: Implementation Planning & Implementation 세부 흐름
+
+```mermaid
+flowchart TD
+    subgraph Phase3 [Phase 3: Implementation Planning]
+        Start3([Phase 3 시작]) --> CallDev3[@frontend-developer-subagent 호출]
+        CallDev3 --> Plan[PO/UX 결과물 기반 구현 계획 수립]
+        Plan --> RecordPlan["implementation-planning/{번호}.md 기록"]
+        RecordPlan --> SelfImprove3[자율 개선 의견 추가 제안]
+        SelfImprove3 --> Step4Go{Phase 4 진행 여부}
+        Step4Go -->|Yes| End3([Phase 4 이동])
+        Step4Go -->|No| CallDev3
+    end
+
+    subgraph Phase4 [Phase 4: Implementation]
+        End3 --> CallDev4[@frontend-developer-subagent 호출]
+        CallDev4 --> Develop[계획에 따른 코드 작성 및 기능 개발]
+        Develop --> RecordImpl["implementation/{번호}.md 기록"]
+        RecordImpl --> End4([Phase 5 즉시 이동])
+    end
+```
+
+### 5. Phase 5 & Phase 6: Tuning & QA Check 세부 흐름
+
+```mermaid
+flowchart TD
+    subgraph Phase5 [Phase 5: Tuning]
+        Start5([Phase 5 시작]) --> Demo[기능 시연 및 피드백 수집]
+        Demo --> RecordFeedback["feedback/{번호}.md 기록"]
+        RecordFeedback --> MeetingLog5["meeting-log/{번호}.md 작성/추가"]
+        MeetingLog5 --> CheckTuning{수정 필요 여부}
+        CheckTuning -->|Yes| RegressPhase{원하는 Phase 선택}
+        RegressPhase -->|Phase 1~4| RegressGo([해당 Phase로 이동])
+        CheckTuning -->|No| Step6Go{Phase 6 진행 여부}
+        Step6Go -->|Yes| End5([Phase 6 이동])
+    end
+
+    subgraph Phase6 [Phase 6: QA Check]
+        End5 --> CallQA[@qa-engineer-subagent 호출]
+        CallQA --> Validate[PO, UX, Plan, Impl, Tuning 결과 기반 검증]
+        Validate --> RecordQA["qa/{번호}.md 기록"]
+        RecordQA --> CheckFail{10회 이상 실패 또는 구현불가?}
+        CheckFail -->|Yes| RecordUnresolved["unresolved-issues/{번호}.md 기록 및 알림"]
+        CheckFail -->|No| CheckQAStatus{검증 성공 여부}
+        
+        RecordUnresolved --> CheckQAStatus
+        CheckQAStatus -->|실패| RegressQA{수정 제안 및 수용 여부}
+        RegressQA -->|수용| RegressQAGo([해당 Phase로 회귀])
+        RegressQA -->|거절| Step7Go{Phase 7 진행 여부}
+        
+        CheckQAStatus -->|성공| Step7Go
+        Step7Go -->|Yes| End6([Phase 7 이동])
+        Step7Go -->|No| RegressQASelect{원하는 Phase 1~5 선택}
+        RegressQASelect --> RegressQASelectGo([해당 Phase로 회귀])
+    end
+```
+
+### 6. Phase 7: Documentation 세부 흐름
+
+```mermaid
+flowchart TD
+    subgraph Phase7 [Phase 7: Documentation]
+        Start7([Phase 7 시작]) --> CallPO7[@product-owner-subagent 호출]
+        CallPO7 --> CollectAll[모든 히스토리 문서 종합]
+        CollectAll --> CreateOverview["docs/features/{feature명}/00.feature-overview.md 작성"]
+        CreateOverview --> RecordMeta[미해결 이슈 및 히스토리 경로 명시]
+        RecordMeta --> AskEnd{종료 또는 계속 여부}
+        AskEnd -->|종료| EndAll([최종 종료])
+        AskEnd -->|계속| SelectRegress7[원하는 Phase 1~7 선택]
+        SelectRegress7 --> Regress7Go([해당 Phase로 이동])
+    end
+```
