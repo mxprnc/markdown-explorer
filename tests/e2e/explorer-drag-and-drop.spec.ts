@@ -29,6 +29,9 @@ test.describe('Explorer Drag and Drop', () => {
   });
 
   test('should move a folder to another folder', async ({ page }) => {
+    // Wait for the mock file system from beforeEach to be fully hydrated and rendered
+    await expect(page.getByTestId('explorer-item-folder1')).toBeVisible();
+
     // Add another folder to the mock for this test
     await page.evaluate(() => {
       const currentData = (window as any).__E2E_HOOKS__.fileSystemData;

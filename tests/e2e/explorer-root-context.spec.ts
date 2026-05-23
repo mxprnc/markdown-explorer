@@ -5,6 +5,7 @@ test.describe('Explorer Root Context Menu and Header', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await injectMockFileSystem(page, MOCK_FILE_SYSTEM, MOCK_LOCAL_FILES);
+    await expect(page.getByTestId('explorer-item-folder1')).toBeVisible();
   });
 
   test('should display the selected folder name in the header', async ({ page }) => {
@@ -49,7 +50,8 @@ test.describe('Explorer Root Context Menu and Header', () => {
     await creationInput.focus();
     
     await creationInput.fill('new-at-root.md');
-    await page.keyboard.press('Enter');
+    await expect(creationInput).toHaveValue('new-at-root.md');
+    await creationInput.press('Enter');
 
     // Wait for the creation input to disappear (indicates submission processed)
     await expect(creationInput).not.toBeVisible();

@@ -47,20 +47,23 @@ export function useMarkdownWorker(content: string) {
               { default: remarkParse }, 
               { default: remarkMath }, 
               { default: remarkGfm }, 
-              { default: remarkRehype }
+              { default: remarkRehype },
+              { default: rehypeKatex }
             ] = await Promise.all([
               import('https://esm.sh/unified@11?no-check'),
               import('https://esm.sh/remark-parse@11?no-check'),
               import('https://esm.sh/remark-math@6?no-check'),
               import('https://esm.sh/remark-gfm@4?no-check'),
-              import('https://esm.sh/remark-rehype@11?no-check')
+              import('https://esm.sh/remark-rehype@11?no-check'),
+              import('https://esm.sh/rehype-katex@7?no-check')
             ]);
 
             processor = unified()
               .use(remarkParse)
               .use(remarkGfm)
               .use(remarkMath)
-              .use(remarkRehype, { allowDangerousHtml: true });
+              .use(remarkRehype, { allowDangerousHtml: true })
+              .use(rehypeKatex);
               
             console.log('Worker: Engine ready');
           } catch (err) {

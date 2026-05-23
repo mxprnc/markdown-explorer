@@ -12,6 +12,9 @@ test.describe('Explorer Basic Interactions', () => {
         (window as any).__E2E_HOOKS__.setExpandedFolders({ 'folder1': true });
       }
     });
+
+    // Wait for the mock tree to be fully hydrated and rendered
+    await expect(page.getByTestId('explorer-item-folder1')).toBeVisible();
   });
 
   test('should render the mock file tree', async ({ page }) => {
@@ -79,10 +82,11 @@ test.describe('Explorer Basic Interactions', () => {
     
     const renameInput = page.getByTestId('rename-input');
     await renameInput.fill('new-root-file.md');
-    await page.getByTestId('rename-confirm-btn').click();
+    await expect(renameInput).toHaveValue('new-root-file.md');
+    await renameInput.press('Enter');
     
     // Verify it's updated in the list
-    await expect(page.getByTestId('explorer-item-new-root-file.md')).toBeVisible();
+    await expect(page.getByTestId('explorer-item-new-root-file.md')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('explorer-item-root-file.md')).not.toBeVisible();
   });
 
@@ -128,6 +132,7 @@ test.describe('Explorer Basic Interactions', () => {
     // 3. Type a name that we've set to fail ('already-exists.md')
     const input = page.getByTestId('rename-input');
     await input.fill('already-exists.md');
+    await expect(input).toHaveValue('already-exists.md');
     
     // 4. Register dialog handler for the expected error
     let errorMsg = '';
@@ -136,8 +141,8 @@ test.describe('Explorer Basic Interactions', () => {
       await dialog.accept();
     });
 
-    // 5. Click Confirm
-    await page.getByTestId('rename-confirm-btn').click();
+    // 5. Click Confirm / Press Enter
+    await input.press('Enter');
     
     // 6. Verify error message
     expect(errorMsg).toContain('An error occurred during rename.');

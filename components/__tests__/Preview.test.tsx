@@ -48,6 +48,22 @@ describe('Preview Component (Web)', () => {
     expect(renderer.toJSON()).toBeDefined();
   });
 
+  it('should include KaTeX CSS styling in style tag', () => {
+    let renderer: any;
+    TestRenderer.act(() => {
+      renderer = TestRenderer.create(
+        <Preview 
+          content="# Test" 
+          isDark={false} 
+        />
+      );
+    });
+
+    const styleTag = renderer.root.findByType('style');
+    expect(styleTag.props.children).toContain('.katex-display');
+    expect(styleTag.props.children).toContain('.katex');
+  });
+
   it('should expose scrollToHeading method via ref', () => {
     const ref = React.createRef<any>();
     TestRenderer.act(() => {

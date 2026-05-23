@@ -66,6 +66,9 @@ const HastRenderer = React.memo(({ node, components, isDark, resolveImage }: any
     const Component = components[tagName] || tagName;
     const props: any = { ...properties };
     if (props.class) { props.className = props.class; delete props.class; }
+    if (props.className && Array.isArray(props.className)) {
+      props.className = props.className.join(' ');
+    }
 
     const voidElements = ['hr', 'br', 'img', 'input', 'meta', 'link'];
     if (voidElements.includes(tagName)) {
@@ -408,6 +411,8 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
         .markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 1.5em; border: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; }
         .markdown-preview th, .markdown-preview td { border: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding: 8px 12px; text-align: left; }
         .markdown-preview th { background-color: ${isDark ? '#1F2937' : '#F9FAFB'}; font-weight: bold; }
+        .markdown-preview .katex-display { margin: 1.5em 0; overflow-x: auto; overflow-y: hidden; }
+        .markdown-preview .katex { font-size: 1.05em; color: inherit; }
       `}</style>
       {isParsing && !hast ? <span style={{ display: 'flex', justifyContent: 'center', padding: '20px', color: '#9CA3AF' }}>Parsing...</span> : null}
       {!workerError && hast ? hast.children.map((child: any, i: number) => {
