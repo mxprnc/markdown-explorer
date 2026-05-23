@@ -188,7 +188,7 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
       },
       {
         root: container,
-        rootMargin: '0px 0px -80% 0px',
+        rootMargin: '0px 0px -70% 0px',
         threshold: [0, 1]
       }
     );
@@ -215,7 +215,11 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
           const containerRect = container.getBoundingClientRect();
           const targetRect = target.getBoundingClientRect();
           const targetScrollTop = container.scrollTop + (targetRect.top - containerRect.top);
-          container.scrollTo({ top: Math.max(0, targetScrollTop - 150), behavior: 'smooth' });
+          const isE2E = typeof window !== 'undefined' && (window as any).__E2E_HOOKS__;
+          container.scrollTo({ 
+            top: Math.max(0, targetScrollTop - 150), 
+            behavior: isE2E ? 'auto' : 'smooth' 
+          });
         }
       }
     }
@@ -290,6 +294,11 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
       }
 
       // Legacy plain YouTube link (no mx- prefix)
+      const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+      const ytMatch = href ? ytRegex.exec(href) : null;
+      if (ytMatch) {
+        return <PreviewVideoPlayer key={ytMatch[1]} youtubeId={ytMatch[1]} />;
+      }
       return <a href={href} {...rest} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'none' }}>{children}</a>;
     },
     img: (props: any) => {

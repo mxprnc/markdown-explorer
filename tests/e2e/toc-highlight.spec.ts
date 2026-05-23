@@ -14,13 +14,13 @@ const HIGHLIGHT_MOCK_FILES = {
   ...MOCK_LOCAL_FILES,
   'highlight-test.md': `
 # Section 1
-${Array(30).fill('Content 1...').join('\n\n')}
+${Array(100).fill('Content 1...').join('\n\n')}
 
 # Section 2
-${Array(30).fill('Content 2...').join('\n\n')}
+${Array(100).fill('Content 2...').join('\n\n')}
 
 # Section 3
-${Array(30).fill('Content 3...').join('\n\n')}
+${Array(100).fill('Content 3...').join('\n\n')}
 `
 };
 
@@ -28,6 +28,8 @@ test.describe('TOC Active Section Highlighting (Scroll Spy)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await injectMockFileSystem(page, HIGHLIGHT_MOCK_FS, HIGHLIGHT_MOCK_FILES);
+    // Pin the TOC pane so it is visible
+    await page.getByTestId('header-toc-btn').click();
   });
 
   test('should highlight TOC items as user scrolls', async ({ page }) => {
@@ -57,11 +59,15 @@ test.describe('TOC Active Section Highlighting (Scroll Spy)', () => {
   test('should highlight correct item when clicking TOC item', async ({ page }) => {
     await page.getByTestId('explorer-item-highlight-test.md').click();
     
+    // Wait for initial render/highlight of Section 1 to ensure markdown is loaded
+    const tocItem0 = page.getByTestId('toc-item-0').locator('div').first();
+    await expect(tocItem0).toHaveCSS('border-left-width', '3px');
+    
     // Click TOC Item 2 (Section 3)
     await page.getByTestId('toc-item-2').click();
     
-    // Wait for smooth scroll and observer to trigger
-    await page.waitForTimeout(2000);
+    // Wait for scroll and observer to trigger (instant scroll is used now)
+    await page.waitForTimeout(500);
     
     // Verify TOC Item 2 is highlighted
     const tocItem2 = page.getByTestId('toc-item-2').locator('div').first();

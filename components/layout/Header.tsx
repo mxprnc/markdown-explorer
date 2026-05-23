@@ -92,6 +92,7 @@ export const Header = memo(({
           <Pressable 
             onPress={() => setActiveTab('files')} 
             style={[styles.tabBtn, activeTab === 'files' && { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}
+            testID="header-files-btn"
           >
             <Ionicons name="folder-open-outline" size={18} color={activeTab === 'files' ? colors.primary : colors.textMuted} />
             {!isMobile && <Text style={[styles.tabBtnText, { color: activeTab === 'files' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Files</Text>}
@@ -99,6 +100,7 @@ export const Header = memo(({
           <Pressable 
             onPress={() => setActiveTab('editor')} 
             style={[styles.tabBtn, activeTab === 'editor' && { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}
+            testID="header-editor-btn"
           >
             <Ionicons name="document-text-outline" size={18} color={activeTab === 'editor' ? colors.primary : colors.textMuted} />
             {!isMobile && <Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Editor</Text>}
@@ -108,6 +110,7 @@ export const Header = memo(({
             <Pressable 
               onPress={onTocPress} 
               style={[styles.tabBtn, isTocOpen && { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}
+              testID="header-toc-btn"
             >
               <Ionicons name={isTocOpen ? "list" : "list-outline"} size={20} color={isTocOpen ? colors.primary : colors.textMuted} />
             </Pressable>

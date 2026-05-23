@@ -28,10 +28,16 @@ test.describe('Core Components Verification', () => {
     // 2. Type in Editor
     const editor = page.locator('.ProseMirror');
     await editor.waitFor({ state: 'visible' });
-    await editor.focus();
-    await page.keyboard.press('Control+A');
+    await editor.click();
+    await page.keyboard.down('Meta');
+    await page.keyboard.press('a');
+    await page.keyboard.up('Meta');
+    await page.keyboard.down('Control');
+    await page.keyboard.press('a');
+    await page.keyboard.up('Control');
     await page.keyboard.press('Backspace');
     await page.keyboard.type('Hello from E2E');
+    await page.waitForTimeout(500);
 
     // 3. Switch back to Files mode to see Preview
     await page.getByTestId('header-files-btn').click();
@@ -41,17 +47,24 @@ test.describe('Core Components Verification', () => {
 
   test('Tab switching and state persistence', async ({ page }) => {
     // 1. Open file1.md and switch to Editor mode
-    await page.getByTestId('explorer-item-file1.md').click();
+    await page.getByTestId('explorer-item-file1.md').dblclick();
     await page.getByTestId('header-editor-btn').click();
     const editor = page.locator('.ProseMirror');
     await editor.waitFor({ state: 'visible' });
-    await editor.focus();
-    await page.keyboard.press('Control+A');
+    await editor.click();
+    await page.keyboard.down('Meta');
+    await page.keyboard.press('a');
+    await page.keyboard.up('Meta');
+    await page.keyboard.down('Control');
+    await page.keyboard.press('a');
+    await page.keyboard.up('Control');
     await page.keyboard.press('Backspace');
     await page.keyboard.type('Modified File 1');
+    await page.waitForTimeout(500);
 
-    // 2. Open file2.md
+    // 2. Open file2.md (Click first to blur/shift focus from editor, then dblclick)
     await page.getByTestId('explorer-item-file2.md').click();
+    await page.getByTestId('explorer-item-file2.md').dblclick();
     // Re-ensure we are in editor mode (it should stay, but good to be sure)
     await expect(page.getByTestId('tab-item-file2.md')).toBeVisible();
     await expect(editor).toContainText('File 2 Content');

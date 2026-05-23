@@ -26,6 +26,8 @@ test.describe('TOC Pane Interactions', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await injectMockFileSystem(page, TOC_MOCK_FS, TOC_MOCK_FILES);
+    // Pin the TOC pane so it is visible
+    await page.getByTestId('header-toc-btn').click();
   });
 
   test('should render TOC items correctly for markdown with headings', async ({ page }) => {

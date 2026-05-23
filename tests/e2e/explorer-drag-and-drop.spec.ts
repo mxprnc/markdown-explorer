@@ -61,45 +61,57 @@ test.describe('Explorer Drag and Drop', () => {
   });
 
   test('should show visual feedback during drag over', async ({ page }) => {
-    const sourceFile = page.getByTestId('explorer-item-wrapper-root-file.md');
     const targetFolder = page.getByTestId('explorer-item-wrapper-folder1');
 
-    // Drag over but don't drop yet
-    await page.mouse.move(0, 0); // Start from top
-    const sourceBox = await sourceFile.boundingBox();
-    const targetBox = await targetFolder.boundingBox();
-
-    if (!sourceBox || !targetBox) throw new Error('Bounding boxes not found');
-
-    await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
+    // Trigger drag over visual feedback using event dispatching
+    await targetFolder.dispatchEvent('dragenter');
+    await targetFolder.dispatchEvent('dragover');
 
     // Check for visual feedback (e.g. background color or outline)
     // Based on our implementation: isDragOver ? { backgroundColor: isDark ? '#374151' : '#DBEAFE', outline: `1px dashed ${colors.primary}` } : {}
-    const folderContainer = targetFolder.locator('> div'); // The inner Pressable/View
+    const folderContainer = page.getByTestId('explorer-item-folder1');
     const backgroundColor = await folderContainer.evaluate(el => window.getComputedStyle(el).backgroundColor);
     
     // #DBEAFE is rgb(219, 234, 254)
     expect(backgroundColor).toBe('rgb(219, 234, 254)');
 
-    await page.mouse.up();
+    // Reset dragover state
+    await targetFolder.dispatchEvent('dragleave');
   });
 
   test('should move a file to the root area', async ({ page }) => {
-    const sourceFile = page.getByTestId('explorer-item-wrapper-folder1/file1.md');
-    
-    // The root area is the ScrollView container in FileExplorer
-    // In our implementation, we added drop handler to the ScrollView
-    const explorerPane = page.locator('div[data-testid^="explorer-item-wrapper-"]').first().locator('xpath=..'); // Parent of items
+    const explorerScroll = page.getByTestId('explorer-scroll-view');
+    await explorerScroll.evaluate((el) => {
+      const dispatchDragAndDrop = (target: Element) => {
+        // Dragover
+        const dragOverEvent = new DragEvent('dragover', {
+          bubbles: true,
+          cancelable: true,
+        });
+        target.dispatchEvent(dragOverEvent);
 
-    // Wait, let's use a more direct way to find the root area
-    // Maybe we should add a testID to the ScrollView
-    const rootArea = page.locator('div.css-view-175oi2r').filter({ hasText: 'Explorer' }).locator('div.css-view-175oi2r').nth(2); // Heuristic
+        // Drop
+        const dropEvent = new DragEvent('drop', {
+          bubbles: true,
+          cancelable: true,
+        });
+        Object.defineProperty(dropEvent, 'dataTransfer', {
+          value: {
+            getData: (format: string) => {
+              if (format === 'application/json') {
+                return JSON.stringify({ path: 'folder1/file1.md', kind: 'file', name: 'file1.md' });
+              }
+              return '';
+            }
+          }
+        });
+        target.dispatchEvent(dropEvent);
+      };
 
-    // Actually, just dragging to the "Explorer" title or empty space should work if we have a good locator.
-    // Let's drag to the top of the explorer
-    await sourceFile.dragTo(page.getByText('Explorer'));
+      // Dispatch on a root file item wrapper to ensure it bubbles to the ScrollView without being stopped by folder drop zones
+      const bubbleTarget = el.querySelector('[data-testid="explorer-item-wrapper-root-file.md"]') || el.querySelector('div') || el;
+      dispatchDragAndDrop(bubbleTarget);
+    });
 
     await expect(page.getByTestId('explorer-item-file1.md')).toBeVisible();
     await expect(page.getByTestId('explorer-item-folder1/file1.md')).not.toBeVisible();

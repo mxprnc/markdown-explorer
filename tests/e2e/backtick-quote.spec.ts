@@ -50,12 +50,12 @@ test.describe('Inline and Block Code Rendering', () => {
     await page.getByTestId('explorer-item-code-test.md').click();
     
     const preview = page.getByTestId('preview-container');
-    const codeBlock = preview.locator('span > div'); // SyntaxHighlighter renders a div inside a span in our implementation
+    const codeBlock = preview.locator('pre div, div').filter({ hasText: 'console.log("Hello");' }).first();
     
     await expect(codeBlock).toBeVisible();
     await expect(codeBlock).toContainText('console.log("Hello");');
     
-    const display = await preview.locator('span').filter({ has: page.locator('div') }).first().evaluate(el => window.getComputedStyle(el).display);
+    const display = await codeBlock.evaluate(el => window.getComputedStyle(el).display);
     expect(display).toBe('block');
   });
 });

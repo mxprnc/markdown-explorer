@@ -37,7 +37,7 @@ test.describe('Nextra Export Wizard E2E', () => {
     await expect(page.getByText('Design & Theming')).toBeVisible();
 
     // 6. Select a preset
-    await page.getByTestId('preset-card-rose').click();
+    await page.getByTestId('preset-card-sunset').click();
     
     // 7. Click Next -> Step 3
     await page.getByTestId('wizard-next-btn').click();

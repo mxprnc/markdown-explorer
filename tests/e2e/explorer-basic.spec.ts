@@ -113,7 +113,7 @@ test.describe('Explorer Basic Interactions', () => {
     await page.getByTestId('explorer-item-copy-root-file.md').click({ force: true });
     
     // Wait for the alertMsg to be populated (the click above will wait for the action to finish)
-    expect(alertMsg).toContain('상대 경로가 복사되었습니다');
+    expect(alertMsg).toContain('Relative path copied');
     expect(alertMsg).toContain('./root-file.md');
   });
 
@@ -140,7 +140,7 @@ test.describe('Explorer Basic Interactions', () => {
     await page.getByTestId('rename-confirm-btn').click();
     
     // 6. Verify error message
-    expect(errorMsg).toContain('이름 변경 오류가 발생했습니다');
+    expect(errorMsg).toContain('An error occurred during rename.');
     
     // 7. Modal should still be open (or we can check if it closed based on implementation)
     // Actually, based on app/index.tsx, it closes the modal regardless? 

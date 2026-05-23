@@ -7,25 +7,55 @@ export async function injectMockFileSystem(page: Page, data: any[], files: Recor
   await page.evaluate(({ data, files }) => {
     (window as any).__E2E_HOOKS__.mockClipboard();
     
+    // Helper to find items in tree dynamically
+    const findItemInTree = (items: any[], path: string): any => {
+      for (const item of items) {
+        if (item.path === path) return item;
+        if (item.children) {
+          const found = findItemInTree(item.children, path);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
     // Rehydrate functions
-    const rehydrate = (items: any[]) => {
+    const rehydrate = (items: any[]): any[] => {
       return items.map(item => {
         const newItem = { ...item };
-        if (item.kind === 'directory') {
+        if (newItem.children) {
+          newItem.children = rehydrate(newItem.children);
+        }
+        if (newItem.kind === 'directory') {
           newItem.handle = {
             kind: 'directory',
-            name: item.name,
-            getDirectoryHandle: async () => ({ kind: 'directory' }),
-            getFileHandle: async () => ({ kind: 'file' }),
+            name: newItem.name,
+            getDirectoryHandle: async (name: string) => {
+              const child = newItem.children?.find((c: any) => c.name === name && c.kind === 'directory');
+              return child ? child.handle : { kind: 'directory', name };
+            },
+            getFileHandle: async (name: string) => {
+              const child = newItem.children?.find((c: any) => c.name === name && c.kind === 'file');
+              return child ? child.handle : { kind: 'file', name };
+            },
             removeEntry: async () => {},
             move: async () => {}, // Mock move
-            values: async function* () { yield* []; }
+            values: async function* () {
+              const latestData = (window as any).__E2E_HOOKS__?.fileSystemData || [];
+              const latestItem = findItemInTree(latestData, newItem.path);
+              const children = latestItem?.children || [];
+              for (const child of children) {
+                if (child.handle) {
+                  yield child.handle;
+                }
+              }
+            }
           };
         } else {
           newItem.handle = {
             kind: 'file',
-            name: item.name,
-            getFile: async () => new File([''], item.name),
+            name: newItem.name,
+            getFile: async () => new File([''], newItem.name),
             createWritable: async () => ({ write: async () => {}, close: async () => {} }),
             move: async (parentOrName: any, newName?: string) => {
               if (parentOrName === 'already-exists.md' || newName === 'already-exists.md') {
@@ -34,9 +64,6 @@ export async function injectMockFileSystem(page: Page, data: any[], files: Recor
             }
           };
         }
-        if (newItem.children) {
-          newItem.children = rehydrate(newItem.children);
-        }
         return newItem;
       });
     };
@@ -44,6 +71,7 @@ export async function injectMockFileSystem(page: Page, data: any[], files: Recor
     const rehydratedData = rehydrate(data);
     (window as any).__E2E_HOOKS__.setFileSystemData(rehydratedData);
     (window as any).__E2E_HOOKS__.setLocalFiles(files);
+    
     (window as any).__E2E_HOOKS__.setDirHandle({
       kind: 'directory',
       name: 'MOCK_REPO',
@@ -52,10 +80,30 @@ export async function injectMockFileSystem(page: Page, data: any[], files: Recor
         return {
           kind: 'directory',
           name,
-          getDirectoryHandle: async () => ({ kind: 'directory' }),
+          getDirectoryHandle: async (subName: string) => {
+            return {
+              kind: 'directory',
+              name: subName,
+              getDirectoryHandle: async () => ({ kind: 'directory' }),
+              getFileHandle: async () => ({ kind: 'file' }),
+              removeEntry: async () => {},
+              move: async () => {},
+              values: async function* () { yield* []; }
+            };
+          },
           getFileHandle: async () => ({ kind: 'file' }),
           removeEntry: async () => {},
-          move: async () => {}
+          move: async () => {},
+          values: async function* () {
+            const latestData = (window as any).__E2E_HOOKS__?.fileSystemData || [];
+            const latestItem = findItemInTree(latestData, name);
+            const children = latestItem?.children || [];
+            for (const child of children) {
+              if (child.handle) {
+                yield child.handle;
+              }
+            }
+          }
         };
       },
       getFileHandle: async (name: string) => ({ 
@@ -64,7 +112,15 @@ export async function injectMockFileSystem(page: Page, data: any[], files: Recor
         getFile: async () => new File([''], name),
         createWritable: async () => ({ write: async () => {}, close: async () => {} })
       }),
-      removeEntry: async () => {}
+      removeEntry: async () => {},
+      values: async function* () {
+        const latestData = (window as any).__E2E_HOOKS__?.fileSystemData || [];
+        for (const item of latestData) {
+          if (item.handle) {
+            yield item.handle;
+          }
+        }
+      }
     });
   }, { data, files });
 }
