@@ -89,6 +89,7 @@ function MainScreen() {
   const svScrim = useSharedValue(isSidebarVisible ? 1 : 0);
   const svWidth = useSharedValue(isSidebarVisible ? Number(leftPaneWidth) : 0);
 
+  const lastScannedDirRef = useRef<any>(null);
   const isMounted = React.useRef(false);
   React.useEffect(() => {
     isMounted.current = true;
@@ -183,6 +184,10 @@ function MainScreen() {
     moveItem,
   } = useFileSystem();
   
+  const loadDirRecursiveRef = useRef<any>(null);
+  loadDirRecursiveRef.current = loadDirectoryRecursive;
+
+  
   const { recentFiles, addRecentFile } = useRecentFiles();
   
   useEffect(() => {
@@ -273,6 +278,31 @@ function MainScreen() {
   const [youtubeModalVisible, setYoutubeModalVisible] = useState(false);
   const [expandedYoutubeModalVisible, setExpandedYoutubeModalVisible] = useState(false);
   const [youtubeTargetDirectory, setYoutubeTargetDirectory] = useState<string | undefined>(undefined);
+
+  const [fileSearchPickerVisible, setFileSearchPickerVisible] = useState(false);
+
+  // Memoized searchable files list
+  const allSearchableFiles = React.useMemo(() => {
+    const list: { id: string; label: string; description: string; icon: string }[] = [];
+    const collect = (items: any[]) => {
+      for (const item of items) {
+        if (item.kind === 'file') {
+          const isImage = /\.(png|jpe?g|gif|webp)$/i.test(item.name);
+          list.push({
+            id: item.path,
+            label: item.name,
+            description: item.path,
+            icon: isImage ? 'image-outline' : 'document-text-outline',
+          });
+        }
+        if (item.children) {
+          collect(item.children);
+        }
+      }
+    };
+    collect(fileSystemData);
+    return list;
+  }, [fileSystemData]);
 
   const handleYoutubeExtract = (items: YoutubePlaylistItem[], mode: string, options: ExtractionOptions & { listType?: string }) => {
     let markdown = '';
@@ -681,6 +711,42 @@ function MainScreen() {
     };
   }, [activePane, activeTab]);
 
+  // Register File Search Command
+  useEffect(() => {
+    appInstance.commands.addCommand({
+      id: 'open-file-search',
+      name: 'Search Files',
+      callback: () => {
+        setFileSearchPickerVisible(true);
+      }
+    });
+
+    return () => {
+      appInstance.commands.removeCommand('open-file-search');
+    };
+  }, []);
+
+  // Trigger background scan when dirHandle changes
+  useEffect(() => {
+    if (!dirHandle) return;
+    if (lastScannedDirRef.current === dirHandle) return;
+
+    lastScannedDirRef.current = dirHandle;
+    console.log('[App] dirHandle updated, starting background recursive scan...');
+    const timer = setTimeout(async () => {
+      try {
+        if (loadDirRecursiveRef.current) {
+          await loadDirRecursiveRef.current('');
+        }
+        console.log('[App] Background recursive scan complete.');
+      } catch (e) {
+        console.error('[App] Background scan failed', e);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [dirHandle]);
+
   // Global Keyboard Listener
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -692,6 +758,13 @@ function MainScreen() {
         console.log('[Shortcut] Option+T triggered');
         appInstance.commands.executeCommand('insert-template');
       }
+
+      // Cmd + P or Ctrl + P for File Search
+      if ((e.metaKey || e.ctrlKey) && e.code === 'KeyP') {
+        e.preventDefault();
+        console.log('[Shortcut] Cmd/Ctrl+P triggered');
+        appInstance.commands.executeCommand('open-file-search');
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown, { capture: true });
@@ -702,6 +775,9 @@ function MainScreen() {
         setFileSystemData: (data: any) => {
           setFileSystemData(data);
           setSelectedFolder('MOCK_REPO');
+        },
+        get fileSystemData() {
+          return stateRefs.current.fileSystemData;
         },
         setDirHandle: (handle: any) => setDirHandle(handle),
         setLocalFiles: (files: any) => setLocalFiles(files),
@@ -730,6 +806,9 @@ function MainScreen() {
         triggerExpandedYoutubeModal: (path?: string) => {
           setYoutubeTargetDirectory(path || '');
           setExpandedYoutubeModalVisible(true);
+        },
+        triggerFileSearchPicker: () => {
+          setFileSearchPickerVisible(true);
         },
         mockClipboard: () => {
           try {
@@ -1955,6 +2034,18 @@ function MainScreen() {
             setTemplatePicker(prev => ({ ...prev, visible: false }));
           }}
           onClose={() => setTemplatePicker(prev => ({ ...prev, visible: false }))}
+        />
+
+        <QuickPicker 
+          visible={fileSearchPickerVisible}
+          title="Search Files"
+          placeholder="Type a file name to search..."
+          items={allSearchableFiles}
+          onSelect={(item) => {
+            handleSelectFile(item.id, false, activePane);
+            setFileSearchPickerVisible(false);
+          }}
+          onClose={() => setFileSearchPickerVisible(false)}
         />
       </Pressable>
         {/* Toast Notification */}

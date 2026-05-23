@@ -32,6 +32,8 @@ import {
   updateTreePaths 
 } from '@/utils/FileSystemUtils';
 
+const EXCLUDED_DIRS = ['.git', 'node_modules', '.expo', '.vscode'];
+
 export interface FileSystemItem {
   name: string;
   path: string;
@@ -104,6 +106,7 @@ export function useFileSystem() {
               items.push({ name: entry.name, path: entryPath, kind: 'file', handle: entry });
             }
           } else if (entry.kind === 'directory') {
+            if (EXCLUDED_DIRS.includes(entry.name)) continue;
             items.push({ name: entry.name, path: entryPath, kind: 'directory', children: [], handle: entry, isLoaded: false });
           }
         }
@@ -154,6 +157,7 @@ export function useFileSystem() {
             console.log(`[useFileSystem] Entry: ${cleanName} (${isDir ? 'dir' : 'file'})`);
             
             if (isDir) {
+              if (EXCLUDED_DIRS.includes(cleanName)) continue;
               items.push({ name: cleanName, path: entryPath, kind: 'directory', children: [], handle: entryUri, isLoaded: false });
             } else {
               const isSupported = /\.(md|txt|png|jpe?g|gif|webp)$/i.test(cleanName);
@@ -188,6 +192,13 @@ export function useFileSystem() {
       return items;
     };
 
+    if (path === '') {
+      if (!dirHandle) return fileSystemData;
+      const newItems = await scanRecursive(dirHandle, '');
+      setFileSystemData(newItems);
+      return newItems;
+    }
+
     const findAndLoadRecursive = async (items: FileSystemItem[]): Promise<FileSystemItem[]> => {
       for (let i = 0; i < items.length; i++) {
         if (items[i].path === path && items[i].kind === 'directory') {
@@ -209,7 +220,7 @@ export function useFileSystem() {
     const updatedFS = await findAndLoadRecursive(fileSystemData);
     setFileSystemData(updatedFS);
     return updatedFS;
-  }, [fileSystemData, scanLevel]);
+  }, [fileSystemData, scanLevel, dirHandle]);
 
   const loadDirectory = useCallback(async (path: string) => {
     const findAndLoad = async (items: FileSystemItem[]): Promise<FileSystemItem[]> => {
@@ -564,6 +575,8 @@ export function useFileSystem() {
         setSelectedDirPath(prev => updateTreePaths(prev, oldPath, newPath));
         setOpenedFiles(prev => prev.map(p => updateTreePaths(p, oldPath, newPath)));
         setOpenedFiles2(prev => prev.map(p => updateTreePaths(p, oldPath, newPath)));
+        setFileSystemData(prev => updateFileSystemData(prev, oldPath, newPath, newName, newEntryHandle));
+
         setExpandedFolders(prev => {
           const next: Record<string, boolean> = {};
           Object.keys(prev).forEach(key => {

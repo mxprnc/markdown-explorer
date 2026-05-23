@@ -147,4 +147,78 @@ describe('useFileSystem', () => {
 
     expect(mockRoot.getFileHandle).toHaveBeenCalledWith('test.md', { create: true });
   });
+
+  test('loadDirectoryRecursive should scan recursively from root and skip excluded directories', async () => {
+    const mockRoot = createMockDirectoryHandle('root', [
+      createMockFileHandle('root.md'),
+      createMockDirectoryHandle('.git', [
+        createMockFileHandle('config'),
+      ]),
+      createMockDirectoryHandle('subdir', [
+        createMockFileHandle('child.md'),
+      ]),
+    ]);
+
+    let result: any;
+    TestRenderer.act(() => {
+      TestRenderer.create(<Consumer callback={(fs) => (result = fs)} />);
+    });
+
+    await TestRenderer.act(async () => {
+      result.setDirHandle(mockRoot);
+    });
+
+    await TestRenderer.act(async () => {
+      await result.loadDirectoryRecursive('');
+    });
+
+    // Check that it scanned the root and populated fileSystemData
+    expect(result.fileSystemData.length).toBe(2); // root.md and subdir (.git is skipped!)
+    
+    const subdir = result.fileSystemData.find((item: any) => item.name === 'subdir');
+    expect(subdir).toBeDefined();
+    expect(subdir.children).toBeDefined();
+    expect(subdir.children!.length).toBe(1);
+    expect(subdir.children![0].name).toBe('child.md');
+
+    // Check that .git was excluded
+    const gitDir = result.fileSystemData.find((item: any) => item.name === '.git');
+    expect(gitDir).toBeUndefined();
+  });
+
+  test('renameItem should call parentDir removeEntry and create new entry and update fileSystemData', async () => {
+    const mockRoot = createMockDirectoryHandle('root', [
+      createMockFileHandle('oldname.md'),
+    ]);
+
+    let result: any;
+    TestRenderer.act(() => {
+      TestRenderer.create(<Consumer callback={(fs) => (result = fs)} />);
+    });
+
+    await TestRenderer.act(async () => {
+      result.setDirHandle(mockRoot);
+    });
+
+    // Set initial fileSystemData
+    let items: FileSystemItem[] = [];
+    await TestRenderer.act(async () => {
+      items = await result.scanLevel(mockRoot);
+      result.setFileSystemData(items);
+    });
+
+    expect(result.fileSystemData.length).toBe(1);
+    expect(result.fileSystemData[0].name).toBe('oldname.md');
+
+    const itemToRename = result.fileSystemData[0];
+
+    await TestRenderer.act(async () => {
+      await result.renameItem(itemToRename, 'newname.md');
+    });
+
+    // Verify it updated fileSystemData
+    expect(result.fileSystemData.length).toBe(1);
+    expect(result.fileSystemData[0].name).toBe('newname.md');
+    expect(result.fileSystemData[0].path).toBe('newname.md');
+  });
 });

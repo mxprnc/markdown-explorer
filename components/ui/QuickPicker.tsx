@@ -24,10 +24,35 @@ export const QuickPicker = ({ visible, title, placeholder = 'Search...', items, 
   const [search, setSearch] = useState('');
   const inputRef = useRef<TextInput>(null);
 
-  const filteredItems = items.filter(item => 
-    item.label.toLowerCase().includes(search.toLowerCase()) || 
-    (item.description && item.description.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredItems = items
+    .filter(item => 
+      item.label.toLowerCase().includes(search.toLowerCase()) || 
+      (item.description && item.description.toLowerCase().includes(search.toLowerCase()))
+    )
+    .sort((a, b) => {
+      if (!search) return 0;
+      const q = search.toLowerCase();
+      const aLabel = a.label.toLowerCase();
+      const bLabel = b.label.toLowerCase();
+      
+      const aLabelStartsWith = aLabel.startsWith(q);
+      const bLabelStartsWith = bLabel.startsWith(q);
+
+      if (aLabelStartsWith && !bLabelStartsWith) return -1;
+      if (!aLabelStartsWith && bLabelStartsWith) return 1;
+
+      const aDescStartsWith = a.description ? a.description.toLowerCase().startsWith(q) : false;
+      const bDescStartsWith = b.description ? b.description.toLowerCase().startsWith(q) : false;
+
+      if (aDescStartsWith && !bDescStartsWith) return -1;
+      if (!aDescStartsWith && bDescStartsWith) return 1;
+
+      if (aLabelStartsWith && bLabelStartsWith) {
+        return aLabel.length - bLabel.length;
+      }
+
+      return aLabel.localeCompare(bLabel);
+    });
 
   useEffect(() => {
     if (visible) {
