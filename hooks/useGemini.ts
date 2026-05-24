@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
-import { DEFAULT_MODEL } from '@/constants/Models';
+import { DEFAULT_MODEL, AI_PROVIDERS } from '@/constants/Models';
 
 export function useGemini() {
   const [geminiApiKey, setGeminiApiKey] = useState('');
@@ -64,13 +64,37 @@ export function useGemini() {
       if (savedKey) { setGeminiApiKey(savedKey); setTempApiKey(savedKey); }
       if (savedClientId) { setGoogleClientId(savedClientId); setTempClientId(savedClientId); }
       if (savedToken) { setGoogleAccessToken(savedToken); }
-      if (savedModel) { setSelectedModel(savedModel); setTempModel(savedModel); }
       if (savedRootPath) { setRootPath(savedRootPath); setTempRootPath(savedRootPath); }
       
-      if (savedProvider) { 
-        setAiProvider(savedProvider as any); 
-        setTempAiProvider(savedProvider as any); 
+      // AI Provider Self-Healing
+      let activeProvider: 'gemini' | 'openai' | 'claude' = 'gemini';
+      if (savedProvider && (savedProvider === 'gemini' || savedProvider === 'openai' || savedProvider === 'claude')) {
+        activeProvider = savedProvider;
       }
+      setAiProvider(activeProvider);
+      setTempAiProvider(activeProvider);
+
+      // Selected Model Self-Healing & Default Loading
+      if (savedModel) {
+        const providerConfig = AI_PROVIDERS[activeProvider];
+        const modelExists = providerConfig.models.some((m: any) => m.value === savedModel);
+        
+        if (modelExists) {
+          setSelectedModel(savedModel);
+          setTempModel(savedModel);
+        } else {
+          // Fallback to the provider's default model (Self-healing)
+          const fallbackModel = providerConfig.defaultModel;
+          setSelectedModel(fallbackModel);
+          setTempModel(fallbackModel);
+          localStorage.setItem('gemini_selected_model', fallbackModel);
+        }
+      } else {
+        const defaultModelForProvider = AI_PROVIDERS[activeProvider].defaultModel;
+        setSelectedModel(defaultModelForProvider);
+        setTempModel(defaultModelForProvider);
+      }
+      
       if (savedOpenaiKey) { 
         setOpenaiApiKey(savedOpenaiKey); 
         setTempOpenaiApiKey(savedOpenaiKey); 
