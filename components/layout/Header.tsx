@@ -186,7 +186,7 @@ export const Header = memo(({
               size={18} 
               color={isGeminiOpen ? colors.primary : colors.text} 
             />
-            {!isMobile && <Text style={[styles.tabBtnText, { color: isGeminiOpen ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Gemini</Text>}
+            {!isMobile && <Text style={[styles.tabBtnText, { color: isGeminiOpen ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>AI Agent</Text>}
           </Pressable>
 
           <Pressable 
