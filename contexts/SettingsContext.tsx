@@ -5,6 +5,8 @@ import { useGemini } from '@/hooks/useGemini';
 interface APIKeys {
   youtube?: string;
   gemini?: string;
+  openai?: string;
+  claude?: string;
 }
 
 interface SettingsContextType {
@@ -39,6 +41,20 @@ interface SettingsContextType {
   promptAsync: any;
   saveSettings: () => void;
   logout: () => void;
+
+  // Multi-Provider Support
+  aiProvider: 'gemini' | 'openai' | 'claude';
+  setAiProvider: (provider: 'gemini' | 'openai' | 'claude') => void;
+  tempAiProvider: 'gemini' | 'openai' | 'claude';
+  setTempAiProvider: (provider: 'gemini' | 'openai' | 'claude') => void;
+  openaiApiKey: string;
+  setOpenaiApiKey: (key: string) => void;
+  tempOpenaiApiKey: string;
+  setTempOpenaiApiKey: (key: string) => void;
+  claudeApiKey: string;
+  setClaudeApiKey: (key: string) => void;
+  tempClaudeApiKey: string;
+  setTempClaudeApiKey: (key: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -60,6 +76,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (savedKeys.gemini) {
           gemini.setGeminiApiKey(savedKeys.gemini);
         }
+        if (savedKeys.openai) {
+          gemini.setOpenaiApiKey(savedKeys.openai);
+          gemini.setTempOpenaiApiKey(savedKeys.openai);
+        }
+        if (savedKeys.claude) {
+          gemini.setClaudeApiKey(savedKeys.claude);
+          gemini.setTempClaudeApiKey(savedKeys.claude);
+        }
       }
     };
     loadSettings();
@@ -70,10 +94,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setApiKeys(newKeys);
     await setSetting('api_keys', newKeys);
     
-    // Sync Gemini if changed
+    // Sync Gemini/OpenAI/Claude if changed
     if (type === 'gemini') {
       gemini.setGeminiApiKey(key);
       gemini.setTempApiKey(key); // Also update temp for modal
+    }
+    if (type === 'openai') {
+      gemini.setOpenaiApiKey(key);
+      gemini.setTempOpenaiApiKey(key);
+    }
+    if (type === 'claude') {
+      gemini.setClaudeApiKey(key);
+      gemini.setTempClaudeApiKey(key);
     }
   };
 
@@ -86,6 +118,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (type === 'gemini') {
       gemini.setGeminiApiKey('');
       gemini.setTempApiKey('');
+    }
+    if (type === 'openai') {
+      gemini.setOpenaiApiKey('');
+      gemini.setTempOpenaiApiKey('');
+    }
+    if (type === 'claude') {
+      gemini.setClaudeApiKey('');
+      gemini.setTempClaudeApiKey('');
     }
   };
 
@@ -114,3 +154,4 @@ export function useAppSettings() {
 }
 
 export const useSettings = useAppSettings;
+

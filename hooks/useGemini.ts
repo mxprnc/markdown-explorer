@@ -16,6 +16,16 @@ export function useGemini() {
   const [rootPath, setRootPath] = useState('');
   const [tempRootPath, setTempRootPath] = useState('');
 
+  // Multi-Provider Support States
+  const [aiProvider, setAiProvider] = useState<'gemini' | 'openai' | 'claude'>('gemini');
+  const [tempAiProvider, setTempAiProvider] = useState<'gemini' | 'openai' | 'claude'>('gemini');
+  
+  const [openaiApiKey, setOpenaiApiKey] = useState('');
+  const [tempOpenaiApiKey, setTempOpenaiApiKey] = useState('');
+  
+  const [claudeApiKey, setClaudeApiKey] = useState('');
+  const [tempClaudeApiKey, setTempClaudeApiKey] = useState('');
+
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: googleClientId,
     androidClientId: googleClientId,
@@ -47,11 +57,28 @@ export function useGemini() {
       const savedModel = localStorage.getItem('gemini_selected_model');
       const savedRootPath = localStorage.getItem('markdown_explorer_root_path');
       
+      const savedProvider = localStorage.getItem('ai_provider');
+      const savedOpenaiKey = localStorage.getItem('openai_api_key');
+      const savedClaudeKey = localStorage.getItem('claude_api_key');
+      
       if (savedKey) { setGeminiApiKey(savedKey); setTempApiKey(savedKey); }
       if (savedClientId) { setGoogleClientId(savedClientId); setTempClientId(savedClientId); }
       if (savedToken) { setGoogleAccessToken(savedToken); }
       if (savedModel) { setSelectedModel(savedModel); setTempModel(savedModel); }
       if (savedRootPath) { setRootPath(savedRootPath); setTempRootPath(savedRootPath); }
+      
+      if (savedProvider) { 
+        setAiProvider(savedProvider as any); 
+        setTempAiProvider(savedProvider as any); 
+      }
+      if (savedOpenaiKey) { 
+        setOpenaiApiKey(savedOpenaiKey); 
+        setTempOpenaiApiKey(savedOpenaiKey); 
+      }
+      if (savedClaudeKey) { 
+        setClaudeApiKey(savedClaudeKey); 
+        setTempClaudeApiKey(savedClaudeKey); 
+      }
     }
   }, []);
 
@@ -60,14 +87,23 @@ export function useGemini() {
     setGoogleClientId(tempClientId);
     setSelectedModel(tempModel);
     setRootPath(tempRootPath);
+    
+    setAiProvider(tempAiProvider);
+    setOpenaiApiKey(tempOpenaiApiKey);
+    setClaudeApiKey(tempClaudeApiKey);
+    
     if (Platform.OS === 'web') {
       localStorage.setItem('gemini_api_key', tempApiKey);
       localStorage.setItem('google_client_id', tempClientId);
       localStorage.setItem('gemini_selected_model', tempModel);
       localStorage.setItem('markdown_explorer_root_path', tempRootPath);
+      
+      localStorage.setItem('ai_provider', tempAiProvider);
+      localStorage.setItem('openai_api_key', tempOpenaiApiKey);
+      localStorage.setItem('claude_api_key', tempClaudeApiKey);
     }
     setShowGeminiSettings(false);
-  }, [tempApiKey, tempClientId, tempModel, tempRootPath]);
+  }, [tempApiKey, tempClientId, tempModel, tempRootPath, tempAiProvider, tempOpenaiApiKey, tempClaudeApiKey]);
 
   const logout = useCallback(() => {
     setGoogleAccessToken(null);
@@ -91,5 +127,14 @@ export function useGemini() {
     saveSettings,
     logout,
     setGeminiApiKey,
+    
+    // Multi-Provider Exports
+    aiProvider, setAiProvider,
+    tempAiProvider, setTempAiProvider,
+    openaiApiKey, setOpenaiApiKey,
+    tempOpenaiApiKey, setTempOpenaiApiKey,
+    claudeApiKey, setClaudeApiKey,
+    tempClaudeApiKey, setTempClaudeApiKey,
   };
 }
+

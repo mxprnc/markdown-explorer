@@ -48,7 +48,7 @@ describe('useGemini', () => {
     });
 
     expect(result.geminiApiKey).toBe('');
-    expect(result.selectedModel).toBe('gemini-2.5-pro');
+    expect(result.selectedModel).toBe('gemini-3.5-flash');
   });
 
   it('should save settings to localStorage and update state', () => {
@@ -59,7 +59,7 @@ describe('useGemini', () => {
 
     TestRenderer.act(() => {
       result.setTempApiKey('new-test-key');
-      result.setTempModel('gemini-2.0-flash');
+      result.setTempModel('gemini-3.1-pro-preview');
     });
 
     TestRenderer.act(() => {

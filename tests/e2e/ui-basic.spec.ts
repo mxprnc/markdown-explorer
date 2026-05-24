@@ -32,7 +32,10 @@ test.describe('UI Components Verification', () => {
   test('Collapsible and Button in Settings Modal', async ({ page }) => {
     // 1. Open Settings Modal
     await page.getByTestId('settings-btn').click();
-    await expect(page.locator('text=Settings / Gemini AI')).toBeVisible();
+    await expect(page.getByTestId('settings-modal-title')).toBeVisible();
+
+    // Switch to Integrations tab where the Collapsible is located
+    await page.getByTestId('sidebar-tab-integrations').click();
 
     // 2. Verify Collapsible state (initial: closed)
     const collapsibleHeading = page.getByTestId('collapsible-heading');

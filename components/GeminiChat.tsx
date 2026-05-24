@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAppSettings } from '@/contexts/SettingsContext';
-import { AVAILABLE_MODELS } from '@/constants/Models';
+import { AVAILABLE_MODELS, AI_PROVIDERS } from '@/constants/Models';
 
 interface GeminiChatProps {
   currentContent: string;
@@ -27,10 +27,15 @@ export default function GeminiChat({ currentContent, onSaveChatToFile, bottomSpa
     googleAccessToken: accessToken, 
     selectedModel: model, 
     setSelectedModel: onModelChange,
-    setShowGeminiSettings
+    setShowGeminiSettings,
+    
+    // Multi-Provider settings
+    aiProvider,
+    openaiApiKey,
+    claudeApiKey
   } = useAppSettings();
   
-  const models = AVAILABLE_MODELS;
+  const models = AI_PROVIDERS[aiProvider].models;
   const onOpenSettings = () => setShowGeminiSettings(true);
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -42,10 +47,16 @@ export default function GeminiChat({ currentContent, onSaveChatToFile, bottomSpa
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const hasAuth = !!(apiKey || accessToken);
+  const hasAuth = (() => {
+    if (aiProvider === 'gemini') return !!(apiKey || accessToken);
+    if (aiProvider === 'openai') return !!openaiApiKey;
+    if (aiProvider === 'claude') return !!claudeApiKey;
+    return false;
+  })();
 
   const formatChatAsMarkdown = (msgs: Message[]) => {
-    return msgs.map(m => `### ${m.role === 'user' ? 'User' : 'Gemini'}\n\n${m.content}`).join('\n\n---\n\n');
+    const assistantName = aiProvider === 'gemini' ? 'Gemini' : aiProvider === 'openai' ? 'OpenAI' : 'Claude';
+    return msgs.map(m => `### ${m.role === 'user' ? 'User' : assistantName}\n\n${m.content}`).join('\n\n---\n\n');
   };
 
   const handleSend = async () => {
@@ -69,29 +80,62 @@ ${currentContent || "(empty)"}
 Based on the content above, please answer the following question:
 ${userMsg}`;
 
-      // Unified v1beta for 2026 model compatibility (Gemini 2.5, 3.1, etc.)
-      const apiVer = 'v1beta';
-
-      if (accessToken) {
-        const response = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models/${model}:generateContent`, {
+      if (aiProvider === 'gemini') {
+        const apiVer = 'v1beta';
+        if (accessToken) {
+          const response = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models/${model}:generateContent`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: systemPrompt }] }]
+            })
+          });
+          const data = await response.json();
+          if (!response.ok || data.error) throw new Error(data.error?.message || `HTTP ${response.status}`);
+          text = data.candidates[0].content.parts[0].text;
+        } else {
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const modelInstance = genAI.getGenerativeModel({ model: model }, { apiVersion: apiVer });
+          const result = await modelInstance.generateContent(systemPrompt);
+          const response = await result.response;
+          text = response.text();
+        }
+      } else if (aiProvider === 'openai') {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${openaiApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: systemPrompt }] }]
+            model: model,
+            messages: [{ role: 'user', content: systemPrompt }]
           })
         });
         const data = await response.json();
-        if (data.error) throw new Error(data.error.message);
-        text = data.candidates[0].content.parts[0].text;
-      } else {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const modelInstance = genAI.getGenerativeModel({ model: model }, { apiVersion: apiVer });
-        const result = await modelInstance.generateContent(systemPrompt);
-        const response = await result.response;
-        text = response.text();
+        if (!response.ok) throw new Error(data.error?.message || `HTTP ${response.status}`);
+        text = data.choices[0].message.content;
+      } else if (aiProvider === 'claude') {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': claudeApiKey,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({
+            model: model,
+            max_tokens: 4096,
+            messages: [{ role: 'user', content: systemPrompt }]
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error?.message || `HTTP ${response.status}`);
+        text = data.content[0].text;
       }
 
       const finalMessages = [...newMessages, { role: 'model', content: text } as Message];
@@ -102,7 +146,7 @@ ${userMsg}`;
         await onSaveChatToFile(archivePath, formatChatAsMarkdown(finalMessages));
       }
     } catch (error: any) {
-      console.error("Gemini Error:", error);
+      console.error("AI Error:", error);
       setMessages(prev => [...prev, { role: 'model', content: "❌ An error occurred: " + (error.message || "Unknown error") }]);
     } finally {
       setLoading(false);
@@ -117,12 +161,10 @@ ${userMsg}`;
   };
 
   const handleKeyPress = (e: any) => {
-    // For React Native Web multiline TextInput
     const key = e.nativeEvent.key;
     const isModifier = e.nativeEvent.metaKey || e.nativeEvent.ctrlKey;
     
     if (key === 'Enter' && isModifier) {
-      // In web, e.preventDefault is available to stop newline insertion
       if (e.preventDefault) e.preventDefault();
       handleSend();
     }
@@ -133,7 +175,7 @@ ${userMsg}`;
     if (text.length > 0) {
       const filtered = fileList.filter(f => 
         f.toLowerCase().includes(text.toLowerCase()) && f !== text
-      ).slice(0, 5); // Limit to 5 suggestions
+      ).slice(0, 5); 
       setFilteredSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
     } else {
@@ -151,7 +193,7 @@ ${userMsg}`;
        <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: isDark ? '#121212' : '#F3F4F6' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="sparkles" size={14} color={colors.primary} style={{ marginRight: 6 }} />
-            <Text style={[styles.title, { color: colors.text }]}>Gemini Assistant</Text>
+            <Text style={[styles.title, { color: colors.text }]}>AI Assistant</Text>
             
             <View style={[styles.modeToggle, { borderColor: colors.border }]}>
               <Pressable 
@@ -193,7 +235,6 @@ ${userMsg}`;
               ) : (
                 <Pressable 
                   onPress={() => {
-                    // Simple cycle through models on native for now
                     const currentIndex = models.findIndex(m => m.value === model);
                     const nextIndex = (currentIndex + 1) % models.length;
                     onModelChange(models[nextIndex].value);
@@ -258,7 +299,6 @@ ${userMsg}`;
                   }
                 }}
                 onBlur={() => {
-                  // Small delay to allow Pressable to trigger
                   setTimeout(() => setShowSuggestions(false), 200);
                 }}
                 placeholder="filename.md"
@@ -305,7 +345,7 @@ ${userMsg}`;
            <View style={styles.emptyState}>
              <Ionicons name="chatbubble-ellipses-outline" size={32} color={colors.textMuted} />
              <Text style={[styles.emptyText, { color: colors.textMuted}]}>
-                Ask Gemini anything! (Press Cmd/Ctrl + Enter to send)
+                Ask AI anything! (Press Cmd/Ctrl + Enter to send)
              </Text>
            </View>
          )}
@@ -320,7 +360,7 @@ ${userMsg}`;
              }
            ]}>
              <Text style={[styles.roleLabel, { color: colors.primary }]}>
-               {msg.role === 'user' ? 'USER' : 'GEMINI'}
+               {msg.role === 'user' ? 'USER' : aiProvider.toUpperCase()}
              </Text>
              <Text selectable style={[styles.messageText, { color: colors.text }]}>{msg.content}</Text>
            </View>
