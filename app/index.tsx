@@ -23,6 +23,8 @@ import { useGemini } from '@/hooks/useGemini';
 import { usePaneResize } from '@/hooks/usePaneResize';
 import { useFileSystem } from '@/hooks/useFileSystem';
 import { useRecentFiles } from '@/hooks/useRecentFiles';
+import { useChatHistory } from '@/hooks/useChatHistory';
+import { ChatHistoryList } from '@/components/sidebar/ChatHistoryList';
 import { FileExplorer } from '@/components/explorer/FileExplorer';
 import { ImageViewer } from '@/components/preview/ImageViewer';
 import { TOCPane } from '@/components/toc/TOCPane';
@@ -195,6 +197,72 @@ function MainScreen() {
       console.log('[App] fileSystemData updated:', JSON.stringify(fileSystemData.map(i => ({ name: i.name, kind: i.kind })), null, 2));
     }
   }, [fileSystemData]);
+
+  // Keep active directory handles globally accessible for popup windows
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      (window as any)._activeDirHandle = dirHandle;
+      (window as any)._activeFileSystemData = fileSystemData;
+      
+      (window as any)._readWorkspaceFile = async (relativePath: string) => {
+        if (!dirHandle) return null;
+        try {
+          const parts = relativePath.split('/');
+          let current = dirHandle;
+          for (let i = 0; i < parts.length - 1; i++) {
+            current = await current.getDirectoryHandle(parts[i]);
+          }
+          const fileHandle = await current.getFileHandle(parts[parts.length - 1]);
+          const file = await fileHandle.getFile();
+          return await file.text();
+        } catch (e) {
+          console.error('[Parent-FS] Read failed:', relativePath, e);
+          return null;
+        }
+      };
+
+      (window as any)._writeWorkspaceFile = async (relativePath: string, content: string) => {
+        if (!dirHandle) return false;
+        try {
+          const parts = relativePath.split('/');
+          let current = dirHandle;
+          for (let i = 0; i < parts.length - 1; i++) {
+            current = await current.getDirectoryHandle(parts[i], { create: true });
+          }
+          const fileHandle = await current.getFileHandle(parts[parts.length - 1], { create: true });
+          const writable = await fileHandle.createWritable();
+          await writable.write(content);
+          await writable.close();
+          return true;
+        } catch (e) {
+          console.error('[Parent-FS] Write failed:', relativePath, e);
+          return false;
+        }
+      };
+
+      (window as any)._deleteWorkspaceFile = async (relativePath: string) => {
+        if (!dirHandle) return false;
+        try {
+          const parts = relativePath.split('/');
+          let current = dirHandle;
+          for (let i = 0; i < parts.length - 1; i++) {
+            current = await current.getDirectoryHandle(parts[i]);
+          }
+          await current.removeEntry(parts[parts.length - 1]);
+          return true;
+        } catch (e) {
+          console.error('[Parent-FS] Delete failed:', relativePath, e);
+          return false;
+        }
+      };
+    }
+  }, [dirHandle, fileSystemData]);
+
+  const chatHistory = useChatHistory(
+    dirHandle,
+    settings.aiProvider,
+    settings.selectedModel
+  );
 
   const [editorContent, setEditorContent] = useState('# Markdown Explorer Project\n\n* This is a functional CodeMirror-based editor.\n* Typing here will be reflected in the Live Preview below.\n\nDoes it work well? 😊');
   const [activeTab, setActiveTab] = useState<'files' | 'editor'>('files');
@@ -1600,6 +1668,26 @@ function MainScreen() {
                 activeViewId={activeSidebarViewId}
                 setActiveViewId={setActiveSidebarViewId}
                 registeredViews={sidebarViews}
+                renderChatHistoryList={useCallback(() => (
+                  <ChatHistoryList
+                    chatList={chatHistory.chatList}
+                    activeChatId={chatHistory.activeChatId}
+                    onSelectChat={(id) => {
+                      chatHistory.loadActiveChat(id);
+                      if (!isFooterVisible) {
+                        toggleFooter(true);
+                      }
+                    }}
+                    onCreateNewChat={() => {
+                      chatHistory.createNewChat();
+                      if (!isFooterVisible) {
+                        toggleFooter(true);
+                      }
+                    }}
+                    onRenameChat={chatHistory.renameChat}
+                    onDeleteChat={chatHistory.deleteChat}
+                  />
+                ), [chatHistory, isFooterVisible])}
                 renderFileExplorer={useCallback(() => (
                   <FileExplorer 
                     leftPaneWidth={(isMobile ? sidebarWidth : leftPaneWidth) - 48}
@@ -1959,6 +2047,23 @@ function MainScreen() {
           isCollapsed={!isFooterVisible}
           onToggleCollapse={toggleFooter}
           isResizing={isResizing}
+          chatMessages={chatHistory.messages}
+          onSaveActiveChat={chatHistory.saveActiveChat}
+          onUpdateMessageFeedback={chatHistory.updateMessageFeedback}
+          onMaximize={() => {
+            if (Platform.OS === 'web') {
+              const width = 1000;
+              const height = 800;
+              const left = (window.screen.width - width) / 2;
+              const top = (window.screen.height - height) / 2;
+              const activeId = chatHistory.activeChatId || '';
+              window.open(
+                window.location.origin + `?mode=chat${activeId ? `&chatId=${activeId}` : ''}`,
+                'GeminiChatPopup',
+                `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+              );
+            }
+          }}
           fileList={(() => {
             const list: string[] = [];
             const collect = (items: any[]) => {
@@ -2076,14 +2181,103 @@ function MainScreen() {
   );
 }
 
+function ChatOnlyScreen() {
+  const { colors, isDark } = useTheme();
+  const settings = useAppSettings();
+  
+  // Retrieve shared parent references from window.opener
+  const parentWindow = typeof window !== 'undefined' ? window.opener : null;
+  const parentDirHandle = parentWindow?._activeDirHandle || null;
+  const parentFileSystemData = parentWindow?._activeFileSystemData || [];
+  
+  const { dirHandle, fileSystemData } = useFileSystem();
+  
+  // Prioritize parent handles if available (since popup context is fresh)
+  const activeDirHandle = parentDirHandle || dirHandle;
+  const activeFileSystemData = parentDirHandle ? parentFileSystemData : fileSystemData;
+  
+  const chatHistory = useChatHistory(
+    activeDirHandle,
+    settings.aiProvider,
+    settings.selectedModel
+  );
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && activeDirHandle) {
+      const params = new URLSearchParams(window.location.search);
+      const urlChatId = params.get('chatId');
+      if (urlChatId) {
+        chatHistory.loadActiveChat(urlChatId);
+      }
+    }
+  }, [activeDirHandle]);
+
+  return (
+    <SafeAreaView 
+      edges={['top', 'bottom', 'left', 'right']} 
+      style={{ flex: 1, backgroundColor: colors.background }}
+    >
+      <View style={{ flex: 1, flexDirection: 'row' }}>
+        {/* Left Sidebar for Chat History List */}
+        <View style={{ 
+          width: 250, 
+          borderRightWidth: 1, 
+          borderRightColor: colors.border,
+          backgroundColor: isDark ? '#111827' : '#F9FAFB',
+        }}>
+          <ChatHistoryList
+            chatList={chatHistory.chatList}
+            activeChatId={chatHistory.activeChatId}
+            onSelectChat={(id) => chatHistory.loadActiveChat(id)}
+            onCreateNewChat={() => chatHistory.createNewChat()}
+            onRenameChat={chatHistory.renameChat}
+            onDeleteChat={chatHistory.deleteChat}
+          />
+        </View>
+        
+        {/* Right Chat Pane */}
+        <View style={{ flex: 1 }}>
+          <GeminiChat
+            currentContent=""
+            onSaveChatToFile={async () => true}
+            fileList={(() => {
+              const list: string[] = [];
+              const collect = (items: any[]) => {
+                for (const it of items) {
+                  if (it.kind === 'file') list.push(it.path);
+                  if (it.children) collect(it.children);
+                }
+              };
+              collect(activeFileSystemData);
+              return list;
+            })()}
+            chatMessages={chatHistory.messages}
+            onSaveActiveChat={chatHistory.saveActiveChat}
+            onUpdateMessageFeedback={chatHistory.updateMessageFeedback}
+          />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
 export default function App() {
   "use no-memo";
+  const [isChatOnlyMode, setIsChatOnlyMode] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const params = new URLSearchParams(window.location.search);
+      setIsChatOnlyMode(params.get('mode') === 'chat');
+    }
+  }, []);
+
   return (
     <SafeAreaProvider>
       <ThemeProvider>
         <SettingsProvider>
           <PluginProvider app={appInstance}>
-            <MainScreen />
+            {isChatOnlyMode ? <ChatOnlyScreen /> : <MainScreen />}
           </PluginProvider>
         </SettingsProvider>
       </ThemeProvider>

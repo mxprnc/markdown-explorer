@@ -12,23 +12,28 @@ interface SidebarProps {
   setActiveViewId: (id: string) => void;
   registeredViews: ViewEntry[];
   renderFileExplorer: () => React.ReactNode;
+  renderChatHistoryList?: () => React.ReactNode;
   isMobile?: boolean;
 }
 
 export function Sidebar({ 
-  app, width, activeViewId, setActiveViewId, registeredViews, renderFileExplorer, isMobile 
+  app, width, activeViewId, setActiveViewId, registeredViews, renderFileExplorer, renderChatHistoryList, isMobile 
 }: SidebarProps) {
   const { colors, isDark } = useTheme();
   const iconBarWidth = isMobile ? 44 : 48;
 
   const allSidebarViews = [
     { id: 'files', name: 'Explorer', icon: 'folder-outline' },
-    ...registeredViews
+    ...registeredViews,
+    { id: 'chats', name: 'AI Chats', icon: 'chatbubbles-outline' }
   ];
 
   const renderActiveView = () => {
     if (activeViewId === 'files') {
       return renderFileExplorer();
+    }
+    if (activeViewId === 'chats' && renderChatHistoryList) {
+      return renderChatHistoryList();
     }
     
     const view = registeredViews.find(v => v.id === activeViewId);
