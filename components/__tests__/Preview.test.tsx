@@ -24,6 +24,24 @@ jest.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({
   oneLight: {},
 }));
 
+// Mock theme context
+jest.mock('@/contexts/ThemeContext', () => ({
+  useTheme: () => ({
+    colors: {
+      background: '#FFFFFF',
+      text: '#121212',
+      border: '#E5E7EB',
+      surface: '#F9FAFB',
+      primary: '#3B82F6',
+      textMuted: '#6B7280',
+      textHighlight: '#000000',
+      accentGlow: 'rgba(59, 130, 246, 0.08)',
+    },
+    isDark: false,
+    fontFamilyCode: 'monospace'
+  })
+}));
+
 // Mock useMarkdownWorker
 jest.mock('../../hooks/useMarkdownWorker', () => ({
   useMarkdownWorker: jest.fn(() => ({

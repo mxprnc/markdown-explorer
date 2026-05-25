@@ -25,28 +25,28 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>0/33</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/24</span>
+                <span class='fraction'>0/36</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>0/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/17</span>
+                <span class='fraction'>0/30</span>
             </div>
         
             
@@ -188,10 +188,46 @@
 <a name='L123'></a><a href='#L123'>123</a>
 <a name='L124'></a><a href='#L124'>124</a>
 <a name='L125'></a><a href='#L125'>125</a>
-<a name='L126'></a><a href='#L126'>126</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -218,7 +254,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -320,6 +360,21 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { AppInstance } from '@/core/AppInstance';
 import { ViewEntry } from '@/core/ViewRegistry';
 &nbsp;
+const hexToRgba = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(h</span>ex: string, alpha: number): string =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  if (!hex || !hex.startsWith('#')) <span class="cstat-no" title="statement not covered" >return hex;</span></span>
+  let color = <span class="cstat-no" title="statement not covered" >hex.replace('#', '');</span>
+<span class="cstat-no" title="statement not covered" >  if (color.length === 3) {</span>
+<span class="cstat-no" title="statement not covered" >    color = color.split('').map(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >c + c)</span>.join('');</span>
+  }
+<span class="cstat-no" title="statement not covered" >  if (color.length === 6) {</span>
+    const r = <span class="cstat-no" title="statement not covered" >parseInt(color.substring(0, 2), 16);</span>
+    const g = <span class="cstat-no" title="statement not covered" >parseInt(color.substring(2, 4), 16);</span>
+    const b = <span class="cstat-no" title="statement not covered" >parseInt(color.substring(4, 6), 16);</span>
+<span class="cstat-no" title="statement not covered" >    return `rgba(${r}, ${g}, ${b}, ${alpha})`;</span>
+  }
+<span class="cstat-no" title="statement not covered" >  return hex;</span>
+};
+&nbsp;
 interface SidebarProps {
   app: AppInstance;
   width: any;
@@ -328,11 +383,12 @@ interface SidebarProps {
   registeredViews: ViewEntry[];
   renderFileExplorer: () =&gt; React.ReactNode;
   renderChatHistoryList?: () =&gt; React.ReactNode;
+  renderPluginsManager?: () =&gt; React.ReactNode;
   isMobile?: boolean;
 }
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >Sidebar(</span>{ 
-  app, width, activeViewId, setActiveViewId, registeredViews, renderFileExplorer, renderChatHistoryList, isMobile 
+  app, width, activeViewId, setActiveViewId, registeredViews, renderFileExplorer, renderChatHistoryList, renderPluginsManager, isMobile 
 }: SidebarProps) {
   const { colors, isDark } = <span class="cstat-no" title="statement not covered" >useTheme();</span>
   const iconBarWidth = <span class="cstat-no" title="statement not covered" >isMobile ? 44 : 48;</span>
@@ -340,7 +396,8 @@ export function <span class="fstat-no" title="function not covered" >Sidebar(</s
   const allSidebarViews = <span class="cstat-no" title="statement not covered" >[</span>
     { id: 'files', name: 'Explorer', icon: 'folder-outline' },
     ...registeredViews,
-    { id: 'chats', name: 'AI Chats', icon: 'chatbubbles-outline' }
+    { id: 'chats', name: 'AI Chats', icon: 'chatbubbles-outline' },
+    { id: 'plugins', name: 'Plugins &amp; Themes', icon: 'extension-puzzle-outline' }
   ];
 &nbsp;
   const renderActiveView = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
@@ -349,6 +406,9 @@ export function <span class="fstat-no" title="function not covered" >Sidebar(</s
     }
 <span class="cstat-no" title="statement not covered" >    if (activeViewId === 'chats' &amp;&amp; renderChatHistoryList) {</span>
 <span class="cstat-no" title="statement not covered" >      return renderChatHistoryList();</span>
+    }
+<span class="cstat-no" title="statement not covered" >    if (activeViewId === 'plugins' &amp;&amp; renderPluginsManager) {</span>
+<span class="cstat-no" title="statement not covered" >      return renderPluginsManager();</span>
     }
     
     const view = <span class="cstat-no" title="statement not covered" >registeredViews.find(<span class="fstat-no" title="function not covered" >v </span>=&gt; <span class="cstat-no" title="statement not covered" >v.id === activeViewId)</span>;</span>
@@ -370,7 +430,7 @@ export function <span class="fstat-no" title="function not covered" >Sidebar(</s
           backgroundColor: colors.background, 
           borderRightColor: colors.border,
           ...(Platform.OS === 'web' &amp;&amp; isDark ? {
-            backgroundColor: 'rgba(11, 14, 20, 0.95)',
+            backgroundColor: hexToRgba(colors.background, 0.95),
             backdropFilter: 'blur(8px)',
           } : {} as any)
         }
@@ -402,7 +462,7 @@ export function <span class="fstat-no" title="function not covered" >Sidebar(</s
         { 
           backgroundColor: colors.surface,
           ...(Platform.OS === 'web' &amp;&amp; isDark ? {
-            backgroundColor: 'rgba(21, 25, 33, 0.85)',
+            backgroundColor: hexToRgba(colors.surface, 0.85),
             backdropFilter: 'blur(12px)',
           } : {} as any)
         }
@@ -445,7 +505,7 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-24T10:29:43.407Z
+                at 2026-05-25T04:46:01.031Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

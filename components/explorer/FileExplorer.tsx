@@ -41,7 +41,7 @@ export function FileExplorer({
   creatingItem, creationName, setCreationName, onConfirmCreation, onCancelCreation,
   setDraggingTab, onExportToNextra, onMove, selectedFolder
 }: FileExplorerProps) {
-  const { colors, isDark, fontFamilyUI } = useTheme();
+  const { colors, isDark, fontFamilyUI, fontSizeUI } = useTheme();
   const scrollRef = React.useRef<any>(null);
   
   React.useEffect(() => {
@@ -106,7 +106,7 @@ export function FileExplorer({
       <View style={[styles.paneHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <Text 
           testID="explorer-title"
-          style={[styles.paneTitle, { color: colors.textMuted }]}
+          style={[styles.paneTitle, { color: colors.textMuted, fontSize: fontSizeUI - 1, fontFamily: fontFamilyUI }]}
           {...(Platform.OS === 'web' ? {
             onContextMenu: handleRootContextMenu
           } : {})}
@@ -128,14 +128,14 @@ export function FileExplorer({
       >
         {fileSystemData.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>No folder opened.</Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted, fontSize: fontSizeUI, fontFamily: fontFamilyUI }]}>No folder opened.</Text>
             <Pressable 
               accessibilityRole="button"
               onPress={onOpenDirectory} 
               style={[styles.openBtn, { backgroundColor: colors.primary, cursor: 'pointer' } as any]}
               testID="open-folder-btn"
             >
-              <Text style={styles.openBtnText}>Open Folder</Text>
+              <Text style={[styles.openBtnText, { fontSize: fontSizeUI, fontFamily: fontFamilyUI }]}>Open Folder</Text>
             </Pressable>
           </View>
         ) : (

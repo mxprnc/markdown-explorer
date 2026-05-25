@@ -68,7 +68,7 @@ export function ChatHistoryList({
   onRenameChat,
   onDeleteChat
 }: ChatHistoryListProps) {
-  const { colors, fontFamilyUI, isDark } = useTheme();
+  const { colors, fontFamilyUI, isDark, fontSizeUI = 13 } = useTheme();
   
   // Inline rename state
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
@@ -111,8 +111,8 @@ export function ChatHistoryList({
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* List Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontFamilyUI }]}>
+      <View style={[styles.header, { height: fontSizeUI + 35, borderBottomColor: colors.border }]}>
+        <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontFamilyUI, fontSize: fontSizeUI }]}>
           AI Chats
         </Text>
         <Pressable
@@ -125,7 +125,7 @@ export function ChatHistoryList({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           testID="sidebar-new-chat-btn"
         >
-          <Ionicons name="add" size={18} color={colors.text} />
+          <Ionicons name="add" size={fontSizeUI + 5} color={colors.text} />
         </Pressable>
       </View>
 
@@ -136,15 +136,15 @@ export function ChatHistoryList({
       >
         {chatList.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="chatbubbles-outline" size={32} color={colors.textMuted} style={{ marginBottom: 12 }} />
-            <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>
+            <Ionicons name="chatbubbles-outline" size={fontSizeUI + 19} color={colors.textMuted} style={{ marginBottom: 12 }} />
+            <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>
               저장된 대화가 없습니다.
             </Text>
             <Pressable
               onPress={onCreateNewChat}
               style={[styles.emptyAddBtn, { backgroundColor: colors.primary }]}
             >
-              <Text style={[styles.emptyAddBtnText, { fontFamily: fontFamilyUI }]}>
+              <Text style={[styles.emptyAddBtnText, { fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>
                 새 대화 시작
               </Text>
             </Pressable>
@@ -168,13 +168,13 @@ export function ChatHistoryList({
                 style={[
                   styles.chatItem,
                   isActive && { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' },
-                  { borderLeftColor: isActive ? colors.primary : 'transparent' }
+                  { borderLeftColor: isActive ? colors.primary : 'transparent', height: fontSizeUI + 35 }
                 ]}
                 testID={`chat-item-${chat.id}`}
               >
                 {/* Provider Icon Avatar */}
-                <View style={[styles.avatar, { backgroundColor: prov.color + '18' }]}>
-                  <Ionicons name={prov.icon} size={16} color={prov.color} />
+                <View style={[styles.avatar, { backgroundColor: prov.color + '18', width: fontSizeUI + 15, height: fontSizeUI + 15, borderRadius: (fontSizeUI + 15) * 0.22 }]}>
+                  <Ionicons name={prov.icon} size={fontSizeUI + 3} color={prov.color} />
                 </View>
 
                 {/* Info Text Area */}
@@ -193,7 +193,9 @@ export function ChatHistoryList({
                           color: colors.text, 
                           fontFamily: fontFamilyUI,
                           borderColor: colors.primary,
-                          backgroundColor: colors.background
+                          backgroundColor: colors.background,
+                          fontSize: fontSizeUI - 1,
+                          height: fontSizeUI + 14
                         }
                       ]}
                     />
@@ -206,13 +208,14 @@ export function ChatHistoryList({
                           { 
                             color: isActive ? colors.text : colors.textMuted,
                             fontFamily: fontFamilyUI,
-                            fontWeight: isActive ? '600' : 'normal'
+                            fontWeight: isActive ? '600' : 'normal',
+                            fontSize: fontSizeUI - 1
                           }
                         ]}
                       >
                         {chat.title}
                       </Text>
-                      <Text style={[styles.timeText, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>
+                      <Text style={[styles.timeText, { color: colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 2.5 }]}>
                         {timeAgo}
                       </Text>
                     </View>
@@ -227,14 +230,14 @@ export function ChatHistoryList({
                       style={styles.actionIconBtn}
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
-                      <Ionicons name="pencil-outline" size={14} color={colors.textMuted} />
+                      <Ionicons name="pencil-outline" size={fontSizeUI + 1} color={colors.textMuted} />
                     </Pressable>
                     <Pressable
                       onPress={() => handleDeletePrompt(chat)}
                       style={styles.actionIconBtn}
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
-                      <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                      <Ionicons name="trash-outline" size={fontSizeUI + 1} color="#EF4444" />
                     </Pressable>
                   </View>
                 )}

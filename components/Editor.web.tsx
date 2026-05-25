@@ -1,4 +1,4 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useState, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { findBestHeadingMatch, preprocessMarkdown, postprocessMarkdown } from '@/utils/MarkdownUtils';
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import { Extension, getMarkRange, Node } from '@tiptap/core';
@@ -52,6 +52,39 @@ function Mermaid({ chart, isDark }: { chart: string, isDark: boolean }) {
 
 const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos }: any) => {
   const { isDark, colors } = useTheme();
+
+  const customPrismStyle = useMemo(() => {
+    const baseStyle = isDark ? oneDark : oneLight;
+    return {
+      ...baseStyle,
+      'code[class*="language-"]': {
+        ...baseStyle['code[class*="language-"]'],
+        background: 'transparent',
+      },
+      'pre[class*="language-"]': {
+        ...baseStyle['pre[class*="language-"]'],
+        background: 'transparent',
+      },
+      'comment': {
+        ...baseStyle['comment'],
+        color: colors.textMuted,
+        opacity: 0.85
+      },
+      'prolog': {
+        ...baseStyle['prolog'],
+        color: colors.textMuted
+      },
+      'doctype': {
+        ...baseStyle['doctype'],
+        color: colors.textMuted
+      },
+      'cdata': {
+        ...baseStyle['cdata'],
+        color: colors.textMuted
+      }
+    };
+  }, [isDark, colors.textMuted]);
+
   const [isEditing, setIsEditing] = useState(() => {
     if (typeof getPos !== 'function') return false;
     const pos = getPos();
@@ -148,8 +181,8 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
         {isMermaid ? (
           <div style={{
             position: 'relative',
-            border: '1px solid ' + (isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'),
-            backgroundColor: isDark ? '#151921' : '#FFFFFF',
+            border: '1px solid ' + colors.border,
+            backgroundColor: colors.surface,
             borderRadius: 8,
             padding: 16
           }}>
@@ -161,22 +194,44 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
             <Mermaid chart={rawCodeContent} isDark={isDark} />
           </div>
         ) : (
-          <div style={{
+          <div className="editor-code-block-scroll" style={{
             position: 'relative',
-            border: '1px solid ' + (isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'),
-            backgroundColor: isDark ? '#0b0e14' : '#F9FAFB',
+            border: '1px solid ' + colors.border,
+            backgroundColor: colors.background,
             borderRadius: 8,
             overflow: 'hidden'
           }}>
+            {Platform.OS === 'web' && (
+              <style>{`
+                .editor-code-block-scroll div::-webkit-scrollbar {
+                  height: 8px;
+                  width: 8px;
+                }
+                .editor-code-block-scroll div::-webkit-scrollbar-track {
+                  background: ${colors.surface};
+                }
+                .editor-code-block-scroll div::-webkit-scrollbar-thumb {
+                  background: ${colors.border};
+                  border-radius: 4px;
+                }
+                .editor-code-block-scroll div::-webkit-scrollbar-thumb:hover {
+                  background: ${colors.textMuted};
+                }
+                .editor-code-block-scroll div {
+                  scrollbar-width: thin;
+                  scrollbar-color: ${colors.border} ${colors.surface};
+                }
+              `}</style>
+            )}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               padding: '8px 16px',
-              borderBottom: '1px solid ' + (isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'),
-              backgroundColor: isDark ? '#151921' : '#F3F4F6'
+              borderBottom: '1px solid ' + colors.border,
+              backgroundColor: colors.surface
             }}>
-              <div style={{ fontSize: 11, fontWeight: 'bold', fontFamily: 'Inter, sans-serif', color: isDark ? '#9CA3AF' : '#6B7280', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 11, fontWeight: 'bold', fontFamily: 'Inter, sans-serif', color: colors.textMuted, textTransform: 'uppercase' }}>
                 {language || 'code'}
               </div>
                 <CopyButton content={rawCodeContent} />
@@ -192,7 +247,7 @@ const CodeBlockComponent = ({ node, updateAttributes, extension, editor, getPos 
                 color: isDark ? '#4B5563' : '#9CA3AF',
                 textAlign: 'right'
               }}
-              style={isDark ? oneDark : oneLight}
+              style={customPrismStyle}
               showLineNumbers={true}
               customStyle={{
                 margin: 0,
@@ -1101,6 +1156,7 @@ export default forwardRef(function Editor({
   onSelectionChange?: (selection: { start: number, end: number }) => void,
   onYoutubeExtract?: () => void
 }, ref: any) {
+  const { fontSizeCode, colors } = useTheme();
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const [editorContextMenu, setEditorContextMenu] = React.useState<{ x: number, y: number, visible: boolean } | null>(null);
 
@@ -1294,14 +1350,14 @@ export default forwardRef(function Editor({
     }
   }));
 
-  const textColor = isDark ? '#F3F4F6' : '#121212';
-  const bgColor = isDark ? '#121212' : '#ffffff';
+  const textColor = colors.text;
+  const bgColor = colors.background;
 
-  const cbBg = isDark ? '#111827' : '#F9FAFB';
-  const cbBgHeader = isDark ? '#1F2937' : '#F3F4F6';
-  const cbBorder = isDark ? '#374151' : '#E5E7EB';
-  const cbText = isDark ? '#E5E7EB' : '#1F2937';
-  const cbCopy = isDark ? '#9CA3AF' : '#6B7280';
+  const cbBg = colors.surface;
+  const cbBgHeader = colors.background;
+  const cbBorder = colors.border;
+  const cbText = colors.text;
+  const cbCopy = colors.textMuted;
 
   return (
     <div ref={wrapperRef} className="tiptap-wrapper" data-testid="editor-container" style={{ height: '100%', maxHeight: '100%', boxSizing: 'border-box', flex: 1, backgroundColor: bgColor, overflowY: 'auto', color: textColor, '--cb-bg': cbBg, '--cb-bg-header': cbBgHeader, '--cb-border': cbBorder, '--cb-text': cbText, '--cb-copy': cbCopy } as React.CSSProperties}>
@@ -1311,6 +1367,7 @@ export default forwardRef(function Editor({
           outline: none;
           max-width: 800px;
           margin: 0 auto;
+          font-size: ${fontSizeCode}px;
         }
         
         .tiptap-wrapper h1,
@@ -1323,12 +1380,12 @@ export default forwardRef(function Editor({
           font-weight: 700;
         }
         
-        .tiptap-wrapper h1 { font-size: 2rem; font-weight: 800; border-bottom: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding-bottom: 0.3em; margin-top: 2rem; margin-bottom: 1rem; }
-        .tiptap-wrapper h2 { font-size: 1.6rem; font-weight: 700; border-bottom: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding-bottom: 0.3em; margin-top: 1.8rem; margin-bottom: 0.8rem; }
-        .tiptap-wrapper h3 { font-size: 1.3rem; font-weight: 700; margin-top: 1.6rem; margin-bottom: 0.6rem; }
-        .tiptap-wrapper h4 { font-size: 1.15rem; font-weight: 700; margin-top: 1.4rem; margin-bottom: 0.4rem; color: ${isDark ? '#F3F4F6' : '#111827'}; }
-        .tiptap-wrapper h5 { font-size: 1.05rem; font-weight: 700; margin-top: 1.2rem; margin-bottom: 0.3rem; color: ${isDark ? '#D1D5DB' : '#374151'}; }
-        .tiptap-wrapper h6 { font-size: 1rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.2rem; color: ${isDark ? '#9CA3AF' : '#6B7280'}; text-transform: uppercase; letter-spacing: 0.05em; }
+        .tiptap-wrapper h1 { font-size: 2em; font-weight: 800; border-bottom: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding-bottom: 0.3em; margin-top: 2rem; margin-bottom: 1rem; }
+        .tiptap-wrapper h2 { font-size: 1.6em; font-weight: 700; border-bottom: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding-bottom: 0.3em; margin-top: 1.8rem; margin-bottom: 0.8rem; }
+        .tiptap-wrapper h3 { font-size: 1.3em; font-weight: 700; margin-top: 1.6rem; margin-bottom: 0.6rem; }
+        .tiptap-wrapper h4 { font-size: 1.15em; font-weight: 700; margin-top: 1.4rem; margin-bottom: 0.4rem; color: ${isDark ? '#F3F4F6' : '#111827'}; }
+        .tiptap-wrapper h5 { font-size: 1.05em; font-weight: 700; margin-top: 1.2rem; margin-bottom: 0.3rem; color: ${isDark ? '#D1D5DB' : '#374151'}; }
+        .tiptap-wrapper h6 { font-size: 1em; font-weight: 700; margin-top: 1rem; margin-bottom: 0.2rem; color: ${isDark ? '#9CA3AF' : '#6B7280'}; text-transform: uppercase; letter-spacing: 0.05em; }
         
         .tiptap-wrapper p {
           margin-bottom: 1em;

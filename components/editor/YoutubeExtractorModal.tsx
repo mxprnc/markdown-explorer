@@ -107,7 +107,7 @@ export function YoutubeExtractorModal({ visible, onConfirm, onCancel }: YoutubeE
                   style={[styles.modeButton, mode !== m && { opacity: 0.8 }]}
                   textStyle={{ 
                     fontSize: 12, 
-                    color: mode === m ? '#FFFFFF' : (isDark ? '#cbd5e1' : '#4b5563') 
+                    color: mode === m ? '#FFFFFF' : colors.textMuted 
                   }}
                 />
               ))}
@@ -127,7 +127,7 @@ export function YoutubeExtractorModal({ visible, onConfirm, onCancel }: YoutubeE
                   style={[styles.modeButton, listType !== t && { opacity: 0.8 }]}
                   textStyle={{ 
                     fontSize: 12, 
-                    color: listType === t ? '#FFFFFF' : (isDark ? '#cbd5e1' : '#4b5563') 
+                    color: listType === t ? '#FFFFFF' : colors.textMuted 
                   }}
                 />
               ))}
@@ -139,7 +139,7 @@ export function YoutubeExtractorModal({ visible, onConfirm, onCancel }: YoutubeE
             <Text style={[styles.label, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>PLAYLIST URL</Text>
             <TextInput
               style={[styles.input, { 
-                backgroundColor: isDark ? '#1a1a1a' : '#fff', 
+                backgroundColor: colors.background, 
                 borderColor: colors.border, 
                 color: colors.text,
                 fontFamily: fontFamilyCode
@@ -170,7 +170,7 @@ export function YoutubeExtractorModal({ visible, onConfirm, onCancel }: YoutubeE
               <Text style={[styles.label, { color: colors.textMuted, fontFamily: fontFamilyUI }]}>ITEM LIMIT (MAX 50)</Text>
               <TextInput
                 style={[styles.input, { 
-                  backgroundColor: isDark ? '#1a1a1a' : '#fff', 
+                  backgroundColor: colors.background, 
                   borderColor: colors.border, 
                   color: colors.text,
                   fontFamily: fontFamilyCode
@@ -197,7 +197,7 @@ export function YoutubeExtractorModal({ visible, onConfirm, onCancel }: YoutubeE
 
           {/* API Key Status */}
           <View style={[styles.section, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }]}>
-            <View style={styles.apiKeyContainer}>
+            <View style={[styles.apiKeyContainer, { backgroundColor: colors.background }]}>
               <Ionicons name="key-outline" size={14} color={youtubeKey ? colors.primary : colors.textMuted} style={{ marginRight: 8 }} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.label, { color: colors.textMuted, marginBottom: 2 }]}>YOUTUBE API KEY</Text>

@@ -291,3 +291,41 @@
   * **해결 1 (자가 복구 - Self-Healing):** `SettingsContext` 기동 단계에서 로컬 스토리지에 유보된 모델명이 현재 지원 모델 목록에 존재하지 않을 경우, 기본 안전 권장 모델(`gemini-2.5-pro` 등)로 강제 회귀(Fallback)시키는 자동 롤백 루틴을 내장하여 오작동 차단.
   * **이슈 2 (Playwright E2E UI 테스트 충돌):** 통합 설정 모달 UI의 레이아웃 개편 및 버튼 텍스트의 중복으로 인해 Playwright E2E 자동 테스트 시 Selector가 모호해져 테스트가 실패하는 현상.
   * **해결 2:** 모달 주요 요소에 고유한 `testID`와 접근성 식별값을 심어 테스트 격리성을 확보하고, API 키 필드가 단일화됨에 따라 테스트 명세 시나리오 역시 단일 dynamic-key 입력 흐름으로 통일하여 최종 CI/CD 패스 달성.
+
+## 34. 테마 플러그인 시스템(Theme Plugin System) 및 VSCode 테마 임포터
+* **목표:** 개발자 및 사용자의 취향에 맞는 맞춤형 문서 작성 환경을 제공하기 위해, 마크다운 에디터와 앱 인터페이스 전반의 색상 테마를 동적으로 변경할 수 있는 플러그인 아키텍처 및 외부 테마 가져오기 시스템 구축.
+* **내용 & 해결방식:**
+  * **테마 생명주기 및 API 구축 (`Manifest.ts`, `App.ts`):**
+    * 기존의 `PluginManager` 아키텍처에 긴밀히 통합하여 테마를 플러그인의 한 분류(`type: 'theme'`)로 설계 및 표준 Manifest 규격화.
+    * 플러그인이 런타임에서 테마를 핸들링할 수 있도록 `ThemeAPI`(`registerTheme`, `unregisterTheme`, `setActiveTheme`) 제공 및 EventBus 설계.
+    * 웰컴 PoC용 다크 네온 테마인 `Tokyo Night` 및 `One Dark Pro` 테마를 내장 플러그인 형태로 구현하여 기본 탑재.
+  * **VSCode 테마 호환 파서 개발 (`VSCodeThemeParser.ts`):**
+    * VS Code용 JSON 테마 포맷을 직접 분석하고 정제하여 당사 규격의 HSL/HEX 색상 토큰으로 똑똑하게 번역해 주는 독립 파서 엔진 탑재.
+    * JSON 텍스트 내에 섞여 있는 주석(한 줄 주석 `//`, 다중 줄 주석 `/* */`)을 완벽하게 필터링하여 오동작 없는 JSON 파싱 구현 및 색상 누락 시 라이트/다크 모드별 안전 폴백(Fallback) 보정 로직 내장.
+* **이슈 & 트러블슈팅:**
+  * **이슈 (Server Side Rendering localStorage ReferenceError):** Playwright E2E 웹서버(Node 환경) 사전 컴파일 단계에서, `useState` 내에 동기식으로 배치된 `localStorage.getItem()`을 호출하여 `localStorage is not defined` 에러로 전체 마운트가 붕괴되는 현상.
+  * **해결:** `Platform.OS === 'web'` 체크 조건식 뒤에 `&& typeof localStorage !== 'undefined'` 안전 장치를 3중 추가하여 Node SSR 단계에서는 기본 폴백값으로 안전하게 넘어가고 클라이언트 브라우저에서만 정상 로드 및 쓰기 보존이 처리되도록 생명주기 정렬 패치.
+
+## 35. 단일 통합 설정 대시보드(Unified Settings Modal) 및 어페어런스(Appearance) 탭 구축
+* **목표:** 앱 곳곳에 난잡하게 파편화되어 있던 개별 설정 다이얼로그(SettingsModal, GeminiSettingsModal 등)를 하나의 세련된 IDE급 모달 대시보드로 통합하여 관리 효율성 및 시각적 일체감 대폭 향상.
+* **내용 & 해결방식:**
+  * **단일 통합 모달 아키텍처 (`SettingsModal.tsx`):**
+    * `GeminiSettingsModal.tsx`를 전면 제거(Deprecate)하고, `SettingsModal.tsx` 단일 파일에 모든 시스템 구성을 병합.
+    * 좌측 사이드바에 미려한 탭 레이아웃을 제공하고 4대 탭(**AI Assistant**, **Appearance**, **API Keys**, **Integrations**)으로 데이터 스코프 분류.
+  * **정밀 폰트 스케일러 및 LocalStorage 영속화:**
+    * **Appearance** 탭 내에 사용자의 접근성을 돕기 위해 **UI Font Size** 및 **Editor Font Size**를 1px 단위로 조절할 수 있는 정밀 스케일러 조작 버튼 구현.
+    * 폰트 사이즈와 테마 모드 설정을 `localStorage`에 영구 보존하여 페이지 새로고침 시에도 사용자의 레이아웃 크기 배율과 디자인 테마가 완전히 보존되도록 구현.
+    * UI Font Size 조절 시, 좌측 사이드바, 상태 바(Footer), AI Assistant 패널 타이틀, 설정 모달 내 요소들이 조화로운 비율로 연쇄 스케일링되도록 유동적 위계 스타일 설계.
+
+## 36. 독립형 플러그인 & 테마 관리 사이드바(Dedicated Plugins Sidebar)
+* **목표:** 설정(Settings) 모달 창 깊숙한 곳에 숨겨져 있던 플러그인 목록, 활성화 토글, 테마 스위칭, 임포터 폼 등의 옵션들을 메인 화면 좌측 액티비티 바(Activity Bar) 전용 일등 메뉴로 분리 개편하여, VS Code 및 Obsidian 수준의 편리한 확장 관리자 UX 구현.
+* **내용 & 해결방식:**
+  * **사이드바 확장 센터 구현 (`PluginsSidebar.tsx`):**
+    * 액티비티 바에 퍼즐 조각 아이콘(`extension-puzzle-outline`)을 새롭게 장착하고, 클릭 시 탐색기 창 옆에 즉시 활성화되는 전용 플러그인 사이드바 설계.
+    * **세그먼트 탭 필터 (ALL / PLUGINS / THEMES):** 사용자가 원하는 종류의 카드들만 모아볼 수 있는 고성능 탭 필터링 지원.
+    * **실시간 탐색 검색 바:** 플러그인의 명칭과 상세 설명 텍스트를 실시간 완전 검색(FTS)하여 지연 없이 매치 항목을 렌더링하는 검색 인풋 바 제공.
+    * **원클릭 테마 핫스왑 및 테마 임포터 내장:**
+      * 테마 카드 하단의 `Apply Theme` 버튼 클릭 시 에디터와 컴포넌트 전반의 테마가 딜레이 없이 즉시 즉각 변경되는 핫스왑 지원.
+      * 가져온 외부 커스텀 테마를 원클릭 삭제할 수 있는 휴지통 아이콘 탑재.
+      * `ALL` 및 `THEMES` 탭 하단에 접이식 아코디언 컴포넌트로 테마 임포터를 배치하여 깔끔한 공간 효율성을 추구하고, `PLUGINS` 기능형 목록에서는 개념 혼선을 막기 위해 이를 자동 은닉하는 조건부 렌더링 도입.
+

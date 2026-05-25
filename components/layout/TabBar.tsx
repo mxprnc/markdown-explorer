@@ -21,7 +21,7 @@ interface TabBarProps {
 export const TabBar = memo(({
   paneId, files, previewFile, selectedFile, onSelect, onClose, onPin, onContextMenu, onSetDraggingTab, onDropTab, isDraggingOver, allFiles = []
 }: TabBarProps) => {
-  const { colors, fontFamilyUI } = useTheme();
+  const { colors, fontFamilyUI, fontSizeUI } = useTheme();
   const lastClickRef = useRef<{ time: number, file: string } | null>(null);
   const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null);
 
@@ -92,7 +92,7 @@ export const TabBar = memo(({
           }
         } as any)}
       >
-        <Text style={{ color: colors.textMuted, fontSize: 12, paddingHorizontal: 12 }}>No file opened</Text>
+        <Text style={{ color: colors.textMuted, fontSize: fontSizeUI - 1, paddingHorizontal: 12 }}>No file opened</Text>
         {showIndicatorAtStart && <View style={[styles.insertionIndicator, { backgroundColor: colors.primary }]} />}
       </View>
     );
@@ -133,7 +133,7 @@ export const TabBar = memo(({
                 selectable={false} 
                 style={[
                   styles.tabText, 
-                  { color: colors.textMuted, fontFamily: fontFamilyUI }, 
+                  { color: colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }, 
                   isActive && [styles.tabTextActive, { color: colors.textHighlight }],
 
                   isPreview && { fontStyle: 'italic' }
@@ -150,7 +150,7 @@ export const TabBar = memo(({
                 style={styles.tabCloseBtn}
                 testID={`tab-close-${file}`}
               >
-                <Text selectable={false} style={[styles.tabCloseText, { color: colors.textMuted }]}>✕</Text>
+                <Text selectable={false} style={[styles.tabCloseText, { color: colors.textMuted, fontSize: fontSizeUI - 3 }]}>✕</Text>
               </Pressable>
             </Pressable>
           );

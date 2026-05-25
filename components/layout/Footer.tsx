@@ -25,7 +25,7 @@ interface FooterProps {
 }
 
 export const Footer = memo(({ height, responder, selectedFile, editorContent, onSaveChatToFile, fileList, isCollapsed, onToggleCollapse, isResizing, chatMessages, onSaveActiveChat, onUpdateMessageFeedback, onMaximize }: FooterProps) => {
-  const { colors, fontFamilyCode } = useTheme();
+  const { colors, fontFamilyCode, fontSizeUI } = useTheme();
   const { setSettingsVisible } = useAppSettings();
   
   const animatedStyle = useAnimatedStyle(() => ({
@@ -65,7 +65,7 @@ export const Footer = memo(({ height, responder, selectedFile, editorContent, on
       )}
 
       {/* Path Display Bar */}
-      <View style={[styles.footerPath, { backgroundColor: colors.primary }]}>
+      <View style={[styles.footerPath, { backgroundColor: colors.primary, height: fontSizeUI + 11 }]}>
         <Pressable 
           onPress={() => {
             console.log('[Footer] Toggle button pressed');
@@ -73,19 +73,19 @@ export const Footer = memo(({ height, responder, selectedFile, editorContent, on
           }} 
           style={styles.toggleBtn}
         >
-          <Ionicons name={isCollapsed ? "chevron-up" : "chevron-down"} size={14} color="#FFF" />
+          <Ionicons name={isCollapsed ? "chevron-up" : "chevron-down"} size={fontSizeUI + 1} color="#FFF" />
         </Pressable>
-        <Ionicons name="link-outline" size={12} color="#FFF" style={{ marginRight: 6 }} />
+        <Ionicons name="link-outline" size={fontSizeUI - 1} color="#FFF" style={{ marginRight: 6 }} />
         <Text 
           numberOfLines={1} 
           ellipsizeMode="middle" 
-          style={[styles.footerPathText, { fontFamily: fontFamilyCode, flex: 1 }]}
+          style={[styles.footerPathText, { fontFamily: fontFamilyCode, flex: 1, fontSize: fontSizeUI - 2 }]}
         >
           {selectedFile ? decodePath(selectedFile) : 'No file selected'}
         </Text>
         <View style={{ marginLeft: 'auto', flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-          <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode }]}>UTF-8</Text>
-          <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode }]}>Markdown</Text>
+          <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode, fontSize: fontSizeUI - 2 }]}>UTF-8</Text>
+          <Text style={[styles.footerPathText, { fontFamily: fontFamilyCode, fontSize: fontSizeUI - 2 }]}>Markdown</Text>
           <Pressable 
             onPress={() => setSettingsVisible(true)}
             style={({ hovered }: any) => [
@@ -93,7 +93,7 @@ export const Footer = memo(({ height, responder, selectedFile, editorContent, on
               hovered && { backgroundColor: 'rgba(255,255,255,0.2)' }
             ]}
           >
-            <Ionicons name="settings-outline" size={14} color="#FFF" />
+            <Ionicons name="settings-outline" size={fontSizeUI + 1} color="#FFF" />
           </Pressable>
         </View>
       </View>

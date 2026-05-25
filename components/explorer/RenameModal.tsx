@@ -36,8 +36,8 @@ export function RenameModal({ visible, name, onChangeName, onConfirm, onCancel }
               padding: '10px 12px',
               borderRadius: '6px',
               border: `1px solid ${colors.border}`,
-              backgroundColor: isDark ? '#1a1a1a' : '#fff',
-              color: isDark ? '#fff' : '#000',
+              backgroundColor: colors.background,
+              color: colors.text,
               fontSize: '14px',
               outline: 'none',
               fontFamily: fontFamilyUI

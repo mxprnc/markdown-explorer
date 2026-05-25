@@ -15,4 +15,6 @@ export interface PluginManifest {
   version: string;
   /** 이 플러그인이 작동하기 위해 필요한 최소 앱 버전 */
   minAppVersion?: string;
+  /** 플러그인의 유형 (기능용 'functional' 또는 테마용 'theme') */
+  type?: 'functional' | 'theme';
 }

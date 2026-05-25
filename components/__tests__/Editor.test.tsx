@@ -90,6 +90,23 @@ jest.mock('tiptap-markdown', () => ({ Markdown: { configure: jest.fn(() => ({}))
 jest.mock('@aarkue/tiptap-math-extension', () => ({ MathExtension: { configure: jest.fn(() => ({})) } }));
 jest.mock('mermaid', () => ({ initialize: jest.fn(), render: jest.fn() }));
 
+jest.mock('@/contexts/ThemeContext', () => ({
+  useTheme: jest.fn(() => ({
+    isDark: false,
+    colors: {
+      background: '#FFFFFF',
+      text: '#121212',
+      border: '#E5E7EB',
+      surface: '#F9FAFB',
+      primary: '#3B82F6',
+      textMuted: '#6B7280',
+      textHighlight: '#000000',
+      accentGlow: 'rgba(59, 130, 246, 0.08)',
+    },
+    fontSizeCode: 14,
+  })),
+}));
+
 describe('Editor Component (Web)', () => {
   it('renders correctly and exposes ref', () => {
     const ref = React.createRef<any>();

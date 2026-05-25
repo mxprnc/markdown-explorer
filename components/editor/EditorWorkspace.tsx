@@ -68,7 +68,7 @@ export function EditorWorkspace({
   forcePaneModes,
   onYoutubeExtract
 }: EditorWorkspaceProps) {
-  const { colors, fontFamilyUI } = useTheme();
+  const { colors, fontFamilyUI, fontSizeUI } = useTheme();
   const [dragOverPane, setDragOverPane] = React.useState<number | null>(null);
 
   // Stable handlers using refs to avoid re-render issues during drag
@@ -128,10 +128,10 @@ export function EditorWorkspace({
             <Ionicons name="folder-open-outline" size={48} color={colors.primary} style={{ marginBottom: 16 }} />
             {!selectedFolder ? (
               <>
-                <Text style={{ color: colors.text, fontSize: 18, fontFamily: fontFamilyUI, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }}>
+                <Text style={{ color: colors.text, fontSize: fontSizeUI + 5, fontFamily: fontFamilyUI, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }}>
                   Welcome to Mark Explorer
                 </Text>
-                <Text style={{ color: colors.textMuted, fontSize: 14, fontFamily: fontFamilyUI, marginBottom: 24, textAlign: 'center' }}>
+                <Text style={{ color: colors.textMuted, fontSize: fontSizeUI + 1, fontFamily: fontFamilyUI, marginBottom: 24, textAlign: 'center' }}>
                   Open a local folder to start exploring and editing your Markdown files.
                 </Text>
                 <View 
@@ -144,14 +144,14 @@ export function EditorWorkspace({
                 >
                   <Text 
                     onPress={onOpenDirectory}
-                    style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold', fontFamily: fontFamilyUI }}
+                    style={{ color: '#FFF', fontSize: fontSizeUI + 3, fontWeight: 'bold', fontFamily: fontFamilyUI }}
                   >
                     Open Folder
                   </Text>
                 </View>
               </>
             ) : (
-              <Text style={{ color: colors.textMuted, fontSize: 16, fontFamily: fontFamilyUI }}>Please select a file.</Text>
+              <Text style={{ color: colors.textMuted, fontSize: fontSizeUI + 3, fontFamily: fontFamilyUI }}>Please select a file.</Text>
             )}
           </View>
         );

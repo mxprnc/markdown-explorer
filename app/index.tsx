@@ -31,7 +31,6 @@ import { TOCPane } from '@/components/toc/TOCPane';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { TabBar } from '@/components/layout/TabBar';
-import { GeminiSettingsModal } from '@/components/gemini/GeminiSettingsModal';
 import { RenameModal } from '@/components/explorer/RenameModal';
 import { EditorWorkspace } from '@/components/editor/EditorWorkspace';
 import { Resizer } from '@/components/ui/Resizer';
@@ -56,6 +55,7 @@ import { PluginProvider, usePlugins } from '@/contexts/PluginContext';
 import { AppInstance } from '@/core/AppInstance';
 import { QuickPicker } from '@/components/ui/QuickPicker';
 import { SettingsModal } from '@/components/settings/SettingsModal';
+import { PluginsSidebar } from '@/components/sidebar/PluginsSidebar';
 
 const appInstance = new AppInstance();
 
@@ -1668,6 +1668,9 @@ function MainScreen() {
                 activeViewId={activeSidebarViewId}
                 setActiveViewId={setActiveSidebarViewId}
                 registeredViews={sidebarViews}
+                renderPluginsManager={useCallback(() => (
+                  <PluginsSidebar />
+                ), [])}
                 renderChatHistoryList={useCallback(() => (
                   <ChatHistoryList
                     chatList={chatHistory.chatList}
@@ -2087,10 +2090,7 @@ function MainScreen() {
           </View>
         )}
 
-        {/* MODALS */}
-        <GeminiSettingsModal 
-          visible={settings.showGeminiSettings} onClose={() => settings.setShowGeminiSettings(false)}
-        />
+
 
         <RenameModal 
           visible={!!renamingItem}

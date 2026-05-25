@@ -36,7 +36,7 @@ export const Header = memo(({
   activeFile, onFileTitlePress,
   isGeminiOpen, onGeminiPress
 }: HeaderProps) => {
-  const { colors, themeMode, toggleTheme, fontFamilyUI, isDark } = useTheme();
+  const { colors, themeMode, toggleTheme, fontFamilyUI, isDark, fontSizeUI } = useTheme();
   const insets = useSafeAreaInsets();
 
   const truncateMiddle = (str: string, maxLen: number = 20) => {
@@ -79,7 +79,7 @@ export const Header = memo(({
             onPress={onFileTitlePress}
             style={styles.fileTitleBtn}
           >
-            <Text style={[styles.fileTitleText, { color: colors.text, fontFamily: fontFamilyUI }]}>
+            <Text style={[styles.fileTitleText, { color: colors.text, fontFamily: fontFamilyUI, fontSize: fontSizeUI }]}>
               {truncateMiddle(fileName, 18)}
             </Text>
             <Ionicons name="chevron-down" size={14} color={colors.textMuted} style={{ marginLeft: 4 }} />
@@ -95,7 +95,7 @@ export const Header = memo(({
             testID="header-files-btn"
           >
             <Ionicons name="folder-open-outline" size={18} color={activeTab === 'files' ? colors.primary : colors.textMuted} />
-            {!isMobile && <Text style={[styles.tabBtnText, { color: activeTab === 'files' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Files</Text>}
+            {!isMobile && <Text style={[styles.tabBtnText, { color: activeTab === 'files' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>Files</Text>}
           </Pressable>
           <Pressable 
             onPress={() => setActiveTab('editor')} 
@@ -103,7 +103,7 @@ export const Header = memo(({
             testID="header-editor-btn"
           >
             <Ionicons name="document-text-outline" size={18} color={activeTab === 'editor' ? colors.primary : colors.textMuted} />
-            {!isMobile && <Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Editor</Text>}
+            {!isMobile && <Text style={[styles.tabBtnText, { color: activeTab === 'editor' ? colors.text : colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>Editor</Text>}
           </Pressable>
           
           {onTocPress && (
@@ -130,7 +130,7 @@ export const Header = memo(({
               size={18} 
               color={isSplitMode ? colors.primary : colors.textMuted} 
             />
-            <Text style={[styles.tabBtnText, { color: isSplitMode ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>Split View</Text>
+            <Text style={[styles.tabBtnText, { color: isSplitMode ? colors.text : colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>Split View</Text>
           </Pressable>
         )}
 
@@ -186,7 +186,7 @@ export const Header = memo(({
               size={18} 
               color={isGeminiOpen ? colors.primary : colors.text} 
             />
-            {!isMobile && <Text style={[styles.tabBtnText, { color: isGeminiOpen ? colors.text : colors.textMuted, fontFamily: fontFamilyUI }]}>AI Agent</Text>}
+            {!isMobile && <Text style={[styles.tabBtnText, { color: isGeminiOpen ? colors.text : colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>AI Assistant</Text>}
           </Pressable>
 
           <Pressable 
@@ -219,7 +219,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: 'space-between',
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', minWidth: 40 },
+  headerLeft: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    minWidth: 40,
+    paddingLeft: Platform.OS === 'web' ? 8 : 0
+  },
   headerCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   headerRight: { flexDirection: 'row', alignItems: 'center' },
   fileTitleBtn: {

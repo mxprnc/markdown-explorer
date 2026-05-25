@@ -32,7 +32,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/44</span>
+                <span class='fraction'>0/45</span>
             </div>
         
             
@@ -426,7 +426,10 @@
 <a name='L361'></a><a href='#L361'>361</a>
 <a name='L362'></a><a href='#L362'>362</a>
 <a name='L363'></a><a href='#L363'>363</a>
-<a name='L364'></a><a href='#L364'>364</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L364'></a><a href='#L364'>364</a>
+<a name='L365'></a><a href='#L365'>365</a>
+<a name='L366'></a><a href='#L366'>366</a>
+<a name='L367'></a><a href='#L367'>367</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -613,6 +616,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -859,7 +865,7 @@ export function <span class="fstat-no" title="function not covered" >ChatHistory
   onRenameChat,
   onDeleteChat
 }: ChatHistoryListProps) {
-  const { colors, fontFamilyUI, isDark } = <span class="cstat-no" title="statement not covered" >useTheme();</span>
+  const { colors, fontFamilyUI, isDark, fontSizeUI = <span class="branch-0 cbranch-no" title="branch not covered" >13 </span>} = <span class="cstat-no" title="statement not covered" >useTheme();</span>
   
   // Inline rename state
   const [editingChatId, setEditingChatId] = <span class="cstat-no" title="statement not covered" >useState&lt;string | null&gt;(null);</span>
@@ -902,8 +908,8 @@ export function <span class="fstat-no" title="function not covered" >ChatHistory
 <span class="cstat-no" title="statement not covered" >  return (</span>
     &lt;View style={[styles.container, { backgroundColor: colors.surface }]}&gt;
       {/* List Header */}
-      &lt;View style={[styles.header, { borderBottomColor: colors.border }]}&gt;
-        &lt;Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontFamilyUI }]}&gt;
+      &lt;View style={[styles.header, { height: fontSizeUI + 35, borderBottomColor: colors.border }]}&gt;
+        &lt;Text style={[styles.headerTitle, { color: colors.text, fontFamily: fontFamilyUI, fontSize: fontSizeUI }]}&gt;
           AI Chats
         &lt;/Text&gt;
         &lt;Pressable
@@ -916,7 +922,7 @@ export function <span class="fstat-no" title="function not covered" >ChatHistory
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           testID="sidebar-new-chat-btn"
         &gt;
-          &lt;Ionicons name="add" size={18} color={colors.text} /&gt;
+          &lt;Ionicons name="add" size={fontSizeUI + 5} color={colors.text} /&gt;
         &lt;/Pressable&gt;
       &lt;/View&gt;
 &nbsp;
@@ -927,15 +933,15 @@ export function <span class="fstat-no" title="function not covered" >ChatHistory
       &gt;
         {chatList.length === 0 ? (
           &lt;View style={styles.emptyState}&gt;
-            &lt;Ionicons name="chatbubbles-outline" size={32} color={colors.textMuted} style={{ marginBottom: 12 }} /&gt;
-            &lt;Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: fontFamilyUI }]}&gt;
+            &lt;Ionicons name="chatbubbles-outline" size={fontSizeUI + 19} color={colors.textMuted} style={{ marginBottom: 12 }} /&gt;
+            &lt;Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}&gt;
               저장된 대화가 없습니다.
             &lt;/Text&gt;
             &lt;Pressable
               onPress={onCreateNewChat}
               style={[styles.emptyAddBtn, { backgroundColor: colors.primary }]}
             &gt;
-              &lt;Text style={[styles.emptyAddBtnText, { fontFamily: fontFamilyUI }]}&gt;
+              &lt;Text style={[styles.emptyAddBtnText, { fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}&gt;
                 새 대화 시작
               &lt;/Text&gt;
             &lt;/Pressable&gt;
@@ -959,13 +965,13 @@ export function <span class="fstat-no" title="function not covered" >ChatHistory
                 style={[
                   styles.chatItem,
                   isActive &amp;&amp; { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' },
-                  { borderLeftColor: isActive ? colors.primary : 'transparent' }
+                  { borderLeftColor: isActive ? colors.primary : 'transparent', height: fontSizeUI + 35 }
                 ]}
                 testID={`chat-item-${chat.id}`}
               &gt;
                 {/* Provider Icon Avatar */}
-                &lt;View style={[styles.avatar, { backgroundColor: prov.color + '18' }]}&gt;
-                  &lt;Ionicons name={prov.icon} size={16} color={prov.color} /&gt;
+                &lt;View style={[styles.avatar, { backgroundColor: prov.color + '18', width: fontSizeUI + 15, height: fontSizeUI + 15, borderRadius: (fontSizeUI + 15) * 0.22 }]}&gt;
+                  &lt;Ionicons name={prov.icon} size={fontSizeUI + 3} color={prov.color} /&gt;
                 &lt;/View&gt;
 &nbsp;
                 {/* Info Text Area */}
@@ -984,7 +990,9 @@ export function <span class="fstat-no" title="function not covered" >ChatHistory
                           color: colors.text, 
                           fontFamily: fontFamilyUI,
                           borderColor: colors.primary,
-                          backgroundColor: colors.background
+                          backgroundColor: colors.background,
+                          fontSize: fontSizeUI - 1,
+                          height: fontSizeUI + 14
                         }
                       ]}
                     /&gt;
@@ -997,13 +1005,14 @@ export function <span class="fstat-no" title="function not covered" >ChatHistory
                           { 
                             color: isActive ? colors.text : colors.textMuted,
                             fontFamily: fontFamilyUI,
-                            fontWeight: isActive ? '600' : 'normal'
+                            fontWeight: isActive ? '600' : 'normal',
+                            fontSize: fontSizeUI - 1
                           }
                         ]}
                       &gt;
                         {chat.title}
                       &lt;/Text&gt;
-                      &lt;Text style={[styles.timeText, { color: colors.textMuted, fontFamily: fontFamilyUI }]}&gt;
+                      &lt;Text style={[styles.timeText, { color: colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 2.5 }]}&gt;
                         {timeAgo}
                       &lt;/Text&gt;
                     &lt;/View&gt;
@@ -1018,14 +1027,14 @@ export function <span class="fstat-no" title="function not covered" >ChatHistory
                       style={styles.actionIconBtn}
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     &gt;
-                      &lt;Ionicons name="pencil-outline" size={14} color={colors.textMuted} /&gt;
+                      &lt;Ionicons name="pencil-outline" size={fontSizeUI + 1} color={colors.textMuted} /&gt;
                     &lt;/Pressable&gt;
                     &lt;Pressable
                       onPress={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleDeletePrompt(chat)}</span>
                       style={styles.actionIconBtn}
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     &gt;
-                      &lt;Ionicons name="trash-outline" size={14} color="#EF4444" /&gt;
+                      &lt;Ionicons name="trash-outline" size={fontSizeUI + 1} color="#EF4444" /&gt;
                     &lt;/Pressable&gt;
                   &lt;/View&gt;
                 )}
@@ -1159,7 +1168,7 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-24T10:29:43.407Z
+                at 2026-05-25T04:46:01.031Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

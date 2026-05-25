@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useMarkdownWorker } from '../../hooks/useMarkdownWorker';
+import { useTheme } from '@/contexts/ThemeContext';
 import mermaid from 'mermaid';
 import equal from 'fast-deep-equal';
 import { findBestHeadingMatch } from '@/utils/MarkdownUtils';
@@ -153,6 +154,39 @@ const PreviewVideoPlayer = React.memo(({ youtubeId }: { youtubeId: string }) => 
 const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVisible }: { content: string, isDark: boolean, resolveImage?: (src: string) => Promise<string>, onHeadingVisible?: (index: number) => void }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { hast, isParsing, workerError } = useMarkdownWorker(content);
+  const { colors, fontSizeCode } = useTheme();
+
+  const customPrismStyle = useMemo(() => {
+    const baseStyle = isDark ? oneDark : oneLight;
+    return {
+      ...baseStyle,
+      'code[class*="language-"]': {
+        ...baseStyle['code[class*="language-"]'],
+        background: 'transparent',
+      },
+      'pre[class*="language-"]': {
+        ...baseStyle['pre[class*="language-"]'],
+        background: 'transparent',
+      },
+      'comment': {
+        ...baseStyle['comment'],
+        color: colors.textMuted,
+        opacity: 0.85
+      },
+      'prolog': {
+        ...baseStyle['prolog'],
+        color: colors.textMuted
+      },
+      'doctype': {
+        ...baseStyle['doctype'],
+        color: colors.textMuted
+      },
+      'cdata': {
+        ...baseStyle['cdata'],
+        color: colors.textMuted
+      }
+    };
+  }, [isDark, colors.textMuted]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || !onHeadingVisible || !containerRef.current) return;
@@ -352,8 +386,8 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
           margin: '20px 0', 
           borderRadius: '10px', 
           overflow: 'hidden', 
-          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'}`,
-          backgroundColor: isDark ? '#0b0e14' : '#F9FAFB',
+          border: `1px solid ${colors.border}`,
+          backgroundColor: colors.background,
           boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.05)',
         }}>
           <div style={{ 
@@ -361,14 +395,14 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
             justifyContent: 'space-between', 
             alignItems: 'center', 
             padding: '8px 16px',
-            backgroundColor: isDark ? '#151921' : '#F8FAFC',
-            borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'}`
+            backgroundColor: colors.surface,
+            borderBottom: `1px solid ${colors.border}`
           }}>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#ff5f56', marginRight: 6 }} />
               <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#ffbd2e', marginRight: 6 }} />
               <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#27c93f', marginRight: 12 }} />
-              <span style={{ fontSize: '11px', fontWeight: '700', color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 {match[1]}
               </span>
             </div>
@@ -379,12 +413,12 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
             PreTag="div"
             children={codeString}
             language={match[1]}
-            style={isDark ? oneDark : oneLight}
+            style={customPrismStyle}
             showLineNumbers={true}
             customStyle={{
               margin: 0,
               padding: '16px',
-              fontSize: '13px',
+              fontSize: `${fontSizeCode - 1}px`,
               backgroundColor: 'transparent',
               border: 'none',
             }}
@@ -393,24 +427,60 @@ const MarkdownPreview = forwardRef(({ content, isDark, resolveImage, onHeadingVi
       );
 
     }
-  }), [isDark, resolveImage]);
+  }), [isDark, resolveImage, colors, customPrismStyle, fontSizeCode]);
 
   return (
-    <div ref={containerRef} data-testid="preview-container" className="markdown-preview" style={{ height: '100%', overflowY: 'auto', padding: '24px', paddingBottom: '30vh', color: isDark ? '#F3F4F6' : '#121212', fontSize: '14px', lineHeight: '1.6', fontFamily: 'Inter, sans-serif' }}>
+    <div ref={containerRef} data-testid="preview-container" className="markdown-preview" style={{ height: '100%', overflowY: 'auto', padding: '24px', paddingBottom: '30vh', color: colors.text, backgroundColor: colors.background, fontSize: `${fontSizeCode}px`, lineHeight: '1.6', fontFamily: 'Inter, sans-serif' }}>
       <style>{`
-        .markdown-preview blockquote { border-left: 4px solid #3B82F6; padding-left: 16px; color: ${isDark ? '#9CA3AF' : '#6B7280'}; font-style: italic; margin: 1.5em 0; }
-        .markdown-preview h1 { font-size: 2rem; font-weight: 800; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding-bottom: 0.3em; }
-        .markdown-preview h2 { font-size: 1.6rem; font-weight: 700; margin-top: 1.8rem; margin-bottom: 0.8rem; border-bottom: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding-bottom: 0.3em; }
-        .markdown-preview h3 { font-size: 1.3rem; font-weight: 700; margin-top: 1.6rem; margin-bottom: 0.6rem; }
-        .markdown-preview h4 { font-size: 1.15rem; font-weight: 700; margin-top: 1.4rem; margin-bottom: 0.4rem; color: ${isDark ? '#F3F4F6' : '#111827'}; }
-        .markdown-preview h5 { font-size: 1.05rem; font-weight: 700; margin-top: 1.2rem; margin-bottom: 0.3rem; color: ${isDark ? '#D1D5DB' : '#374151'}; }
-        .markdown-preview h6 { font-size: 1rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.2rem; color: ${isDark ? '#9CA3AF' : '#6B7280'}; text-transform: uppercase; letter-spacing: 0.05em; }
+        /* Custom Scrollbar for Preview Container */
+        .markdown-preview::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        .markdown-preview::-webkit-scrollbar-track {
+          background: ${colors.background};
+        }
+        .markdown-preview::-webkit-scrollbar-thumb {
+          background: ${colors.border};
+          border-radius: 4px;
+        }
+        .markdown-preview::-webkit-scrollbar-thumb:hover {
+          background: ${colors.textMuted};
+        }
+
+        /* Custom Scrollbar for Code Blocks */
+        .markdown-preview div::-webkit-scrollbar {
+          height: 8px;
+          width: 8px;
+        }
+        .markdown-preview div::-webkit-scrollbar-track {
+          background: ${colors.surface};
+        }
+        .markdown-preview div::-webkit-scrollbar-thumb {
+          background: ${colors.border};
+          border-radius: 4px;
+        }
+        .markdown-preview div::-webkit-scrollbar-thumb:hover {
+          background: ${colors.textMuted};
+        }
+        .markdown-preview div {
+          scrollbar-width: thin;
+          scrollbar-color: ${colors.border} ${colors.surface};
+        }
+
+        .markdown-preview blockquote { border-left: 4px solid ${colors.primary}; padding-left: 16px; color: ${colors.textMuted}; font-style: italic; margin: 1.5em 0; }
+        .markdown-preview h1 { font-size: 2em; font-weight: 800; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 1px solid ${colors.border}; padding-bottom: 0.3em; }
+        .markdown-preview h2 { font-size: 1.6em; font-weight: 700; margin-top: 1.8rem; margin-bottom: 0.8rem; border-bottom: 1px solid ${colors.border}; padding-bottom: 0.3em; }
+        .markdown-preview h3 { font-size: 1.3em; font-weight: 700; margin-top: 1.6rem; margin-bottom: 0.6rem; }
+        .markdown-preview h4 { font-size: 1.15em; font-weight: 700; margin-top: 1.4rem; margin-bottom: 0.4rem; color: ${colors.text}; }
+        .markdown-preview h5 { font-size: 1.05em; font-weight: 700; margin-top: 1.2rem; margin-bottom: 0.3rem; color: ${colors.textMuted}; }
+        .markdown-preview h6 { font-size: 1em; font-weight: 700; margin-top: 1rem; margin-bottom: 0.2rem; color: ${colors.textMuted}; text-transform: uppercase; letter-spacing: 0.05em; }
         .markdown-preview p { margin-bottom: 1.2em; line-height: 1.7; }
         .markdown-preview ul, .markdown-preview ol { padding-left: 24px; margin-bottom: 1.2em; }
         .markdown-preview li { margin-bottom: 0.4em; }
-        .markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 1.5em; border: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; }
-        .markdown-preview th, .markdown-preview td { border: 1px solid ${isDark ? '#374151' : '#E5E7EB'}; padding: 8px 12px; text-align: left; }
-        .markdown-preview th { background-color: ${isDark ? '#1F2937' : '#F9FAFB'}; font-weight: bold; }
+        .markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 1.5em; border: 1px solid ${colors.border}; }
+        .markdown-preview th, .markdown-preview td { border: 1px solid ${colors.border}; padding: 8px 12px; text-align: left; }
+        .markdown-preview th { background-color: ${colors.surface}; font-weight: bold; }
         .markdown-preview .katex-display { margin: 1.5em 0; overflow-x: auto; overflow-y: hidden; }
         .markdown-preview .katex { font-size: 1.05em; color: inherit; }
       `}</style>

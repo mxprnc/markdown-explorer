@@ -46,6 +46,28 @@ export interface Commands {
   removeCommand(id: string): void;
 }
 
+export interface ThemeConfig {
+  id: string;
+  name: string;
+  isDark: boolean;
+  colors: {
+    background: string;
+    text: string;
+    border: string;
+    surface: string;
+    primary: string;
+    textMuted: string;
+    textHighlight: string;
+    accentGlow: string;
+  };
+}
+
+export interface ThemeAPI {
+  registerTheme(theme: ThemeConfig): void;
+  unregisterTheme(id: string): void;
+  setActiveTheme(id: string | null): void;
+}
+
 /**
  * 플러그인에 전달되는 최상위 애플리케이션 인스턴스 인터페이스입니다.
  */
@@ -53,6 +75,7 @@ export interface App {
   vault: Vault;
   workspace: Workspace;
   commands: Commands;
+  theme: ThemeAPI;
   plugins: {
     getPlugin(id: string): any;
   };

@@ -40,7 +40,7 @@ export function ImageViewer({ uri, name }: ImageViewerProps) {
   };
   
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#1a1a1a' : '#f0f0f0' }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface }}>
       {/* Toolbar */}
       <View style={[styles.toolbar, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <Pressable onPress={() => setZoom(prev => Math.max(0.1, prev - 0.2))} style={styles.toolBtn} testID="zoom-out-btn">

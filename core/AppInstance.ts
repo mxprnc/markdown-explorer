@@ -17,6 +17,17 @@ export class AppInstance implements App {
   public vault: Vault = {} as Vault;
   public workspace: Workspace = {} as Workspace;
   public anims: any = {};
+  public theme = {
+    registerTheme: (theme: any) => {
+      this.emit('theme:register', theme);
+    },
+    unregisterTheme: (id: string) => {
+      this.emit('theme:unregister', id);
+    },
+    setActiveTheme: (id: string | null) => {
+      this.emit('theme:set-active', id);
+    }
+  };
 
   constructor() {
     this.commands = new CommandManager();

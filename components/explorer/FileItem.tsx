@@ -25,7 +25,7 @@ export function FileItem({
   onSelect, onToggle, onContextMenu, onMouseEnter, onMouseLeave, onRenameRequest,
   setDraggingTab, onMove
 }: FileItemProps) {
-  const { colors, isDark, fontFamilyUI } = useTheme();
+  const { colors, isDark, fontFamilyUI, fontSizeUI } = useTheme();
   const isImage = /\.(png|jpe?g|gif|webp)$/i.test(item.name);
   const isDarkTheme = isDark;
   const isDoc = /\.(md|txt)$/i.test(item.name);
@@ -101,7 +101,7 @@ export function FileItem({
           { 
             color: isDoc || item.kind === 'directory' ? (isDark ? '#FFFFFF' : '#1A202C') : colors.textMuted, 
             fontFamily: fontFamilyUI,
-            fontSize: 14,
+            fontSize: fontSizeUI,
           },
           item.kind === 'directory' && { fontWeight: 'bold' },
           isSelected && { fontWeight: 'bold', color: colors.primary }

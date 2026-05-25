@@ -33,7 +33,7 @@ export function FileTree({
   creatingItem, creationName, setCreationName, onConfirmCreation, onCancelCreation,
   setDraggingTab, onMove
 }: FileTreeProps) {
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, fontSizeUI } = useTheme();
   
   const renderList = () => {
     const list = items.map((item) => {
@@ -88,7 +88,7 @@ export function FileTree({
     if (creatingItem && creatingItem.parentPath === parentPath) {
       list.push(
         <View key="creation-input" style={[styles.creationInput, { paddingLeft: 30 + depth * 12 }]}>
-          <Text style={{ fontSize: 13, marginRight: 4 }}>{creatingItem.kind === 'directory' ? '📁' : '📄'}</Text>
+          <Text style={{ fontSize: fontSizeUI, marginRight: 4 }}>{creatingItem.kind === 'directory' ? '📁' : '📄'}</Text>
           <View style={{ flex: 1 }}>
             {Platform.OS === 'web' ? (
               <input
@@ -115,10 +115,10 @@ export function FileTree({
                 style={{
                   width: '90%',
                   padding: '2px 6px',
-                  fontSize: '13px',
+                  fontSize: `${fontSizeUI}px`,
                   border: `1px solid ${colors.primary}`,
-                  backgroundColor: isDark ? '#1a1a1a' : '#fff',
-                  color: isDark ? '#fff' : '#000',
+                  backgroundColor: colors.background,
+                  color: colors.text,
                   outline: 'none',
                   borderRadius: '3px'
                 }}
@@ -135,11 +135,11 @@ export function FileTree({
                 style={{
                   width: '90%',
                   padding: 4,
-                  fontSize: 13,
+                  fontSize: fontSizeUI,
                   borderWidth: 1,
                   borderColor: colors.primary,
-                  backgroundColor: isDark ? '#1a1a1a' : '#fff',
-                  color: isDark ? '#fff' : '#000',
+                  backgroundColor: colors.background,
+                  color: colors.text,
                   borderRadius: 3
                 }}
               />

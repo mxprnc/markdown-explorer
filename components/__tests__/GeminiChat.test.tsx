@@ -9,7 +9,8 @@ jest.mock('@/contexts/SettingsContext', () => ({
     googleAccessToken: '',
     selectedModel: 'gemini-3.5-flash',
     setSelectedModel: jest.fn(),
-    setShowGeminiSettings: jest.fn(),
+    setSettingsVisible: jest.fn(),
+    setActiveTab: jest.fn(),
     aiProvider: 'gemini',
     openaiApiKey: '',
     claudeApiKey: ''

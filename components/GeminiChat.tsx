@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -81,13 +81,46 @@ export default function GeminiChat({
   onUpdateMessageFeedback,
   onMaximize
 }: GeminiChatProps) {
-  const { colors, isDark, fontFamilyCode } = useTheme();
+  const { colors, isDark, fontFamilyCode, fontSizeUI } = useTheme();
+
+  const customPrismStyle = useMemo(() => {
+    const baseStyle = isDark ? oneDark : oneLight;
+    return {
+      ...baseStyle,
+      'code[class*="language-"]': {
+        ...baseStyle['code[class*="language-"]'],
+        background: 'transparent',
+      },
+      'pre[class*="language-"]': {
+        ...baseStyle['pre[class*="language-"]'],
+        background: 'transparent',
+      },
+      'comment': {
+        ...baseStyle['comment'],
+        color: colors.textMuted,
+        opacity: 0.85
+      },
+      'prolog': {
+        ...baseStyle['prolog'],
+        color: colors.textMuted
+      },
+      'doctype': {
+        ...baseStyle['doctype'],
+        color: colors.textMuted
+      },
+      'cdata': {
+        ...baseStyle['cdata'],
+        color: colors.textMuted
+      }
+    };
+  }, [isDark, colors.textMuted]);
   const { 
     geminiApiKey: apiKey, 
     googleAccessToken: accessToken, 
     selectedModel: model, 
     setSelectedModel: onModelChange,
-    setShowGeminiSettings,
+    setSettingsVisible,
+    setActiveTab,
     
     // Multi-Provider settings
     aiProvider,
@@ -96,7 +129,10 @@ export default function GeminiChat({
   } = useAppSettings();
   
   const models = AI_PROVIDERS[aiProvider].models;
-  const onOpenSettings = () => setShowGeminiSettings(true);
+  const onOpenSettings = () => {
+    setActiveTab('ai');
+    setSettingsVisible(true);
+  };
 
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const isExternalHistory = chatMessages !== undefined && onSaveActiveChat !== undefined;
@@ -493,14 +529,41 @@ ${userPrompt}`;
 
   const renderCodeBlock = (node: any, children: any, language: string) => {
     return (
-      <View key={node.key} style={{ 
-        marginVertical: 8, 
-        borderRadius: 8, 
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: isDark ? '#0b0e14' : '#F9FAFB',
-      }}>
+      <View 
+        key={node.key} 
+        nativeID={`chat-code-block-${node.key}`}
+        className="chat-code-block-scroll"
+        style={{ 
+          marginVertical: 8, 
+          borderRadius: 8, 
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.background,
+        }}
+      >
+        {Platform.OS === 'web' && (
+          <style>{`
+            .chat-code-block-scroll div::-webkit-scrollbar {
+              height: 6px;
+              width: 6px;
+            }
+            .chat-code-block-scroll div::-webkit-scrollbar-track {
+              background: ${colors.surface};
+            }
+            .chat-code-block-scroll div::-webkit-scrollbar-thumb {
+              background: ${colors.border};
+              border-radius: 3px;
+            }
+            .chat-code-block-scroll div::-webkit-scrollbar-thumb:hover {
+              background: ${colors.textMuted};
+            }
+            .chat-code-block-scroll div {
+              scrollbar-width: thin;
+              scrollbar-color: ${colors.border} ${colors.surface};
+            }
+          `}</style>
+        )}
         <View style={{ 
           flexDirection: 'row', 
           justifyContent: 'space-between', 
@@ -535,7 +598,7 @@ ${userPrompt}`;
               PreTag="div"
               children={node.content?.replace(/\n$/, '')}
               language={language || 'text'}
-              style={isDark ? oneDark : oneLight}
+              style={customPrismStyle}
               showLineNumbers={false}
               customStyle={{
                 margin: 0,
@@ -690,23 +753,23 @@ ${userPrompt}`;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingBottom: bottomSpacing }]}>
-       <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: isDark ? '#121212' : '#F3F4F6' }]}>
+       <View style={[styles.header, { height: fontSizeUI + 27, borderBottomColor: colors.border, backgroundColor: isDark ? '#121212' : '#F3F4F6' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="sparkles" size={14} color={colors.primary} style={{ marginRight: 6 }} />
-            <Text style={[styles.title, { color: colors.text }]}>AI Assistant</Text>
+            <Ionicons name="sparkles" size={fontSizeUI + 1} color={colors.primary} style={{ marginRight: 6 }} />
+            <Text style={[styles.title, { color: colors.text, fontSize: fontSizeUI - 2 }]}>AI Assistant</Text>
             
-            <View style={[styles.modeToggle, { borderColor: colors.border }]}>
+            <View style={[styles.modeToggle, { borderColor: colors.border, height: fontSizeUI + 11 }]}>
               <Pressable 
                 onPress={() => setMode('general')}
                 style={[styles.modeBtn, mode === 'general' && { backgroundColor: colors.primary }]}
               >
-                <Text style={[styles.modeBtnText, { color: mode === 'general' ? '#FFF' : colors.textMuted }]}>General</Text>
+                <Text style={[styles.modeBtnText, { color: mode === 'general' ? '#FFF' : colors.textMuted, fontSize: fontSizeUI - 4 }]}>General</Text>
               </Pressable>
               <Pressable 
                 onPress={() => setMode('archive')}
                 style={[styles.modeBtn, mode === 'archive' && { backgroundColor: '#10B981' }]}
               >
-                <Text style={[styles.modeBtnText, { color: mode === 'archive' ? '#FFF' : colors.textMuted }]}>Archive</Text>
+                <Text style={[styles.modeBtnText, { color: mode === 'archive' ? '#FFF' : colors.textMuted, fontSize: fontSizeUI - 4 }]}>Archive</Text>
               </Pressable>
             </View>
 
@@ -716,12 +779,11 @@ ${userPrompt}`;
                   value={model}
                   onChange={(e) => onModelChange(e.target.value)}
                   style={{
-                    height: 20,
+                    height: fontSizeUI + 7,
                     paddingHorizontal: 4,
                     borderRadius: 4,
-                    fontSize: 9,
-                    fontWeight: 'bold',
-                    backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                    fontSize: fontSizeUI - 4,
+                    backgroundColor: colors.background,
                     color: colors.primary,
                     borderWidth: 1,
                     borderColor: colors.border,
@@ -742,11 +804,10 @@ ${userPrompt}`;
                   style={{
                     paddingHorizontal: 6,
                     paddingVertical: 2,
-                    borderRadius: 4,
-                    backgroundColor: isDark ? '#333' : '#E5E7EB',
+                    backgroundColor: colors.border,
                   }}
                 >
-                  <Text style={{ fontSize: 9, fontWeight: 'bold', color: colors.primary }}>
+                  <Text style={{ fontSize: fontSizeUI - 4, fontWeight: 'bold', color: colors.primary }}>
                     {models.find(m => m.value === model)?.label || model}
                   </Text>
                 </Pressable>
@@ -756,14 +817,14 @@ ${userPrompt}`;
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             {mode === 'general' && messages.length > 0 && (
-              <Pressable onPress={handleCopyMd} style={styles.actionBtn}>
-                <Ionicons name="copy-outline" size={14} color={colors.primary} />
-                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Copy (MD)</Text>
+              <Pressable onPress={handleCopyMd} style={[styles.actionBtn, { paddingVertical: fontSizeUI - 9 }]}>
+                <Ionicons name="copy-outline" size={fontSizeUI + 1} color={colors.primary} />
+                <Text style={[styles.actionBtnText, { color: colors.primary, fontSize: fontSizeUI - 3 }]}>Copy (MD)</Text>
               </Pressable>
             )}
             <Pressable onPress={onOpenSettings} style={styles.settingsBtn} testID="settings-btn">
-              <Ionicons name="settings-outline" size={14} color={colors.text} />
-              <Text style={[styles.settingsBtnText, { color: colors.text }]}>Settings</Text>
+              <Ionicons name="settings-outline" size={fontSizeUI + 1} color={colors.text} />
+              <Text style={[styles.settingsBtnText, { color: colors.text, fontSize: fontSizeUI - 3 }]}>Settings</Text>
             </Pressable>
 
             {onMaximize && (
@@ -1020,7 +1081,7 @@ ${userPrompt}`;
 
         <View style={[styles.inputContainer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
          <TextInput
-           style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}
+           style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
             placeholder={hasAuth ? "Type a message..." : "Available after authentication."}
            placeholderTextColor={colors.textMuted}
            value={inputText}
