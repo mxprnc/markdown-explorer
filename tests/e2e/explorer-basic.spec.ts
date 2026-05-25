@@ -83,7 +83,7 @@ test.describe('Explorer Basic Interactions', () => {
     const renameInput = page.getByTestId('rename-input');
     await renameInput.fill('new-root-file.md');
     await expect(renameInput).toHaveValue('new-root-file.md');
-    await renameInput.press('Enter');
+    await page.getByTestId('rename-confirm-btn').click();
     
     // Verify it's updated in the list
     await expect(page.getByTestId('explorer-item-new-root-file.md')).toBeVisible({ timeout: 10000 });
@@ -141,8 +141,8 @@ test.describe('Explorer Basic Interactions', () => {
       await dialog.accept();
     });
 
-    // 5. Click Confirm / Press Enter
-    await input.press('Enter');
+    // 5. Click Confirm
+    await page.getByTestId('rename-confirm-btn').click();
     
     // 6. Verify error message
     expect(errorMsg).toContain('An error occurred during rename.');

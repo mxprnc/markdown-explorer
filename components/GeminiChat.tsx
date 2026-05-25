@@ -34,6 +34,8 @@ interface GeminiChatProps {
   onSaveActiveChat?: (newMessages: Message[]) => Promise<void>;
   onUpdateMessageFeedback?: (msgIndex: number, feedback: 'like' | 'dislike' | null) => Promise<void>;
   onMaximize?: () => void;
+  highlightInfo?: { chatId: string; messageIndex: number; query: string } | null;
+  onClearHighlight?: () => void;
 }
 
 export interface AIAgentSkill {
@@ -79,7 +81,9 @@ export default function GeminiChat({
   chatMessages,
   onSaveActiveChat,
   onUpdateMessageFeedback,
-  onMaximize
+  onMaximize,
+  highlightInfo,
+  onClearHighlight
 }: GeminiChatProps) {
   const { colors, isDark, fontFamilyCode, fontSizeUI } = useTheme();
 
@@ -139,6 +143,34 @@ export default function GeminiChat({
   const messages = isExternalHistory ? chatMessages : localMessages;
 
   const [inputText, setInputText] = useState('');
+  const [activeHighlightIndex, setActiveHighlightIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (highlightInfo && highlightInfo.messageIndex !== undefined && highlightInfo.messageIndex >= 0 && highlightInfo.messageIndex < messages.length) {
+      const targetIndex = highlightInfo.messageIndex;
+      setActiveHighlightIndex(targetIndex);
+
+      if (Platform.OS === 'web') {
+        setTimeout(() => {
+          const el = document.getElementById(`chat-msg-${targetIndex}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 150);
+      }
+
+      const timer = setTimeout(() => {
+        setActiveHighlightIndex(null);
+        if (onClearHighlight) {
+          onClearHighlight();
+        }
+      }, 3000);
+
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, [highlightInfo, messages.length]);
   
   // Autocomplete Suggestion States
   const [suggestionTrigger, setSuggestionTrigger] = useState<'@' | '$' | null>(null);
@@ -902,11 +934,25 @@ ${userPrompt}`;
         )}
        
        <ScrollView 
-         ref={scrollViewRef}
-         style={styles.chatArea}
-         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-         testID="chat-message-list"
-       >
+          ref={scrollViewRef}
+          style={styles.chatArea}
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          testID="chat-message-list"
+        >
+          {Platform.OS === 'web' && (
+            <style>{`
+              @keyframes chatBubblePulse {
+                0% {
+                  transform: scale(1);
+                  box-shadow: 0 0 8px ${colors.primary}30;
+                }
+                100% {
+                  transform: scale(1.015);
+                  box-shadow: 0 0 18px ${colors.primary}60;
+                }
+              }
+            `}</style>
+          )}
          {!hasAuth && (
             <View style={styles.emptyState}>
               <Ionicons name="lock-closed" size={32} color={colors.textMuted} />
@@ -923,99 +969,119 @@ ${userPrompt}`;
              </Text>
            </View>
          )}
-          {messages.map((msg, i) => (
-            <View key={i} style={[
-              styles.messageBubble, 
-              msg.role === 'user' ? styles.userBubbleStyle : styles.modelBubbleStyle,
-              { 
-                backgroundColor: msg.role === 'user' ? colors.userBubble : colors.modelBubble, 
-                borderColor: colors.border,
-                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start'
-              }
-            ]}>
-              <Text style={[styles.roleLabel, { color: colors.primary }]}>
-                {msg.role === 'user' 
-                  ? 'USER' 
-                  : (() => {
-                      const activeIndex = msg.activeVersionIndex || 0;
-                      const activeVer = msg.versions && msg.versions[activeIndex];
-                      if (activeVer && typeof activeVer === 'object') {
-                        const prov = activeVer.provider;
-                        const mdlVal = activeVer.model;
-                        const label = AI_PROVIDERS[prov]?.models.find(m => m.value === mdlVal)?.label || mdlVal;
-                        return `${prov.toUpperCase()} (${label})`;
-                      }
-                      return aiProvider.toUpperCase();
-                    })()
-                }
-              </Text>
-              <Markdown style={markdownStyles} rules={markdownRules}>
-                {msg.content}
-              </Markdown>
-              
-              {/* Action Toolbar for Messages */}
-              <View style={styles.actionRow}>
-                {msg.role === 'model' && (
+          {messages.map((msg, i) => {
+            const isFocused = activeHighlightIndex === i;
+            return (
+              <View 
+                key={i} 
+                nativeID={`chat-msg-${i}`}
+                id={`chat-msg-${i}`}
+                style={[
+                  styles.messageBubble, 
+                  msg.role === 'user' ? styles.userBubbleStyle : styles.modelBubbleStyle,
+                  { 
+                    backgroundColor: msg.role === 'user' ? colors.userBubble : colors.modelBubble, 
+                    borderColor: isFocused ? colors.primary : colors.border,
+                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    borderWidth: isFocused ? 2 : 1,
+                  },
+                  isFocused && (Platform.OS === 'web' ? {
+                    boxShadow: `0 0 16px ${colors.primary}40, inset 0 0 8px ${colors.primary}20`,
+                    animation: 'chatBubblePulse 1.5s infinite alternate',
+                    transition: 'all 0.3s ease-in-out'
+                  } as any : {
+                    shadowColor: colors.primary,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 8,
+                    elevation: 4
+                  })
+                ]}
+              >
+                <Text style={[styles.roleLabel, { color: colors.primary }]}>
+                  {msg.role === 'user' 
+                    ? 'USER' 
+                    : (() => {
+                        const activeIndex = msg.activeVersionIndex || 0;
+                        const activeVer = msg.versions && msg.versions[activeIndex];
+                        if (activeVer && typeof activeVer === 'object') {
+                          const prov = activeVer.provider;
+                          const mdlVal = activeVer.model;
+                          const label = AI_PROVIDERS[prov]?.models.find(m => m.value === mdlVal)?.label || mdlVal;
+                          return `${prov.toUpperCase()} (${label})`;
+                        }
+                        return aiProvider.toUpperCase();
+                      })()
+                  }
+                </Text>
+                <Markdown style={markdownStyles} rules={markdownRules}>
+                  {msg.content}
+                </Markdown>
+                
+                {/* Action Toolbar for Messages */}
+                <View style={styles.actionRow}>
+                  {msg.role === 'model' && (
+                    <Pressable
+                      onPress={() => handleRegenerate(i)}
+                      style={styles.actionBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      testID={`regenerate-btn-${i}`}
+                    >
+                      <Ionicons 
+                        name="refresh-outline" 
+                        size={13} 
+                        color={colors.textMuted} 
+                      />
+                    </Pressable>
+                  )}
+
                   <Pressable
-                    onPress={() => handleRegenerate(i)}
+                    onPress={() => handleCopyMessage(msg.content)}
                     style={styles.actionBtn}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    testID={`regenerate-btn-${i}`}
+                    testID={`copy-btn-${i}`}
                   >
                     <Ionicons 
-                      name="refresh-outline" 
+                      name="copy-outline" 
                       size={13} 
                       color={colors.textMuted} 
                     />
                   </Pressable>
-                )}
 
-                <Pressable
-                  onPress={() => handleCopyMessage(msg.content)}
-                  style={styles.actionBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  testID={`copy-btn-${i}`}
-                >
-                  <Ionicons 
-                    name="copy-outline" 
-                    size={13} 
-                    color={colors.textMuted} 
-                  />
-                </Pressable>
-
-                {/* Version Selector for Regenerated AI Responses */}
-                {msg.role === 'model' && msg.versions && msg.versions.length > 1 && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 'auto', gap: 6 }}>
-                    <Pressable
-                      onPress={() => handleSwitchVersion(i, (msg.activeVersionIndex || 0) - 1)}
-                      disabled={(msg.activeVersionIndex || 0) === 0}
-                      style={({ pressed }: any) => [
-                        { opacity: (msg.activeVersionIndex || 0) === 0 ? 0.3 : 1 },
-                        pressed && { opacity: 0.7 }
-                      ]}
-                      testID={`prev-version-btn-${i}`}
-                    >
-                      <Ionicons name="chevron-back" size={13} color={colors.text} />
-                    </Pressable>
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: colors.textMuted }}>
-                      {((msg.activeVersionIndex || 0) + 1)} / {msg.versions.length}
-                    </Text>
-                    <Pressable
-                      onPress={() => handleSwitchVersion(i, (msg.activeVersionIndex || 0) + 1)}
-                      disabled={(msg.activeVersionIndex || 0) === msg.versions.length - 1}
-                      style={({ pressed }: any) => [
-                        { opacity: (msg.activeVersionIndex || 0) === msg.versions.length - 1 ? 0.3 : 1 },
-                        pressed && { opacity: 0.7 }
-                      ]}
-                      testID={`next-version-btn-${i}`}
-                    >
-                      <Ionicons name="chevron-forward" size={13} color={colors.text} />
-                    </Pressable>
-                  </View>
-                )}
+                  {/* Version Selector for Regenerated AI Responses */}
+                  {msg.role === 'model' && msg.versions && msg.versions.length > 1 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 'auto', gap: 6 }}>
+                      <Pressable
+                        onPress={() => handleSwitchVersion(i, (msg.activeVersionIndex || 0) - 1)}
+                        disabled={(msg.activeVersionIndex || 0) === 0}
+                        style={({ pressed }: any) => [
+                          { opacity: (msg.activeVersionIndex || 0) === 0 ? 0.3 : 1 },
+                          pressed && { opacity: 0.7 }
+                        ]}
+                        testID={`prev-version-btn-${i}`}
+                      >
+                        <Ionicons name="chevron-back" size={13} color={colors.text} />
+                      </Pressable>
+                      <Text style={{ fontSize: 10, fontWeight: '600', color: colors.textMuted }}>
+                        {((msg.activeVersionIndex || 0) + 1)} / {msg.versions.length}
+                      </Text>
+                      <Pressable
+                        onPress={() => handleSwitchVersion(i, (msg.activeVersionIndex || 0) + 1)}
+                        disabled={(msg.activeVersionIndex || 0) === msg.versions.length - 1}
+                        style={({ pressed }: any) => [
+                          { opacity: (msg.activeVersionIndex || 0) === msg.versions.length - 1 ? 0.3 : 1 },
+                          pressed && { opacity: 0.7 }
+                        ]}
+                        testID={`next-version-btn-${i}`}
+                      >
+                        <Ionicons name="chevron-forward" size={13} color={colors.text} />
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
          {loading && (
            <View style={styles.loadingContainer}>
              <ActivityIndicator size="small" color={colors.primary} />

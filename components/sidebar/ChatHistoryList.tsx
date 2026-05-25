@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, Platform, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, Platform, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { ChatMetadata } from '@/hooks/useChatHistory';
+import { ChatMetadata, ChatSearchResult } from '@/hooks/useChatHistory';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 interface ChatHistoryListProps {
   chatList: ChatMetadata[];
   activeChatId: string | null;
-  onSelectChat: (id: string) => void;
+  onSelectChat: (id: string, messageIndex?: number, query?: string) => void;
   onCreateNewChat: () => void;
   onRenameChat: (id: string, newTitle: string) => Promise<boolean>;
   onDeleteChat: (id: string) => Promise<boolean>;
+  searchChats?: (query: string) => Promise<ChatSearchResult[]>;
 }
 
 // Map provider to specific styles and icons
@@ -66,7 +67,8 @@ export function ChatHistoryList({
   onSelectChat,
   onCreateNewChat,
   onRenameChat,
-  onDeleteChat
+  onDeleteChat,
+  searchChats
 }: ChatHistoryListProps) {
   const { colors, fontFamilyUI, isDark, fontSizeUI = 13 } = useTheme();
   
@@ -76,6 +78,53 @@ export function ChatHistoryList({
   
   // Hovered item ID for desktop layout to show action icons dynamically
   const [hoveredChatId, setHoveredChatId] = useState<string | null>(null);
+
+  // Search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<ChatSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const debounceTimeoutRef = React.useRef<any>(null);
+
+  React.useEffect(() => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    debounceTimeoutRef.current = setTimeout(async () => {
+      if (searchChats) {
+        try {
+          const results = await searchChats(trimmedQuery);
+          setSearchResults(results);
+        } catch (e) {
+          console.error('[ChatHistoryList] Search failed', e);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setIsSearching(false);
+      }
+    }, 250);
+
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, searchChats]);
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearching(false);
+  };
 
   const handleStartRename = (chat: ChatMetadata) => {
     setEditingChatId(chat.id);
@@ -108,6 +157,39 @@ export function ChatHistoryList({
     }
   };
 
+  const escapeRegExp = (string: string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  };
+
+  const renderSnippetWithHighlight = (snippet: string, query: string) => {
+    if (!query) return <Text style={{ color: colors.textMuted, fontSize: fontSizeUI - 2 }}>{snippet}</Text>;
+
+    const parts = snippet.split(new RegExp(`(${escapeRegExp(query)})`, 'gi'));
+    return (
+      <Text numberOfLines={2} style={{ fontSize: fontSizeUI - 2, color: colors.textMuted, lineHeight: fontSizeUI + 3, fontFamily: fontFamilyUI }}>
+        {parts.map((part, i) => {
+          const isMatch = part.toLowerCase() === query.toLowerCase();
+          return (
+            <Text
+              key={i}
+              style={[
+                isMatch && {
+                  color: colors.primary,
+                  fontWeight: 'bold',
+                  backgroundColor: colors.primary + '20',
+                  paddingHorizontal: 2,
+                  borderRadius: 2
+                }
+              ]}
+            >
+              {part}
+            </Text>
+          );
+        })}
+      </Text>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* List Header */}
@@ -129,121 +211,210 @@ export function ChatHistoryList({
         </Pressable>
       </View>
 
+      {/* Search Input Bar */}
+      <View style={[styles.searchBarContainer, { borderBottomColor: colors.border }]}>
+        <Ionicons name="search-outline" size={fontSizeUI + 2} color={colors.textMuted} style={styles.searchIcon} />
+        <TextInput
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="대화 내용 검색..."
+          placeholderTextColor={colors.textMuted}
+          style={[
+            styles.searchInput,
+            {
+              color: colors.text,
+              fontFamily: fontFamilyUI,
+              fontSize: fontSizeUI - 1.5,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+            }
+          ]}
+        />
+        {searchQuery.length > 0 && (
+          <Pressable onPress={handleClearSearch} style={styles.clearBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="close-circle" size={fontSizeUI + 2} color={colors.textMuted} />
+          </Pressable>
+        )}
+      </View>
+
       {/* List Items Scroll view */}
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {chatList.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="chatbubbles-outline" size={fontSizeUI + 19} color={colors.textMuted} style={{ marginBottom: 12 }} />
-            <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>
-              저장된 대화가 없습니다.
-            </Text>
-            <Pressable
-              onPress={onCreateNewChat}
-              style={[styles.emptyAddBtn, { backgroundColor: colors.primary }]}
-            >
-              <Text style={[styles.emptyAddBtnText, { fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>
-                새 대화 시작
+        {searchQuery.trim().length > 0 ? (
+          isSearching ? (
+            <View style={styles.searchingState}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.searchingText, { color: colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>
+                검색 중...
               </Text>
-            </Pressable>
-          </View>
+            </View>
+          ) : searchResults.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="search-outline" size={fontSizeUI + 19} color={colors.textMuted} style={{ marginBottom: 12 }} />
+              <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>
+                일치하는 대화 내용이 없습니다.
+              </Text>
+            </View>
+          ) : (
+            searchResults.map((result, idx) => {
+              const prov = getProviderDetails(result.provider);
+              const isTitleMatch = result.role === 'title';
+
+              return (
+                <Pressable
+                  key={`${result.chatId}-${result.messageIndex}-${idx}`}
+                  onPress={() => onSelectChat(result.chatId, result.messageIndex === -1 ? undefined : result.messageIndex, searchQuery)}
+                  style={({ pressed }) => [
+                    styles.searchResultItem,
+                    { borderBottomColor: colors.border },
+                    pressed && { opacity: 0.7 }
+                  ]}
+                >
+                  <View style={styles.searchResultHeader}>
+                    {/* Provider Avatar */}
+                    <View style={[styles.avatar, { backgroundColor: prov.color + '18', width: fontSizeUI + 11, height: fontSizeUI + 11, borderRadius: (fontSizeUI + 11) * 0.22, marginRight: 6 }]}>
+                      <Ionicons name={prov.icon} size={fontSizeUI - 1} color={prov.color} />
+                    </View>
+                    <Text numberOfLines={1} style={[styles.searchResultTitle, { color: colors.text, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>
+                      {result.chatTitle}
+                    </Text>
+                    <Text style={[styles.searchResultRole, { 
+                      color: isTitleMatch ? colors.primary : result.role === 'user' ? '#3B82F6' : '#10B981', 
+                      fontFamily: fontFamilyUI, 
+                      fontSize: fontSizeUI - 3.5,
+                      backgroundColor: isTitleMatch ? colors.primary + '15' : result.role === 'user' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                      borderColor: isTitleMatch ? colors.primary + '30' : result.role === 'user' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                      borderWidth: 1,
+                      borderRadius: 4,
+                      paddingHorizontal: 4,
+                      paddingVertical: 1,
+                      overflow: 'hidden'
+                    }]}>
+                      {isTitleMatch ? '제목' : result.role === 'user' ? '사용자' : 'AI'}
+                    </Text>
+                  </View>
+
+                  {/* snippet rendering with highlight */}
+                  <View style={styles.snippetContainer}>
+                    {renderSnippetWithHighlight(result.matchedSnippet, searchQuery)}
+                  </View>
+                </Pressable>
+              );
+            })
+          )
         ) : (
-          chatList.map(chat => {
-            const isActive = chat.id === activeChatId;
-            const isEditing = chat.id === editingChatId;
-            const prov = getProviderDetails(chat.provider);
-            const timeAgo = getRelativeTime(chat.updatedAt);
-            const isHovered = chat.id === hoveredChatId;
-
-            return (
+          chatList.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="chatbubbles-outline" size={fontSizeUI + 19} color={colors.textMuted} style={{ marginBottom: 12 }} />
+              <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>
+                저장된 대화가 없습니다.
+              </Text>
               <Pressable
-                key={chat.id}
-                onPress={() => !isEditing && onSelectChat(chat.id)}
-                {...({
-                  onMouseEnter: () => setHoveredChatId(chat.id),
-                  onMouseLeave: () => setHoveredChatId(null)
-                } as any)}
-                style={[
-                  styles.chatItem,
-                  isActive && { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' },
-                  { borderLeftColor: isActive ? colors.primary : 'transparent', height: fontSizeUI + 35 }
-                ]}
-                testID={`chat-item-${chat.id}`}
+                onPress={onCreateNewChat}
+                style={[styles.emptyAddBtn, { backgroundColor: colors.primary }]}
               >
-                {/* Provider Icon Avatar */}
-                <View style={[styles.avatar, { backgroundColor: prov.color + '18', width: fontSizeUI + 15, height: fontSizeUI + 15, borderRadius: (fontSizeUI + 15) * 0.22 }]}>
-                  <Ionicons name={prov.icon} size={fontSizeUI + 3} color={prov.color} />
-                </View>
+                <Text style={[styles.emptyAddBtnText, { fontFamily: fontFamilyUI, fontSize: fontSizeUI - 1 }]}>
+                  새 대화 시작
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            chatList.map(chat => {
+              const isActive = chat.id === activeChatId;
+              const isEditing = chat.id === editingChatId;
+              const prov = getProviderDetails(chat.provider);
+              const timeAgo = getRelativeTime(chat.updatedAt);
+              const isHovered = chat.id === hoveredChatId;
 
-                {/* Info Text Area */}
-                <View style={styles.infoArea}>
-                  {isEditing ? (
-                    <TextInput
-                      value={editTitle}
-                      onChangeText={setEditTitle}
-                      onBlur={() => handleSaveRename(chat.id)}
-                      onSubmitEditing={() => handleSaveRename(chat.id)}
-                      autoFocus
-                      selectTextOnFocus
-                      style={[
-                        styles.renameInput,
-                        { 
-                          color: colors.text, 
-                          fontFamily: fontFamilyUI,
-                          borderColor: colors.primary,
-                          backgroundColor: colors.background,
-                          fontSize: fontSizeUI - 1,
-                          height: fontSizeUI + 14
-                        }
-                      ]}
-                    />
-                  ) : (
-                    <View style={styles.titleRow}>
-                      <Text 
-                        numberOfLines={1} 
+              return (
+                <Pressable
+                  key={chat.id}
+                  onPress={() => !isEditing && onSelectChat(chat.id)}
+                  {...({
+                    onMouseEnter: () => setHoveredChatId(chat.id),
+                    onMouseLeave: () => setHoveredChatId(null)
+                  } as any)}
+                  style={[
+                    styles.chatItem,
+                    isActive && { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' },
+                    { borderLeftColor: isActive ? colors.primary : 'transparent', height: fontSizeUI + 35 }
+                  ]}
+                  testID={`chat-item-${chat.id}`}
+                >
+                  {/* Provider Icon Avatar */}
+                  <View style={[styles.avatar, { backgroundColor: prov.color + '18', width: fontSizeUI + 15, height: fontSizeUI + 15, borderRadius: (fontSizeUI + 15) * 0.22 }]}>
+                    <Ionicons name={prov.icon} size={fontSizeUI + 3} color={prov.color} />
+                  </View>
+
+                  {/* Info Text Area */}
+                  <View style={styles.infoArea}>
+                    {isEditing ? (
+                      <TextInput
+                        value={editTitle}
+                        onChangeText={setEditTitle}
+                        onBlur={() => handleSaveRename(chat.id)}
+                        onSubmitEditing={() => handleSaveRename(chat.id)}
+                        autoFocus
+                        selectTextOnFocus
                         style={[
-                          styles.chatTitle, 
+                          styles.renameInput,
                           { 
-                            color: isActive ? colors.text : colors.textMuted,
+                            color: colors.text, 
                             fontFamily: fontFamilyUI,
-                            fontWeight: isActive ? '600' : 'normal',
-                            fontSize: fontSizeUI - 1
+                            borderColor: colors.primary,
+                            backgroundColor: colors.background,
+                            fontSize: fontSizeUI - 1,
+                            height: fontSizeUI + 14
                           }
                         ]}
+                      />
+                    ) : (
+                      <View style={styles.titleRow}>
+                        <Text 
+                          numberOfLines={1} 
+                          style={[
+                            styles.chatTitle, 
+                            { 
+                              color: isActive ? colors.text : colors.textMuted,
+                              fontFamily: fontFamilyUI,
+                              fontWeight: isActive ? '600' : 'normal',
+                              fontSize: fontSizeUI - 1
+                            }
+                          ]}
+                        >
+                          {chat.title}
+                        </Text>
+                        <Text style={[styles.timeText, { color: colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 2.5 }]}>
+                          {timeAgo}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Inline Action Buttons on Hover */}
+                  {!isEditing && (isHovered || Platform.OS !== 'web') && (
+                    <View style={styles.actions}>
+                      <Pressable
+                        onPress={() => handleStartRename(chat)}
+                        style={styles.actionIconBtn}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                       >
-                        {chat.title}
-                      </Text>
-                      <Text style={[styles.timeText, { color: colors.textMuted, fontFamily: fontFamilyUI, fontSize: fontSizeUI - 2.5 }]}>
-                        {timeAgo}
-                      </Text>
+                        <Ionicons name="pencil-outline" size={fontSizeUI + 1} color={colors.textMuted} />
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleDeletePrompt(chat)}
+                        style={styles.actionIconBtn}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      >
+                        <Ionicons name="trash-outline" size={fontSizeUI + 1} color="#EF4444" />
+                      </Pressable>
                     </View>
                   )}
-                </View>
-
-                {/* Inline Action Buttons on Hover */}
-                {!isEditing && (isHovered || Platform.OS !== 'web') && (
-                  <View style={styles.actions}>
-                    <Pressable
-                      onPress={() => handleStartRename(chat)}
-                      style={styles.actionIconBtn}
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    >
-                      <Ionicons name="pencil-outline" size={fontSizeUI + 1} color={colors.textMuted} />
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleDeletePrompt(chat)}
-                      style={styles.actionIconBtn}
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    >
-                      <Ionicons name="trash-outline" size={fontSizeUI + 1} color="#EF4444" />
-                    </Pressable>
-                  </View>
-                )}
-              </Pressable>
-            );
-          })
+                </Pressable>
+              );
+            })
+          )
         )}
       </ScrollView>
     </View>
@@ -362,5 +533,63 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: 'transparent',
     ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {})
-  }
+  },
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    position: 'relative',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 22,
+    zIndex: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: 32,
+    borderRadius: 8,
+    paddingLeft: 32,
+    paddingRight: 32,
+    paddingVertical: 0,
+  },
+  clearBtn: {
+    position: 'absolute',
+    right: 20,
+    zIndex: 10,
+  },
+  searchingState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    marginTop: 48,
+  },
+  searchingText: {
+    marginTop: 12,
+  },
+  searchResultItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  searchResultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  searchResultTitle: {
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 8,
+  },
+  searchResultRole: {
+    fontSize: 9.5,
+    fontWeight: 'bold',
+    overflow: 'hidden',
+  },
+  snippetContainer: {
+    marginTop: 2,
+  },
 });

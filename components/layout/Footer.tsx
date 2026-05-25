@@ -22,9 +22,11 @@ interface FooterProps {
   onSaveActiveChat?: (newMessages: any[]) => Promise<void>;
   onUpdateMessageFeedback?: (msgIndex: number, feedback: 'like' | 'dislike' | null) => Promise<void>;
   onMaximize?: () => void;
+  highlightInfo?: any;
+  onClearHighlight?: () => void;
 }
 
-export const Footer = memo(({ height, responder, selectedFile, editorContent, onSaveChatToFile, fileList, isCollapsed, onToggleCollapse, isResizing, chatMessages, onSaveActiveChat, onUpdateMessageFeedback, onMaximize }: FooterProps) => {
+export const Footer = memo(({ height, responder, selectedFile, editorContent, onSaveChatToFile, fileList, isCollapsed, onToggleCollapse, isResizing, chatMessages, onSaveActiveChat, onUpdateMessageFeedback, onMaximize, highlightInfo, onClearHighlight }: FooterProps) => {
   const { colors, fontFamilyCode, fontSizeUI } = useTheme();
   const { setSettingsVisible } = useAppSettings();
   
@@ -60,6 +62,8 @@ export const Footer = memo(({ height, responder, selectedFile, editorContent, on
             onSaveActiveChat={onSaveActiveChat}
             onUpdateMessageFeedback={onUpdateMessageFeedback}
             onMaximize={onMaximize}
+            highlightInfo={highlightInfo}
+            onClearHighlight={onClearHighlight}
           />
         </View>
       )}

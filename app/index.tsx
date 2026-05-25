@@ -1675,20 +1675,27 @@ function MainScreen() {
                   <ChatHistoryList
                     chatList={chatHistory.chatList}
                     activeChatId={chatHistory.activeChatId}
-                    onSelectChat={(id) => {
+                    onSelectChat={(id, messageIndex, query) => {
                       chatHistory.loadActiveChat(id);
+                      if (messageIndex !== undefined && query !== undefined) {
+                        chatHistory.setHighlightInfo({ chatId: id, messageIndex, query });
+                      } else {
+                        chatHistory.setHighlightInfo(null);
+                      }
                       if (!isFooterVisible) {
                         toggleFooter(true);
                       }
                     }}
                     onCreateNewChat={() => {
                       chatHistory.createNewChat();
+                      chatHistory.setHighlightInfo(null);
                       if (!isFooterVisible) {
                         toggleFooter(true);
                       }
                     }}
                     onRenameChat={chatHistory.renameChat}
                     onDeleteChat={chatHistory.deleteChat}
+                    searchChats={chatHistory.searchChats}
                   />
                 ), [chatHistory, isFooterVisible])}
                 renderFileExplorer={useCallback(() => (
@@ -2053,6 +2060,8 @@ function MainScreen() {
           chatMessages={chatHistory.messages}
           onSaveActiveChat={chatHistory.saveActiveChat}
           onUpdateMessageFeedback={chatHistory.updateMessageFeedback}
+          highlightInfo={chatHistory.highlightInfo}
+          onClearHighlight={() => chatHistory.setHighlightInfo(null)}
           onMaximize={() => {
             if (Platform.OS === 'web') {
               const width = 1000;
@@ -2228,10 +2237,21 @@ function ChatOnlyScreen() {
           <ChatHistoryList
             chatList={chatHistory.chatList}
             activeChatId={chatHistory.activeChatId}
-            onSelectChat={(id) => chatHistory.loadActiveChat(id)}
-            onCreateNewChat={() => chatHistory.createNewChat()}
+            onSelectChat={(id, messageIndex, query) => {
+              chatHistory.loadActiveChat(id);
+              if (messageIndex !== undefined && query !== undefined) {
+                chatHistory.setHighlightInfo({ chatId: id, messageIndex, query });
+              } else {
+                chatHistory.setHighlightInfo(null);
+              }
+            }}
+            onCreateNewChat={() => {
+              chatHistory.createNewChat();
+              chatHistory.setHighlightInfo(null);
+            }}
             onRenameChat={chatHistory.renameChat}
             onDeleteChat={chatHistory.deleteChat}
+            searchChats={chatHistory.searchChats}
           />
         </View>
         
@@ -2254,6 +2274,8 @@ function ChatOnlyScreen() {
             chatMessages={chatHistory.messages}
             onSaveActiveChat={chatHistory.saveActiveChat}
             onUpdateMessageFeedback={chatHistory.updateMessageFeedback}
+            highlightInfo={chatHistory.highlightInfo}
+            onClearHighlight={() => chatHistory.setHighlightInfo(null)}
           />
         </View>
       </View>

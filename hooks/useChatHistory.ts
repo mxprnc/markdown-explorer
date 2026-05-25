@@ -24,6 +24,22 @@ export interface ChatDetail {
   messages: ChatMessage[];
 }
 
+export interface ChatSearchResult {
+  chatId: string;
+  chatTitle: string;
+  provider: 'gemini' | 'openai' | 'claude';
+  messageIndex: number;
+  role: 'user' | 'model' | 'title';
+  matchedSnippet: string;
+  timestamp?: number;
+}
+
+export interface HighlightInfo {
+  chatId: string;
+  messageIndex: number;
+  query: string;
+}
+
 // Generate unique ID with browser compatibility fallback
 const generateUUID = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -116,6 +132,78 @@ export function useChatHistory(dirHandle: any, aiProvider: 'gemini' | 'openai' |
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [highlightInfo, setHighlightInfo] = useState<HighlightInfo | null>(null);
+
+  const searchChats = useCallback(async (query: string): Promise<ChatSearchResult[]> => {
+    if (!query || !query.trim()) return [];
+    const results: ChatSearchResult[] = [];
+    const lowerQuery = query.toLowerCase().trim();
+
+    try {
+      for (const chat of chatList) {
+        let chatDetail: ChatDetail | null = null;
+        
+        if (isWorkspaceWeb(dirHandle)) {
+          const content = await readChatFile(dirHandle, `.chats/chat-${chat.id}.json`);
+          if (content) {
+            try {
+              chatDetail = JSON.parse(content) as ChatDetail;
+            } catch (e) {
+              console.error(`[ChatHistory] Failed to parse chat detail ${chat.id}`, e);
+            }
+          }
+        } else {
+          const cache = await getSetting(`ai_chat_detail_${chat.id}`);
+          if (cache) {
+            chatDetail = cache as ChatDetail;
+          }
+        }
+
+        if (!chatDetail) continue;
+
+        // Search in title
+        if (chat.title.toLowerCase().includes(lowerQuery)) {
+          results.push({
+            chatId: chat.id,
+            chatTitle: chat.title,
+            provider: chat.provider,
+            messageIndex: -1,
+            role: 'title',
+            matchedSnippet: `채팅방 제목: ${chat.title}`,
+            timestamp: new Date(chat.updatedAt).getTime()
+          });
+        }
+
+        // Search in messages
+        if (chatDetail.messages && chatDetail.messages.length > 0) {
+          chatDetail.messages.forEach((msg, idx) => {
+            if (msg.content.toLowerCase().includes(lowerQuery)) {
+              const matchIdx = msg.content.toLowerCase().indexOf(lowerQuery);
+              const start = Math.max(0, matchIdx - 25);
+              const end = Math.min(msg.content.length, matchIdx + lowerQuery.length + 35);
+              let snippet = msg.content.substring(start, end);
+              if (start > 0) snippet = '...' + snippet;
+              if (end < msg.content.length) snippet = snippet + '...';
+
+              results.push({
+                chatId: chat.id,
+                chatTitle: chat.title,
+                provider: chat.provider,
+                messageIndex: idx,
+                role: msg.role,
+                matchedSnippet: snippet,
+                timestamp: msg.timestamp || new Date(chat.updatedAt).getTime()
+              });
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.error('[ChatHistory] Search chats failed', e);
+    }
+
+    return results;
+  }, [chatList, dirHandle]);
 
   // Load chat list from active source (Directory or IndexedDB)
   const loadChatList = useCallback(async () => {
@@ -519,7 +607,10 @@ export function useChatHistory(dirHandle: any, aiProvider: 'gemini' | 'openai' |
     renameChat,
     deleteChat,
     loadChatList,
-    updateMessageFeedback
+    updateMessageFeedback,
+    highlightInfo,
+    setHighlightInfo,
+    searchChats
   };
 }
 
