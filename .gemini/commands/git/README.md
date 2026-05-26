@@ -17,12 +17,31 @@ If you are collaborating within the Gemini CLI chat session, you can use these g
 Generates a highly compliant, English-only commit message based on staged files and saves it to a temporary location.
 
 - **Usage**:
-  ```text
-  /git:commit-message docs: (README) add guides for commit helpers
-  ```
+  You can specify your intent in English or in any other language (e.g., Korean, French, German, Spanish). The AI will automatically translate and format it into a standard English Conventional Commit.
+  * English Input:
+    ```text
+    /git:commit-message docs: (README) add guides for commit helpers
+    ```
+  * Multilingual Inputs:
+    * Korean:
+      ```text
+      /git:commit-message feat: git sub command 작성
+      ```
+    * French:
+      ```text
+      /git:commit-message feat: créer des sous-commandes git
+      ```
+    * German:
+      ```text
+      /git:commit-message feat: git-unterbefehle erstellen
+      ```
+    * Spanish:
+      ```text
+      /git:commit-message feat: crear subcomandos de git
+      ```
 - **Behavior**:
   - Checks if staged files are present. Aborts with a warning if none are detected.
-  - Automatically translates multilingual user input to English and maps it to Conventional Commit headers.
+  - Automatically translates multilingual user input (e.g., Korean `git sub command 작성` or French `créer des sous-commandes git` -> `feat(git): implement git subcommands`) to English and maps it to Conventional Commit headers.
   - Saves the generated draft to `./.gemini/commands/git/git-temp/<type>-<subject-kebab-case>/<id>.md` (e.g., `docs-add-guides-for-commit-helpers/001.md`).
   - Appends staged-file metadata (paths, sizes, hashes) at the bottom inside a `<!-- gemini-cli-metadata -->` comment block.
   - Returns a clickable link to the draft markdown file so you can open and edit it if needed.

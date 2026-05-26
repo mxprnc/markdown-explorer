@@ -89,5 +89,5 @@ These **AI Custom Commands** are used within the Gemini CLI chat session for pre
 
 > [!TIP]
 > **Tips for Successful Automation**:
-> - Arguments specifying your intent (e.g., `"docs: (README) add guide documentation"`) can be input in **any language (Korean, Japanese, Chinese, etc.)** and will be fully analyzed and converted into a standard English Conventional Commit message.
+> - Arguments specifying your intent (e.g., `"docs: (README) add guide documentation"`) can be input in **any language (Korean, French, German, Spanish, etc.)** and will be fully analyzed and converted into a standard English Conventional Commit message.
 > - If no staged files are detected, commands will trigger a safeguard, prompt you to run `git add` first, and terminate safely.
