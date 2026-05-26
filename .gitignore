@@ -52,7 +52,7 @@ app-example
 
 # temporary
 temp
-
+**/git-temp
 
 ## env
 .env
